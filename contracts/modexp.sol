@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.17;
 
 library BytesTool {
     function memcopy(bytes src, uint srcoffset, bytes dst, uint dstoffset, uint len) pure internal {

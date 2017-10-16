@@ -1,8 +1,10 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.17;
 
-import "./rsaverify.sol";
+import "./owned.sol";
 import "./bytesutils.sol";
 import "./rrutils.sol";
+import "./algorithm.sol";
+import "./digest.sol";
 
 /*
  * TODO: Support for wildcards
@@ -10,7 +12,7 @@ import "./rrutils.sol";
  * NOTE: Doesn't enforce expiration for records, to allow 'playing forward'
  * TODO: Enforce expiration for non-DNSKEY records
  */
-contract DNSSEC {
+contract DNSSEC is Owned {
     using BytesUtils for *;
     using RRUtils for *;
 
@@ -55,6 +57,11 @@ contract DNSSEC {
     // (name, type, class) => RRSet
     mapping(bytes32=>mapping(uint16=>mapping(uint16=>RRSet))) rrsets;
 
+    mapping(uint8=>Algorithm) public algorithms;
+    mapping(uint8=>Digest) public digests;
+
+    event AlgorithmUpdated(uint8 id, address addr);
+    event DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
 
     function DNSSEC() public {
@@ -69,6 +76,16 @@ contract DNSSEC {
             // RRs
             hex"0000430001FFFFFFFF00244A5C080249AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB50000430001FFFFFFFF00244F660802E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D"
         );
+    }
+
+    function setAlgorithm(uint8 id, Algorithm algo) public owner_only {
+        algorithms[id] = algo;
+        AlgorithmUpdated(id, algo);
+    }
+
+    function setDigest(uint8 id, Digest digest) public owner_only {
+        digests[id] = digest;
+        DigestUpdated(id, digest);
     }
 
     function rrset(uint16 class, uint16 dnstype, bytes name) public constant returns(uint32 inception, uint32 expiration, uint64 inserted, bytes rrs) {
@@ -170,6 +187,7 @@ contract DNSSEC {
     }
 
     function verifySignatureWithKey(BytesUtils.slice memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns(bool) {
+        require(algorithms[algorithm] != address(0));
         // TODO: Check key isn't expired, unless updating key itself
 
         // o The RRSIG RR's Signer's Name, Algorithm, and Key Tag fields MUST
@@ -184,10 +202,7 @@ contract DNSSEC {
         //   set.
         if(keyrdata.uint16At(DNSKEY_FLAGS) & DNSKEY_FLAG_ZONEKEY == 0) return false;
 
-        if(algorithm == ALGORITHM_RSASHA256) {
-            if(verifyRSASHA256(keyrdata, data, sig)) return true;
-        }
-        return false;
+        return algorithms[algorithm].verify(keyrdata.toBytes(), data, sig);
     }
 
     function computeKeytag(BytesUtils.slice memory data) internal pure returns(uint16) {
@@ -197,37 +212,6 @@ contract DNSSEC {
         }
         ac += (ac >> 16) & 0xFFFF;
         return uint16(ac & 0xFFFF);
-    }
-
-    function verifyRSASHA256(BytesUtils.slice memory dnskey, bytes data, bytes sig) internal view returns (bool) {
-        bytes memory exponent;
-        bytes memory modulus;
-
-        var exponentLen = uint16(dnskey.uint8At(4));
-        if(exponentLen != 0) {
-            exponent = dnskey.toBytes(5, exponentLen + 5);
-            modulus = dnskey.toBytes(exponentLen + 5, dnskey.len);
-        } else {
-            exponentLen = dnskey.uint16At(5);
-            exponent = dnskey.toBytes(7, exponentLen + 7);
-            modulus = dnskey.toBytes(exponentLen + 7, dnskey.len);
-        }
-
-        bytes memory sigdata = new bytes(modulus.length);
-        BytesUtils.slice memory sigdataslice;
-        sigdataslice.fromBytes(sigdata);
-        // Write 0x0001
-        sigdataslice.writeBytes32(0, 0x0001 << 240);
-        // Repeat 0xFF as many times as needed (2 byte 0x0001 + 20 byte prefix + 32 byte hash = 54)
-        var padsize = modulus.length - 54;
-        sigdataslice.fill(2, padsize, 0xff);
-        // Write the prefix
-        sigdataslice.writeBytes32(padsize + 2, 0x00003031300d060960864801650304020105000420 << 96);
-        // Write the hash
-        sigdataslice.writeBytes32(padsize + 22, sha256(data));
-
-        // Verify the signature
-        return RSAVerify.rsaverify(sigdata, modulus, exponent, sig);
     }
 
     function verifyKeyWithDS(uint16 class, BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, uint16 keytag, uint8 algorithm) internal constant returns (bool) {
@@ -243,20 +227,19 @@ contract DNSSEC {
             if(dsrdata.uint8At(DS_ALGORITHM) != algorithm) continue;
 
             var digesttype = dsrdata.uint8At(DS_DIGEST_TYPE);
-            if(digesttype == DIGEST_ALGORITHM_SHA256) {
-                if(verifySHA256(keyname, keyrdata, dsrdata)) return true;
-            }
+            if(verifyDSHash(digesttype, keyname, keyrdata, dsrdata)) return true;
         }
         return false;
     }
 
-    function verifySHA256(BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, BytesUtils.slice memory digest) internal pure returns (bool) {
+    function verifyDSHash(uint8 digesttype, BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, BytesUtils.slice memory digest) internal view returns (bool) {
+        require(digests[digesttype] != address(0));
+
         bytes memory data = new bytes(keyname.len + keyrdata.len);
         BytesUtils.slice memory dataslice;
         dataslice.fromBytes(data);
         dataslice.memcpy(0, keyname, 0, keyname.len);
         dataslice.memcpy(keyname.len, keyrdata, 0, keyrdata.len);
-        var hash = sha256(data);
-        return hash == digest.bytes32At(4);
+        return digests[digesttype].verify(dataslice.toBytes(), digest.toBytes(4, 36));
     }
 }

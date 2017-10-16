@@ -54,6 +54,12 @@ function encodeName(name) {
 }
 
 contract('DNSSEC', function(accounts) {
+  it('should have a default algorithm and digest set', async function() {
+    var instance = await dnssec.deployed();
+    assert.notEqual(await instance.algorithms(8), "0x0000000000000000000000000000000000000000");
+    assert.notEqual(await instance.digests(2), "0x0000000000000000000000000000000000000000");
+  });
+
   it('should follow the chain of trust', async function() {
     var instance = await dnssec.deployed();
     for(var rrset of test_rrsets) {
