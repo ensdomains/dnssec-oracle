@@ -76,19 +76,3 @@ library ModexpPrecompile {
         }
     }
 }
-
-contract ModexpPrecompileTest {
-    function test1() public returns (bytes) {
-        var (, ret) = ModexpPrecompile.modexp(hex"03", hex"fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e", hex"fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f");
-        return ret;
-    }
-
-    function test2() public returns (bytes) {
-        bytes memory S = hex"77c6b0c53800d37b6b946df6d91a693c25b1ba97cac16879a10b3231a5cea0932a0bc16443b2e82b33ec155a61b29572a5faaf574152bd509a248fdb8ed9d7af";
-        uint e = 65537;
-        bytes memory N = hex"00890e68c2485f2c725116f259a7ac871e1de3618dfc41e1df8eacc0131b2d433de6ed6d1f36bbf5a401d5afa32eeb2d444cf02a920c81f8088ba0b99d47a0bfdf";
-
-        var (, ret) = ModexpPrecompile.modexp(S, e, N);
-        return ret;
-    }
-}
