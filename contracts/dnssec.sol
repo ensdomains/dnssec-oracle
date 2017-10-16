@@ -87,10 +87,10 @@ contract DNSSEC {
         // Validate the signature
         verifySignature(class, data, input, sig);
 
-        var rrset = rrsets[keccak256(name)][typecovered][class];
-        rrset.inception = inception;
-        rrset.expiration = expiration;
-        rrset.inserted = uint64(now);
+        var set = rrsets[keccak256(name)][typecovered][class];
+        set.inception = inception;
+        set.expiration = expiration;
+        set.inserted = uint64(now);
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
@@ -102,16 +102,16 @@ contract DNSSEC {
         //    equal to the time listed in the RRSIG RR's Inception field.
         assert(inception < now);
 
-        if(rrset.rrs.length > 0) {
+        if(set.rrs.length > 0) {
             // To replace an existing rrset, the signature must be newer
-            assert(inception > rrset.inception);
+            assert(inception > set.inception);
         }
 
-        insertRRs(rrset, data, name, class, typecovered);
+        insertRRs(set, data, name, class, typecovered);
         RRSetUpdated(name);
     }
 
-    function insertRRs(RRSet storage rrset, BytesUtils.slice memory data, bytes rrsigname, uint16 rrsetclass, uint16 typecovered) internal {
+    function insertRRs(RRSet storage set, BytesUtils.slice memory data, bytes rrsigname, uint16 rrsetclass, uint16 typecovered) internal {
         // Iterate over all the RRs
         BytesUtils.slice memory name;
         BytesUtils.slice memory rdata;
@@ -130,7 +130,7 @@ contract DNSSEC {
             //    or equal to the value in the RRSIG RR's Labels field.
         }
 
-        rrset.rrs = data.toBytes();
+        set.rrs = data.toBytes();
     }
 
     function verifySignature(uint16 class, BytesUtils.slice memory rdata, bytes data, bytes sig) internal constant {
@@ -222,7 +222,7 @@ contract DNSSEC {
         var padsize = modulus.length - 54;
         sigdataslice.fill(2, padsize, 0xff);
         // Write the prefix
-        sigdataslice.writeBytes32(padsize + 2, 0x003031300d060960864801650304020105000420 << 96);
+        sigdataslice.writeBytes32(padsize + 2, 0x00003031300d060960864801650304020105000420 << 96);
         // Write the hash
         sigdataslice.writeBytes32(padsize + 22, sha256(data));
 
@@ -250,7 +250,7 @@ contract DNSSEC {
         return false;
     }
 
-    function verifySHA256(BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, BytesUtils.slice memory digest) internal view returns (bool) {
+    function verifySHA256(BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, BytesUtils.slice memory digest) internal pure returns (bool) {
         bytes memory data = new bytes(keyname.len + keyrdata.len);
         BytesUtils.slice memory dataslice;
         dataslice.fromBytes(data);
