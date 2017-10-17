@@ -217,6 +217,22 @@ library BytesUtils {
     }
 
     /*
+     * @dev Returns true iff the slice is a suffix of the provided byte string.
+     * @param self The slice to test.
+     * @param data The byte string to test against.
+     */
+    function suffixOf(slice self, bytes data) internal pure returns (bool) {
+        var selflen = self.len;
+        var suffixOffset = 32 + (data.length - selflen);
+        require(selflen <= data.length);
+        bytes32 suffixhash;
+        assembly {
+          suffixhash := keccak256(add(data, suffixOffset), selflen)
+        }
+        return suffixhash == keccak(self);
+    }
+
+    /*
      * @dev Returns the specified byte from the slice.
      * @param self The slice.
      * @param idx The index into the slice.

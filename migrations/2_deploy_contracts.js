@@ -46,7 +46,7 @@ module.exports = function(deployer, network) {
       type: dns.TYPE_DS,
       klass: dns.CLASS_INET,
       ttl: 3600,
-      keytag: 0,
+      keytag: 5647, // Empty body, flags == 0x0101, algorithm = 253, body = 0x1111
       algorithm: 253,
       digestType: 253,
       digest: new Buffer("", "hex")
@@ -63,6 +63,7 @@ module.exports = function(deployer, network) {
       tasks.push(sha256.deployed().then((digest) => instance.setDigest(2, digest.address)));
       if(dev) {
         tasks.push(dummyalgorithm.deployed().then((algorithm) => instance.setAlgorithm(253, algorithm.address)));
+        tasks.push(dummyalgorithm.deployed().then((algorithm) => instance.setAlgorithm(254, algorithm.address)));
         tasks.push(dummydigest.deployed().then((digest) => instance.setDigest(253, digest.address)));
       }
       return Promise.all(tasks);

@@ -102,9 +102,14 @@ contract DNSSEC is Owned {
         var typecovered = data.uint16At(RRSIG_TYPE);
 
         // Validate the signature
-        verifySignature(class, data, input, sig);
+        verifySignature(class, name, data, input, sig);
 
         var set = rrsets[keccak256(name)][typecovered][class];
+        if(set.rrs.length > 0) {
+            // To replace an existing rrset, the signature must be newer
+            assert(inception > set.inception);
+        }
+
         set.inception = inception;
         set.expiration = expiration;
         set.inserted = uint64(now);
@@ -118,11 +123,6 @@ contract DNSSEC is Owned {
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
         assert(inception < now);
-
-        if(set.rrs.length > 0) {
-            // To replace an existing rrset, the signature must be newer
-            assert(inception > set.inception);
-        }
 
         insertRRs(set, data, name, class, typecovered);
         RRSetUpdated(name);
@@ -150,10 +150,16 @@ contract DNSSEC is Owned {
         set.rrs = data.toBytes();
     }
 
-    function verifySignature(uint16 class, BytesUtils.slice memory rdata, bytes data, bytes sig) internal constant {
-        // Extract signer name, algorithm, and key tag
+    function verifySignature(uint16 class, bytes name, BytesUtils.slice memory rdata, bytes data, bytes sig) internal constant {
+        // Extract signer name
         BytesUtils.slice memory signerName;
         rdata.dnsNameAt(RRSIG_SIGNER_NAME, signerName);
+
+        // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
+        //    that contains the RRset.
+        require(signerName.suffixOf(name));
+
+        // Extract algorithm and keytag
         var algorithm = rdata.uint8At(RRSIG_ALGORITHM);
         var keytag = rdata.uint16At(RRSIG_KEY_TAG);
 
@@ -195,7 +201,8 @@ contract DNSSEC is Owned {
         //   the zone's apex DNSKEY RRset.
         if(keyrdata.uint8At(DNSKEY_PROTOCOL) != 3) return false;
         if(keyrdata.uint8At(DNSKEY_ALGORITHM) != algorithm) return false;
-        var computedkeytag = computeKeytag(keyrdata);        if(computedkeytag != keytag) return false;
+        var computedkeytag = computeKeytag(keyrdata);
+        if(computedkeytag != keytag) return false;
 
         // o The matching DNSKEY RR MUST be present in the zone's apex DNSKEY
         //   RRset, and MUST have the Zone Flag bit (DNSKEY RDATA Flag bit 7)
@@ -240,6 +247,6 @@ contract DNSSEC is Owned {
         dataslice.fromBytes(data);
         dataslice.memcpy(0, keyname, 0, keyname.len);
         dataslice.memcpy(keyname.len, keyrdata, 0, keyrdata.len);
-        return digests[digesttype].verify(dataslice.toBytes(), digest.toBytes(4, 36));
+        return digests[digesttype].verify(dataslice.toBytes(), digest.toBytes(4, digest.len));
     }
 }

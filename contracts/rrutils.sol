@@ -22,10 +22,10 @@ library RRUtils {
     function nextRR(BytesUtils.slice memory self, BytesUtils.slice memory name, BytesUtils.slice memory rdata) internal pure returns (uint16 dnstype, uint16 class, uint32 ttl) {
         // Compute the offset from self to the start of the next record
         uint off;
-        if(rdata._ptr == 0) {
+        if(rdata._ptr < self._ptr || rdata._ptr > self._ptr + self.len) {
             off = 0;
         } else {
-            off = rdata._ptr - self._ptr + rdata.len;
+            off = (rdata._ptr + rdata.len) - self._ptr;
         }
 
         if(off >= self.len) {
