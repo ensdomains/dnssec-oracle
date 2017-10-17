@@ -64,8 +64,7 @@ contract DNSSEC is Owned {
     event DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
 
-    function DNSSEC() public {
-        // From http://data.iana.org/root-anchors/root-anchors.xml
+    function DNSSEC(bytes anchors) public {
         rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet(
             // Inception
             0,
@@ -74,7 +73,8 @@ contract DNSSEC is Owned {
             // Inserted
             uint64(now),
             // RRs
-            hex"0000430001FFFFFFFF00244A5C080249AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB50000430001FFFFFFFF00244F660802E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D"
+            anchors
+            //hex"0000430001FFFFFFFF00244A5C080249AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB50000430001FFFFFFFF00244F660802E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D"
         );
     }
 

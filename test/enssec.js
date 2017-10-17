@@ -1,3 +1,4 @@
+var dns = require("../lib/dns.js");
 var dnssec = artifacts.require("./dnssec.sol");
 
 const test_rrsets = [
@@ -39,20 +40,6 @@ const test_rrsets = [
   [1, "secure.d2a8n3.rootcanary.net.", "000108040000003c59e8481a59db191a912706643261386e330a726f6f7463616e617279036e6574000673656375726506643261386e330a726f6f7463616e617279036e657400000100010000003c000491611411", "41a738cbed736d7c744c5d40ab2da19eb89e0168c88df4465fa8545b5e74a89d5f6707465b98d0e727cae14b900fe1eb1acf79903645b40c13b4d4e8133edb6b94de6260664a495292fb57cb612e9a6232236114d3f92a87d9538321027043f289e41b5ee48eecf66331b46a8732ccfb85c9b74f291a36bb30bde470ebe4ff8e"]
 ];
 
-function encodeName(name) {
-  if(!name.endsWith(".")) name = name + ".";
-  if(name == ".") return "0x00";
-
-  var buf = Buffer.alloc(name.length + 1);
-  var off = 0;
-  for(var part of name.split(".")) {
-    buf.writeUInt8(part.length, off++);
-    buf.write(part, off)
-    off += part.length;
-  }
-  return "0x" + buf.toString('hex');
-}
-
 contract('DNSSEC', function(accounts) {
   it('should have a default algorithm and digest set', async function() {
     var instance = await dnssec.deployed();
@@ -63,12 +50,11 @@ contract('DNSSEC', function(accounts) {
   it('should follow the chain of trust', async function() {
     var instance = await dnssec.deployed();
     for(var rrset of test_rrsets) {
-      var name = encodeName(rrset[1]);
+      var name = dns.hexEncodeName(rrset[1]);
       var tx = await instance.submitRRSet(rrset[0], name, "0x" + rrset[2], "0x" + rrset[3], {from: accounts[0]});
       assert.equal(tx.receipt.status, "0x1");
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].args.name, name);
     }
-    //var transactions = await Promise.all(test_rrsets.map((x) => { instance.submitRRSet(x[0], encodeName(x[1]), "0x" + x[2], "0x" + x[3], {from: accounts[0]})}));
   });
 });
