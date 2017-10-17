@@ -44,4 +44,14 @@ library RRUtils {
         rdata.len = self.uint16At(off); off += 2;
         rdata._ptr = self._ptr + off;
     }
+
+    function countLabels(BytesUtils.slice memory self, uint off) internal pure returns(uint ret) {
+        while(true) {
+            assert(off < self.len);
+            var labelLen = self.uint8At(off);
+            if(labelLen == 0) return;
+            off += labelLen + 1;
+            ret += 1;
+        }
+    }
 }

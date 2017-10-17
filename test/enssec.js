@@ -46,12 +46,14 @@ async function verifySubmission(instance, name, data, sig) {
   assert.equal(tx.receipt.status, "0x1");
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[0].args.name, name);
+  return tx;
 }
 
 async function verifyFailedSubmission(instance, name, data, sig) {
   var name = dns.hexEncodeName(name);
   var tx = await instance.submitRRSet(1, name, data, sig);
   assert.equal(tx.receipt.status, "0x0");
+  return tx;
 }
 
 contract('DNSSEC', function(accounts) {
@@ -138,7 +140,41 @@ contract('DNSSEC', function(accounts) {
       keytag: 5647,
       signerName: ".",
       rrs: [
-        {name: "com.", type: dns.TYPE_TXT, klass: 2, ttl: 3600, text: ["foo"]}
+        {name: "com.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
+
+  it('should reject signatures with the wrong type covered', async function() {
+    var instance = await dnssec.deployed();
+    await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_DS,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
+
+  it('should reject signatures with too many labels', async function() {
+    var instance = await dnssec.deployed();
+    await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 2,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
       ],
     }), "0x");
   });
@@ -175,6 +211,21 @@ contract('DNSSEC', function(accounts) {
     }), "0x");
   });
 
+  it("should reject entries with expirations in the past", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.inception = 1;
+    keys.expiration = 123;
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
+
+  it("should reject entries with inceptions in the future", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.inception = 0xFFFFFFFF;
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");    
+  });
+
   it("should accept updates with newer signatures", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
@@ -191,8 +242,11 @@ contract('DNSSEC', function(accounts) {
 
   it('should accept real DNSSEC records', async function() {
     var instance = await dnssec.deployed();
+    var totalGas = 0;
     for(var rrset of test_rrsets) {
-      await verifySubmission(instance, rrset[1], "0x" + rrset[2], "0x" + rrset[3]);
+      var tx = await verifySubmission(instance, rrset[1], "0x" + rrset[2], "0x" + rrset[3]);
+      totalGas += tx.receipt.gasUsed;
     }
+    console.log("Gas used: " + totalGas);
   });
 });

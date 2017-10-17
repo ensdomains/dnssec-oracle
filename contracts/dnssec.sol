@@ -100,6 +100,7 @@ contract DNSSEC is Owned {
         var inception = data.uint32At(RRSIG_INCEPTION);
         var expiration = data.uint32At(RRSIG_EXPIRATION);
         var typecovered = data.uint16At(RRSIG_TYPE);
+        var labels = data.uint8At(RRSIG_LABELS);
 
         // Validate the signature
         verifySignature(class, name, data, input, sig);
@@ -116,13 +117,17 @@ contract DNSSEC is Owned {
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
-        // We permit submitting expired DNSKEYs in order to 'play forward' the
-        // signatures.
-        assert(expiration > now || typecovered == DNSTYPE_DNSKEY);
+        assert(expiration > now);
 
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
         assert(inception < now);
+
+        // o  The number of labels in the RRset owner name MUST be greater than
+        //    or equal to the value in the RRSIG RR's Labels field.
+        BytesUtils.slice memory nameslice;
+        nameslice.fromBytes(name);
+        assert(nameslice.countLabels(0) >= labels);
 
         insertRRs(set, data, name, class, typecovered);
         RRSetUpdated(name);
@@ -139,12 +144,6 @@ contract DNSSEC is Owned {
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
             require(dnstype == typecovered);
-
-            // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
-            //    that contains the RRset.
-
-            // o  The number of labels in the RRset owner name MUST be greater than
-            //    or equal to the value in the RRSIG RR's Labels field.
         }
 
         set.rrs = data.toBytes();
