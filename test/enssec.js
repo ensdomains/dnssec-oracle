@@ -140,7 +140,7 @@ contract('DNSSEC', function(accounts) {
       keytag: 5647,
       signerName: ".",
       rrs: [
-        {name: "com.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+        {name: "foo.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
       ],
     }), "0x");
   });
@@ -179,13 +179,30 @@ contract('DNSSEC', function(accounts) {
     }), "0x");
   });
 
+  it('should support wildcard subdomains', async function() {
+    var instance = await dnssec.deployed();
+    await verifySubmission(instance, "foo.net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 1,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "*.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
+
   it('should reject signatures with invalid signer names', async function() {
     var instance = await dnssec.deployed();
 
     await verifySubmission(instance, "net.", dns.hexEncodeSignedSet({
       typeCovered: dns.TYPE_DNSKEY,
       algorithm: 253,
-      labels: 0,
+      labels: 1,
       originalTTL: 3600,
       expiration: 0xFFFFFFFF,
       inception: 0,
@@ -223,7 +240,7 @@ contract('DNSSEC', function(accounts) {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
     keys.inception = 0xFFFFFFFF;
-    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");    
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
   });
 
   it("should accept updates with newer signatures", async function() {

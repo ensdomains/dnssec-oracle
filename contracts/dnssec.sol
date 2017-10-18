@@ -123,24 +123,31 @@ contract DNSSEC is Owned {
         //    equal to the time listed in the RRSIG RR's Inception field.
         assert(inception < now);
 
-        // o  The number of labels in the RRset owner name MUST be greater than
-        //    or equal to the value in the RRSIG RR's Labels field.
-        BytesUtils.slice memory nameslice;
-        nameslice.fromBytes(name);
-        assert(nameslice.countLabels(0) >= labels);
-
-        insertRRs(set, data, name, class, typecovered);
+        insertRRs(set, data, name, class, typecovered, labels);
         RRSetUpdated(name);
     }
 
-    function insertRRs(RRSet storage set, BytesUtils.slice memory data, bytes rrsigname, uint16 rrsetclass, uint16 typecovered) internal {
+    function insertRRs(RRSet storage set, BytesUtils.slice memory data, bytes rrsigname, uint16 rrsetclass, uint16 typecovered, uint8 labels) internal {
         // Iterate over all the RRs
         BytesUtils.slice memory name;
         BytesUtils.slice memory rdata;
         for(var (dnstype, class, ttl) = data.nextRR(name, rdata); dnstype != 0; (dnstype, class, ttl) = data.nextRR(name, rdata)) {
             // o  The RRSIG RR and the RRset MUST have the same owner name and the
             //    same class.
-            require(class == rrsetclass && name.keccak() == keccak256(rrsigname));
+            require(class == rrsetclass);
+            var nameLabels = name.countLabels(0);
+            // o  The number of labels in the RRset owner name MUST be greater than
+            //    or equal to the value in the RRSIG RR's Labels field.
+            if(nameLabels == labels) {
+              require(name.keccak() == keccak256(rrsigname));
+            } else if(nameLabels == labels + 1) {
+              // It's a wildcard domain; make sure it ends with rrsigname and starts with *.
+              require(name.suffixOf(2, rrsigname));
+              require(name.uint16At(0) == 0x012A);
+            } else {
+              // Anything else is invalid
+              revert();
+            }
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
             require(dnstype == typecovered);
@@ -156,7 +163,7 @@ contract DNSSEC is Owned {
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
         //    that contains the RRset.
-        require(signerName.suffixOf(name));
+        require(signerName.suffixOf(0, name));
 
         // Extract algorithm and keytag
         var algorithm = rdata.uint8At(RRSIG_ALGORITHM);

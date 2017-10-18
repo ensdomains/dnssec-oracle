@@ -221,15 +221,15 @@ library BytesUtils {
      * @param self The slice to test.
      * @param data The byte string to test against.
      */
-    function suffixOf(slice self, bytes data) internal pure returns (bool) {
-        var selflen = self.len;
-        var suffixOffset = 32 + (data.length - selflen);
-        require(selflen <= data.length);
-        bytes32 suffixhash;
+    function suffixOf(slice self, uint off, bytes data) internal pure returns (bool ret) {
+        var suffixlen = self.len - off;
+        require(suffixlen <= data.length);
+        var suffixOffset = 32 + (data.length - suffixlen);
         assembly {
-          suffixhash := keccak256(add(data, suffixOffset), selflen)
+          let suffixhash := keccak256(add(data, suffixOffset), suffixlen)
+          let ourhash := keccak256(add(mload(add(self, 32)), off), suffixlen)
+          ret := eq(suffixhash, ourhash)
         }
-        return suffixhash == keccak(self);
     }
 
     /*

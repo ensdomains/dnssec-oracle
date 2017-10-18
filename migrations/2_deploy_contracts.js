@@ -1,8 +1,8 @@
-var rsasha256 = artifacts.require("./contracts/rsasha256algorithm.sol");
-var sha256 = artifacts.require("./contracts/sha256digest.sol");
-var dnssec = artifacts.require("./contracts/dnssec.sol");
-var dummyalgorithm = artifacts.require("./contracts/dummyalgorithm.sol");
-var dummydigest = artifacts.require("./contracts/dummydigest.sol");
+var rsasha256 = artifacts.require("./RSASHA256Algorithm.sol");
+var sha256 = artifacts.require("./SHA256Digest.sol");
+var dnssec = artifacts.require("./DNSSEC.sol");
+var dummyalgorithm = artifacts.require("./DummyAlgorithm.sol");
+var dummydigest = artifacts.require("./DummyDigest.sol");
 
 var dns = require("../lib/dns.js");
 
