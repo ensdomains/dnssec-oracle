@@ -25,12 +25,30 @@ library BytesUtils {
         }
     }
 
+    /**
+     * @dev Copies memory from one slice to another.
+     *
+     * Not safe to use if `src` and `dest` overlap.
+     *
+     * @param dest The destination slice.
+     * @param destoff Offset into the destination slice.
+     * @parma src The source slice.
+     * @param srcoff Offset into the source slice.
+     * @param len Number of bytes to copy.
+     */
     function memcpy(slice memory dest, uint destoff, slice memory src, uint srcoff, uint len) internal pure {
         require(destoff + len <= dest.len);
         require(srcoff + len <= src.len);
         memcpy(dest._ptr + destoff, src._ptr + srcoff, len);
     }
 
+    /**
+     * @dev Fills a memory area with a repeated byte.
+     * @param dest The destination slice.
+     * @param destoff Offset into the destination slice.
+     * @param len Number of bytes to fill.
+     * @param val Value to fill with.
+     */
     function fill(slice memory dest, uint destoff, uint len, uint val) internal pure {
         // Fill the least significant byte of val across the whole word
         val |= val << 8;
