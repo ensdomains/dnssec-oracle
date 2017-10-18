@@ -8,7 +8,7 @@ library ModexpPrecompile {
     /**
      * @dev Computes (base ^ exponent) % modulus over big numbers.
      */
-    function modexp(BytesUtils.slice memory base, BytesUtils.slice memory exponent, BytesUtils.slice memory modulus) internal view returns (bool success, bytes output) {
+    function modexp(BytesUtils.slice memory base, BytesUtils.slice memory exponent, BytesUtils.slice memory modulus, BytesUtils.slice memory output) internal view returns (bool success) {
         uint base_length = base.len;
         uint exponent_length = exponent.len;
         uint modulus_length = modulus.len;
@@ -25,10 +25,8 @@ library ModexpPrecompile {
         inputslice.memcpy(96 + base_length, exponent, 0, exponent_length);
         inputslice.memcpy(96 + base_length + exponent_length, modulus, 0, modulus_length);
 
-        output = new bytes(modulus_length);
-
         assembly {
-            success := staticcall(gas(), 5, add(input, 32), size, add(output, 32), modulus_length)
+            success := staticcall(gas(), 5, add(input, 32), size, mload(add(output, 32)), modulus_length)
         }
     }
 }

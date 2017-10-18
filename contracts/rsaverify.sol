@@ -17,8 +17,8 @@ library RSAVerify {
     function rsaverify(BytesUtils.slice memory rawmsg, BytesUtils.slice memory N, BytesUtils.slice memory E, BytesUtils.slice memory S) internal view returns (bool) {
         if (rawmsg.len != N.len) return false;
         // This would be modexp(S, e, N) == modexp(rawmsg, 1, N), but we simplify it a bit.
-        var (retS, valS) = ModexpPrecompile.modexp(S, E, N);
+        var retS = ModexpPrecompile.modexp(S, E, N, S);
         // NOTE: keccak256(valS) == keccak256(rawmsg) is the cheapest shortcut for equality comparison
-        return retS == true && keccak256(valS) == rawmsg.keccak();
+        return retS == true && S.keccak() == rawmsg.keccak();
     }
 }
