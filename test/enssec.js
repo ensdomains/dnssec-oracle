@@ -257,6 +257,12 @@ contract('DNSSEC', function(accounts) {
     await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
   });
 
+  it('should reject invalid RSA signatures', async function() {
+    var instance = await dnssec.deployed();
+    var sig = test_rrsets[0][3];
+    await verifyFailedSubmission(instance, test_rrsets[0][1], "0x" + test_rrsets[0][2], "0x" + sig.slice(0, sig.length - 2) + "FF");
+  })
+
   it('should accept real DNSSEC records', async function() {
     var instance = await dnssec.deployed();
     var totalGas = 0;
