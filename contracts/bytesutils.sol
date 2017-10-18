@@ -189,7 +189,7 @@ library BytesUtils {
      * @return True if the slices are equal, false otherwise.
      */
     function equals(slice self, slice other) internal pure returns (bool) {
-        return compare(self, other) == 0;
+        return keccak(self) == keccak(other);
     }
 
     /*

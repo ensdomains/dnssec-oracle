@@ -18,7 +18,6 @@ library RSAVerify {
         if (rawmsg.len != N.len) return false;
         // This would be modexp(S, e, N) == modexp(rawmsg, 1, N), but we simplify it a bit.
         var retS = ModexpPrecompile.modexp(S, E, N, S);
-        // NOTE: keccak256(valS) == keccak256(rawmsg) is the cheapest shortcut for equality comparison
-        return retS == true && S.keccak() == rawmsg.keccak();
+        return retS && S.equals(rawmsg);
     }
 }
