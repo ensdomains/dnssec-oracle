@@ -7,10 +7,7 @@ import "./algorithm.sol";
 import "./digest.sol";
 
 /*
- * TODO: Support for wildcards
  * TODO: Support for NSEC records
- * NOTE: Doesn't enforce expiration for records, to allow 'playing forward'
- * TODO: Enforce expiration for non-DNSKEY records
  */
 contract DNSSEC is Owned {
     using BytesUtils for *;
@@ -90,6 +87,9 @@ contract DNSSEC is Owned {
 
     function rrset(uint16 class, uint16 dnstype, bytes name) public constant returns(uint32 inception, uint32 expiration, uint64 inserted, bytes rrs) {
         var result = rrsets[keccak256(name)][dnstype][class];
+        if(result.expiration < now) {
+          return (0, 0, 0, "");
+        }
         return (result.inception, result.expiration, result.inserted, result.rrs);
     }
 
