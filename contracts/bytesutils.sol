@@ -42,39 +42,6 @@ library BytesUtils {
         memcpy(dest._ptr + destoff, src._ptr + srcoff, len);
     }
 
-    /**
-     * @dev Fills a memory area with a repeated byte.
-     * @param dest The destination slice.
-     * @param destoff Offset into the destination slice.
-     * @param len Number of bytes to fill.
-     * @param val Value to fill with.
-     */
-    function fill(slice memory dest, uint destoff, uint len, uint val) internal pure {
-        // Fill the least significant byte of val across the whole word
-        val |= val << 8;
-        val |= val << 16;
-        val |= val << 32;
-        val |= val << 64;
-        val |= val << 128;
-
-        // Fill word-length chunks while possible
-        var d = dest._ptr + destoff;
-        for(; len >= 32; len -= 32) {
-            assembly {
-                mstore(d, val)
-            }
-            d += 32;
-        }
-
-        // Fill remaining bytes
-        uint mask = 256 ** (32 - len) - 1;
-        assembly {
-            let srcpart := and(val, not(mask))
-            let destpart := and(mload(d), mask)
-            mstore(d, or(destpart, srcpart))
-        }
-    }
-
     /*
      * @dev Returns a slice containing the entire byte string.
      * @param self The byte string to make a slice from.
@@ -201,22 +168,6 @@ library BytesUtils {
         assembly {
             ret := sha3(mload(add(self, 32)), mload(self))
         }
-    }
-
-    /*
-     * @dev Returns a newly allocated string containing the concatenation of
-     *      `self` and `other`.
-     * @param self The first slice to concatenate.
-     * @param other The second slice to concatenate.
-     * @return The concatenation of the two strings.
-     */
-    function concat(slice self, slice other) internal pure returns (string) {
-        var ret = new string(self.len + other.len);
-        uint retptr;
-        assembly { retptr := add(ret, 32) }
-        memcpy(retptr, self._ptr, self.len);
-        memcpy(retptr + self.len, other._ptr, other.len);
-        return ret;
     }
 
     /*
