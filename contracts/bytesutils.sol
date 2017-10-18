@@ -32,7 +32,7 @@ library BytesUtils {
      *
      * @param dest The destination slice.
      * @param destoff Offset into the destination slice.
-     * @parma src The source slice.
+     * @param src The source slice.
      * @param srcoff Offset into the source slice.
      * @param len Number of bytes to copy.
      */
