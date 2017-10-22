@@ -53,10 +53,8 @@ module.exports = function(deployer, network) {
     });
   }
   return deployer.deploy(dnssec, encodeAnchors(anchors))
-    .then(() => deployer.deploy(rsasha256))
-    .then(() => deployer.deploy(sha256))
-    .then(() => dev?deployer.deploy(dummyalgorithm):null)
-    .then(() => dev?deployer.deploy(dummydigest):null)
+    .then(() => deployer.deploy([[rsasha256], [sha256]]))
+    .then(() => dev?deployer.deploy([[dummyalgorithm], [dummydigest]]):null)
     .then(() => dnssec.deployed().then(function(instance) {
       tasks = [];
       tasks.push(rsasha256.deployed().then((algorithm) => instance.setAlgorithm(8, algorithm.address)));

@@ -52,7 +52,7 @@ library BytesUtils {
         assembly {
             ptr := add(self, 0x20)
         }
-        return slice(ptr, self.length);
+        return slice(self.length, ptr);
     }
 
     /*

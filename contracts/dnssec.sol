@@ -272,7 +272,7 @@ contract DNSSEC is Owned {
      * @return True if the key verifies the signature.
      */
     function verifySignatureWithKey(BytesUtils.slice memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns(bool) {
-        require(algorithms[algorithm] != address(0));
+        if(algorithms[algorithm] == address(0)) return false;
         // TODO: Check key isn't expired, unless updating key itself
 
         // o The RRSIG RR's Signer's Name, Algorithm, and Key Tag fields MUST
@@ -341,7 +341,7 @@ contract DNSSEC is Owned {
      * @return True if the digest matches.
      */
     function verifyDSHash(uint8 digesttype, BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, BytesUtils.slice memory digest) internal view returns (bool) {
-        require(digests[digesttype] != address(0));
+        if(digests[digesttype] == address(0)) return false;
 
         bytes memory data = new bytes(keyname.len + keyrdata.len);
         BytesUtils.slice memory dataslice;
