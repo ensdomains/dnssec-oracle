@@ -8,10 +8,10 @@ library RRUtils {
     function dnsNameAt(BytesUtils.Slice self, uint startIdx, BytesUtils.Slice memory target) internal pure returns (BytesUtils.Slice) {
         target._ptr = self._ptr + startIdx;
 
-        var idx = startIdx;
+        uint idx = startIdx;
         while (true) {
             assert(idx < self.len);
-            var labelLen = self.uint8At(idx);
+            uint labelLen = self.uint8At(idx);
             idx += labelLen + 1;
             if (labelLen == 0) break;
         }
@@ -48,7 +48,7 @@ library RRUtils {
     function countLabels(BytesUtils.Slice memory self, uint off) internal pure returns (uint ret) {
         while (true) {
             assert(off < self.len);
-            var labelLen = self.uint8At(off);
+            uint8 labelLen = self.uint8At(off);
             if (labelLen == 0) return;
             off += labelLen + 1;
             ret += 1;

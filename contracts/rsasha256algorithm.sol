@@ -19,7 +19,7 @@ contract RSASHA256Algorithm is Algorithm {
         BytesUtils.Slice memory sigslice;
         sigslice.fromBytes(sig);
 
-        var exponentLen = uint16(dnskey.uint8At(4));
+        uint16 exponentLen = uint16(dnskey.uint8At(4));
         if (exponentLen != 0) {
             exponent.s(5, exponentLen + 5);
             modulus.s(exponentLen + 5, dnskey.len);

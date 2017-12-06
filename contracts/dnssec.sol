@@ -111,7 +111,7 @@ contract DNSSEC is Owned {
      * @return rrs The wire-format RR records.
      */
     function rrset(uint16 class, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
-        var result = rrsets[keccak256(name)][dnstype][class];
+        RRSet result = rrsets[keccak256(name)][dnstype][class];
         if (result.expiration < now) {
             return (0, 0, 0, "");
         }
@@ -137,15 +137,15 @@ contract DNSSEC is Owned {
         BytesUtils.Slice memory data;
         data.fromBytes(input);
 
-        var inception = data.uint32At(RRSIG_INCEPTION);
-        var expiration = data.uint32At(RRSIG_EXPIRATION);
-        var typecovered = data.uint16At(RRSIG_TYPE);
-        var labels = data.uint8At(RRSIG_LABELS);
+        uint32 inception = data.uint32At(RRSIG_INCEPTION);
+        uint32 expiration = data.uint32At(RRSIG_EXPIRATION);
+        uint16 typecovered = data.uint16At(RRSIG_TYPE);
+        uint8 labels = data.uint8At(RRSIG_LABELS);
 
         // Validate the signature
         verifySignature(class, name, data, input, sig);
 
-        var set = rrsets[keccak256(name)][typecovered][class];
+        RRSet set = rrsets[keccak256(name)][typecovered][class];
         if (set.rrs.length > 0) {
             // To replace an existing rrset, the signature must be newer
             assert(inception > set.inception);
@@ -184,7 +184,7 @@ contract DNSSEC is Owned {
             // o  The RRSIG RR and the RRset MUST have the same owner name and the
             //    same class.
             require(class == rrsetclass);
-            var nameLabels = name.countLabels(0);
+            uint nameLabels = name.countLabels(0);
             // o  The number of labels in the RRset owner name MUST be greater than
             //    or equal to the value in the RRSIG RR's Labels field.
             if (nameLabels == labels) {
@@ -226,14 +226,14 @@ contract DNSSEC is Owned {
         require(signerName.suffixOf(0, name));
 
         // Extract algorithm and keytag
-        var algorithm = rdata.uint8At(RRSIG_ALGORITHM);
-        var keytag = rdata.uint16At(RRSIG_KEY_TAG);
+        uint8 algorithm = rdata.uint8At(RRSIG_ALGORITHM);
+        uint16 keytag = rdata.uint16At(RRSIG_KEY_TAG);
 
         // Update rdata to point at the first RR
         rdata.s(18 + signerName.len, rdata.len);
 
         // Look for a matching key and verify the signature with it
-        var keys = rrsets[signerName.keccak()][DNSTYPE_DNSKEY][class];
+        RRSet memory keys = rrsets[signerName.keccak()][DNSTYPE_DNSKEY][class];
         BytesUtils.Slice memory keydata;
         keydata.fromBytes(keys.rrs);
 
@@ -276,7 +276,7 @@ contract DNSSEC is Owned {
         //   the zone's apex DNSKEY RRset.
         if (keyrdata.uint8At(DNSKEY_PROTOCOL) != 3) return false;
         if (keyrdata.uint8At(DNSKEY_ALGORITHM) != algorithm) return false;
-        var computedkeytag = computeKeytag(keyrdata);
+        uint16 computedkeytag = computeKeytag(keyrdata);
         if (computedkeytag != keytag) return false;
 
         // o The matching DNSKEY RR MUST be present in the zone's apex DNSKEY
@@ -311,7 +311,7 @@ contract DNSSEC is Owned {
      * @return True if a DS record verifies this key.
      */
     function verifyKeyWithDS(uint16 class, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
-        var dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
+        RRSet dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
 
         BytesUtils.Slice memory data;
         data.fromBytes(dss.rrs);
@@ -322,7 +322,7 @@ contract DNSSEC is Owned {
             if (dsrdata.uint16At(DS_KEY_TAG) != keytag) continue;
             if (dsrdata.uint8At(DS_ALGORITHM) != algorithm) continue;
 
-            var digesttype = dsrdata.uint8At(DS_DIGEST_TYPE);
+            uint8 digesttype = dsrdata.uint8At(DS_DIGEST_TYPE);
             if (verifyDSHash(digesttype, keyname, keyrdata, dsrdata)) return true;
         }
         return false;

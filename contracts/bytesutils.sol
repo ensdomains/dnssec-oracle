@@ -89,7 +89,7 @@ library BytesUtils {
      * @return A newly allocated byte string containing the slice's text.
      */
     function toBytes(Slice self) internal pure returns (bytes) {
-        var ret = new bytes(self.len);
+        bytes ret = new bytes(self.len);
         uint retptr;
         assembly { retptr := add(ret, 32) }
 
@@ -127,8 +127,8 @@ library BytesUtils {
         if (other.len < self.len)
             shortest = other.len;
 
-        var selfptr = self._ptr;
-        var otherptr = other._ptr;
+        uint selfptr = self._ptr;
+        uint otherptr = other._ptr;
         for (uint idx = 0; idx < shortest; idx += 32) {
             uint a;
             uint b;
@@ -191,9 +191,9 @@ library BytesUtils {
      * @param data The byte string to test against.
      */
     function suffixOf(Slice self, uint off, bytes data) internal pure returns (bool ret) {
-        var suffixlen = self.len - off;
+        uint suffixlen = self.len - off;
         require(suffixlen <= data.length);
-        var suffixOffset = 32 + (data.length - suffixlen);
+        uint suffixOffset = 32 + (data.length - suffixlen);
         assembly {
             let suffixhash := keccak256(add(data, suffixOffset), suffixlen)
             let ourhash := keccak256(add(mload(add(self, 32)), off), suffixlen)
@@ -208,7 +208,7 @@ library BytesUtils {
      * @return The specified 8 bits of slice, interpreted as a byte.
      */
     function byteAt(Slice self, uint idx) internal pure returns (byte ret) {
-        var ptr = self._ptr;
+        uint ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 31), idx)), 0xFF)
         }
@@ -221,7 +221,7 @@ library BytesUtils {
      * @return The specified 8 bits of slice, interpreted as an integer.
      */
     function uint8At(Slice self, uint idx) internal pure returns (uint8 ret) {
-        var ptr = self._ptr;
+        uint ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 31), idx)), 0xFF)
         }
@@ -234,7 +234,7 @@ library BytesUtils {
      * @return The specified 16 bits of slice, interpreted as an integer.
      */
     function uint16At(Slice self, uint idx) internal pure returns (uint16 ret) {
-        var ptr = self._ptr;
+        uint ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 30), idx)), 0xFFFF)
         }
@@ -247,7 +247,7 @@ library BytesUtils {
      * @return The specified 32 bits of slice, interpreted as an integer.
      */
     function uint32At(Slice self, uint idx) internal pure returns (uint32 ret) {
-        var ptr = self._ptr;
+        uint ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 28), idx)), 0xFFFFFFFF)
         }
@@ -260,7 +260,7 @@ library BytesUtils {
      * @return The specified 32 bytes of slice.
      */
     function bytes32At(Slice self, uint idx) internal pure returns (bytes32 ret) {
-        var ptr = self._ptr + idx;
+        uint ptr = self._ptr + idx;
         assembly { ret := mload(ptr) }
     }
 
@@ -271,7 +271,7 @@ library BytesUtils {
      * @param data The word to write.
      */
     function writeBytes32(Slice self, uint idx, bytes32 data) internal pure {
-        var ptr = self._ptr + idx;
+        uint ptr = self._ptr + idx;
         assembly { mstore(ptr, data) }
     }
 }
