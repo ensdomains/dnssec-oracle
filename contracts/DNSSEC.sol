@@ -1,10 +1,10 @@
 pragma solidity ^0.4.17;
 
-import "./owned.sol";
-import "./bytesutils.sol";
-import "./rrutils.sol";
-import "./algorithm.sol";
-import "./digest.sol";
+import "./Owned.sol";
+import "./BytesUtils.sol";
+import "./RRUtils.sol";
+import "./Algorithm.sol";
+import "./Digest.sol";
 
 /*
  * @dev An oracle contract that verifies and stores DNSSEC-validated DNS records.
@@ -111,7 +111,7 @@ contract DNSSEC is Owned {
      * @return rrs The wire-format RR records.
      */
     function rrset(uint16 class, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
-        RRSet result = rrsets[keccak256(name)][dnstype][class];
+        RRSet storage result = rrsets[keccak256(name)][dnstype][class];
         if (result.expiration < now) {
             return (0, 0, 0, "");
         }
@@ -145,7 +145,7 @@ contract DNSSEC is Owned {
         // Validate the signature
         verifySignature(class, name, data, input, sig);
 
-        RRSet set = rrsets[keccak256(name)][typecovered][class];
+        RRSet storage set = rrsets[keccak256(name)][typecovered][class];
         if (set.rrs.length > 0) {
             // To replace an existing rrset, the signature must be newer
             assert(inception > set.inception);
@@ -311,7 +311,7 @@ contract DNSSEC is Owned {
      * @return True if a DS record verifies this key.
      */
     function verifyKeyWithDS(uint16 class, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
-        RRSet dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
+        RRSet storage dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
 
         BytesUtils.Slice memory data;
         data.fromBytes(dss.rrs);

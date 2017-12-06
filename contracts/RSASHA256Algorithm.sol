@@ -1,8 +1,8 @@
 pragma solidity ^0.4.17;
 
-import "./algorithm.sol";
-import "./bytesutils.sol";
-import "./rsaverify.sol";
+import "./Algorithm.sol";
+import "./BytesUtils.sol";
+import "./RSAVerify.sol";
 
 contract RSASHA256Algorithm is Algorithm {
     using BytesUtils for *;

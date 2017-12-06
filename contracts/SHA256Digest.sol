@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
 
-import "./digest.sol";
-import "./bytesutils.sol";
+import "./Digest.sol";
+import "./BytesUtils.sol";
 
 contract SHA256Digest is Digest {
     using BytesUtils for *;

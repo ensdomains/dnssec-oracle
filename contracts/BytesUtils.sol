@@ -89,7 +89,7 @@ library BytesUtils {
      * @return A newly allocated byte string containing the slice's text.
      */
     function toBytes(Slice self) internal pure returns (bytes) {
-        bytes ret = new bytes(self.len);
+        bytes memory ret = new bytes(self.len);
         uint retptr;
         assembly { retptr := add(ret, 32) }
 

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-import "./bytesutils.sol";
+import "./BytesUtils.sol";
 
 library RRUtils {
     using BytesUtils for *;
