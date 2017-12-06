@@ -1,5 +1,5 @@
 var dns = require("../lib/dns.js");
-var dnssec = artifacts.require("./dnssec.sol");
+var dnssec = artifacts.require("./DNSSEC.sol");
 
 const test_rrsets = [
   // .	160065	IN	RRSIG	DNSKEY 8 0 172800 20171111000000 20171021000000 19036 . ItR1tbAbqjpJ6phdY2Wfoz7Ny56aOtXnU1lRRZuIzC2qWrzge8MEJYfRn+1kSuUZ7x2T74la12RYbBkUld79Ul7vS/Chs6w76WszUENQ9G+ImGhpyCqzUfaq/8wTGMmMF6MWlioHRHOhEnSebWq/ErxFhUOkwnuYZAeMKrTqppR/WygEBzlIFCXJTmyt4Pm7WuDTTC97DO/ope7ABJyN/YSU/tvenL4qI7jPCJlSjOo1lg3yF6VQk2DjMjBWo5yZFI/twoNZsTzMEzvbthjnKymwmZcxlFIiJayKMBVTihpWZxc8d2s4svFyT1UPu80r5mQEd5aKvZ4l88XzWVzwQw==
