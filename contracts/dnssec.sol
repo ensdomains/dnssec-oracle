@@ -110,7 +110,7 @@ contract DNSSEC is Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrset(uint16 class, uint16 dnstype, bytes name) public view returns (uint32 inception, uint32 expiration, uint64 inserted, bytes rrs) {
+    function rrset(uint16 class, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
         var result = rrsets[keccak256(name)][dnstype][class];
         if (result.expiration < now) {
             return (0, 0, 0, "");
@@ -310,7 +310,7 @@ contract DNSSEC is Owned {
      * @param algorithm The algorithm ID of the key.
      * @return True if a DS record verifies this key.
      */
-    function verifyKeyWithDS(uint16 class, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal constant returns (bool) {
+    function verifyKeyWithDS(uint16 class, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
         var dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
 
         BytesUtils.Slice memory data;
