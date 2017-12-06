@@ -102,7 +102,7 @@ contract DNSSEC is Owned {
 
     /**
      * @dev Returns the RRs (if any) associated with the provided class, type, and name.
-     * @param class The DNS class (1 = CLASS_INET) to query.
+     * @param dnsclass The DNS class (1 = CLASS_INET) to query.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
      * @return inception The unix timestamp at which the signature for this RRSET was created.
@@ -110,8 +110,8 @@ contract DNSSEC is Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrset(uint16 class, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
-        RRSet storage result = rrsets[keccak256(name)][dnstype][class];
+    function rrset(uint16 dnsclass, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
+        RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
         if (result.expiration < now) {
             return (0, 0, 0, "");
         }
@@ -125,7 +125,7 @@ contract DNSSEC is Owned {
      * trusted, or if they are self-signed, and the signing key is identified by
      * a DS record that is already trusted.
      *
-     * @param class The DNS class (1 = CLASS_INET) of the records being inserted.
+     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param name The name of the RRSET, in DNS label-sequence format.
      * @param input The signed RR set. This is in the format described in section
      *        5.3.2 of RFC4035: The RRDATA section from the RRSIG without the signature
@@ -133,7 +133,7 @@ contract DNSSEC is Owned {
      *        applies to.
      * @param sig The signature data from the RRSIG record.
      */
-    function submitRRSet(uint16 class, bytes name, bytes input, bytes sig) public {
+    function submitRRSet(uint16 dnsclass, bytes name, bytes input, bytes sig) public {
         BytesUtils.Slice memory data;
         data.fromBytes(input);
 
@@ -143,9 +143,9 @@ contract DNSSEC is Owned {
         uint8 labels = data.uint8At(RRSIG_LABELS);
 
         // Validate the signature
-        verifySignature(class, name, data, input, sig);
+        verifySignature(dnsclass, name, data, input, sig);
 
-        RRSet storage set = rrsets[keccak256(name)][typecovered][class];
+        RRSet storage set = rrsets[keccak256(name)][typecovered][dnsclass];
         if (set.rrs.length > 0) {
             // To replace an existing rrset, the signature must be newer
             assert(inception > set.inception);
@@ -163,7 +163,7 @@ contract DNSSEC is Owned {
         //    equal to the time listed in the RRSIG RR's Inception field.
         assert(inception < now);
 
-        insertRRs(set, data, name, class, typecovered, labels);
+        insertRRs(set, data, name, dnsclass, typecovered, labels);
         RRSetUpdated(name);
     }
 
@@ -180,6 +180,7 @@ contract DNSSEC is Owned {
         // Iterate over all the RRs
         BytesUtils.Slice memory name;
         BytesUtils.Slice memory rdata;
+
         for (var (dnstype, class, ttl) = data.nextRR(name, rdata); dnstype != 0; (dnstype, class, ttl) = data.nextRR(name, rdata)) {
             // o  The RRSIG RR and the RRset MUST have the same owner name and the
             //    same class.
@@ -210,13 +211,13 @@ contract DNSSEC is Owned {
      *
      * Throws or reverts if unable to verify the record.
      *
-     * @param class The DNS class for the records.
+     * @param dnsclass The DNS class for the records.
      * @param name The name of the RRSIG record, in DNS label-sequence format.
      * @param rdata The RDATA section of the RRSIG record.
      * @param data The original data to verify.
      * @param sig The signature data.
      */
-    function verifySignature(uint16 class, bytes name, BytesUtils.Slice memory rdata, bytes data, bytes sig) internal constant {
+    function verifySignature(uint16 dnsclass, bytes name, BytesUtils.Slice memory rdata, bytes data, bytes sig) internal constant {
         // Extract signer name
         BytesUtils.Slice memory signerName;
         rdata.dnsNameAt(RRSIG_SIGNER_NAME, signerName);
@@ -233,7 +234,7 @@ contract DNSSEC is Owned {
         rdata.s(18 + signerName.len, rdata.len);
 
         // Look for a matching key and verify the signature with it
-        RRSet memory keys = rrsets[signerName.keccak()][DNSTYPE_DNSKEY][class];
+        RRSet memory keys = rrsets[signerName.keccak()][DNSTYPE_DNSKEY][dnsclass];
         BytesUtils.Slice memory keydata;
         keydata.fromBytes(keys.rrs);
 
@@ -248,7 +249,7 @@ contract DNSSEC is Owned {
             if (dnstype != DNSTYPE_DNSKEY) break;
             if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
                 // It's self-signed - look for a DS record to verify it.
-                if (verifyKeyWithDS(class, keyname, keyrdata, keytag, algorithm)) return;
+                if (verifyKeyWithDS(dnsclass, keyname, keyrdata, keytag, algorithm)) return;
                 // If we found a valid signature but no valid DS, no use checking other records too.
                 break;
             }
@@ -303,15 +304,15 @@ contract DNSSEC is Owned {
 
     /**
      * @dev Attempts to verify a key using DS records.
-     * @param class The DNS class of the key.
+     * @param dnsclass The DNS class of the key.
      * @param keyname The DNS name of the key, in DNS label-sequence format.
      * @param keyrdata The RDATA section of the key.
      * @param keytag The keytag of the key.
      * @param algorithm The algorithm ID of the key.
      * @return True if a DS record verifies this key.
      */
-    function verifyKeyWithDS(uint16 class, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
-        RRSet storage dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
+    function verifyKeyWithDS(uint16 dnsclass, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
+        RRSet storage dss = rrsets[keyname.keccak()][DNSTYPE_DS][dnsclass];
 
         BytesUtils.Slice memory data;
         data.fromBytes(dss.rrs);
