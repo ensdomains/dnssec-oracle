@@ -1,0 +1,14 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "devDependencies": {
+    "solium": "^1.0.4",
+    "truffle": "^4.0.0"
+  },
+  "scripts": {
+    "pretest": "truffle compile",
+    "test": "truffle test",
+    "watch": "npm-watch",
+    "lint": "solium --dir ./contracts"
+  }
+}
