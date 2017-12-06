@@ -13,7 +13,7 @@ library RSAVerify {
      * @param S The signature to recover.
      * @return True if the recovery succeeded.
      */
-    function rsarecover(BytesUtils.slice memory N, BytesUtils.slice memory E, BytesUtils.slice memory S) internal view returns (bool) {
+    function rsarecover(BytesUtils.Slice memory N, BytesUtils.Slice memory E, BytesUtils.Slice memory S) internal view returns (bool) {
         return ModexpPrecompile.modexp(S, E, N, S);
     }
 }

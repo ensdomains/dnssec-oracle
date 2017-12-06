@@ -54,10 +54,10 @@ contract DNSSEC is Owned {
     }
 
     // (name, type, class) => RRSet
-    mapping(bytes32=>mapping(uint16=>mapping(uint16=>RRSet))) rrsets;
+    mapping (bytes32 => mapping(uint16 => mapping(uint16 => RRSet))) rrsets;
 
-    mapping(uint8=>Algorithm) public algorithms;
-    mapping(uint8=>Digest) public digests;
+    mapping (uint8 => Algorithm) public algorithms;
+    mapping (uint8 => Digest) public digests;
 
     event AlgorithmUpdated(uint8 id, address addr);
     event DigestUpdated(uint8 id, address addr);
@@ -70,16 +70,12 @@ contract DNSSEC is Owned {
     function DNSSEC(bytes anchors) public {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
-        rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet(
-            // Inception
-            0,
-            // Expiration
-            0xFFFFFFFF,
-            // Inserted
-            uint64(now),
-            // RRs
-            anchors
-        );
+        rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
+            inception: 0,
+            expiration: 0xFFFFFFFF,
+            inserted: uint64(now),
+            rrs: anchors
+        });
     }
 
     /**
@@ -114,10 +110,10 @@ contract DNSSEC is Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrset(uint16 class, uint16 dnstype, bytes name) public constant returns(uint32 inception, uint32 expiration, uint64 inserted, bytes rrs) {
+    function rrset(uint16 class, uint16 dnstype, bytes name) public view returns (uint32 inception, uint32 expiration, uint64 inserted, bytes rrs) {
         var result = rrsets[keccak256(name)][dnstype][class];
-        if(result.expiration < now) {
-          return (0, 0, 0, "");
+        if (result.expiration < now) {
+            return (0, 0, 0, "");
         }
         return (result.inception, result.expiration, result.inserted, result.rrs);
     }
@@ -138,7 +134,7 @@ contract DNSSEC is Owned {
      * @param sig The signature data from the RRSIG record.
      */
     function submitRRSet(uint16 class, bytes name, bytes input, bytes sig) public {
-        BytesUtils.slice memory data;
+        BytesUtils.Slice memory data;
         data.fromBytes(input);
 
         var inception = data.uint32At(RRSIG_INCEPTION);
@@ -150,7 +146,7 @@ contract DNSSEC is Owned {
         verifySignature(class, name, data, input, sig);
 
         var set = rrsets[keccak256(name)][typecovered][class];
-        if(set.rrs.length > 0) {
+        if (set.rrs.length > 0) {
             // To replace an existing rrset, the signature must be newer
             assert(inception > set.inception);
         }
@@ -180,26 +176,26 @@ contract DNSSEC is Owned {
      * @param typecovered The type covered by the RRSIG record.
      * @param labels The number of labels specified by the RRSIG record.
      */
-    function insertRRs(RRSet storage set, BytesUtils.slice memory data, bytes rrsigname, uint16 rrsetclass, uint16 typecovered, uint8 labels) internal {
+    function insertRRs(RRSet storage set, BytesUtils.Slice memory data, bytes rrsigname, uint16 rrsetclass, uint16 typecovered, uint8 labels) internal {
         // Iterate over all the RRs
-        BytesUtils.slice memory name;
-        BytesUtils.slice memory rdata;
-        for(var (dnstype, class, ttl) = data.nextRR(name, rdata); dnstype != 0; (dnstype, class, ttl) = data.nextRR(name, rdata)) {
+        BytesUtils.Slice memory name;
+        BytesUtils.Slice memory rdata;
+        for (var (dnstype, class, ttl) = data.nextRR(name, rdata); dnstype != 0; (dnstype, class, ttl) = data.nextRR(name, rdata)) {
             // o  The RRSIG RR and the RRset MUST have the same owner name and the
             //    same class.
             require(class == rrsetclass);
             var nameLabels = name.countLabels(0);
             // o  The number of labels in the RRset owner name MUST be greater than
             //    or equal to the value in the RRSIG RR's Labels field.
-            if(nameLabels == labels) {
-              require(name.keccak() == keccak256(rrsigname));
-            } else if(nameLabels == labels + 1) {
-              // It's a wildcard domain; make sure it ends with rrsigname and starts with *.
-              require(name.suffixOf(2, rrsigname));
-              require(name.uint16At(0) == 0x012A);
+            if (nameLabels == labels) {
+                require(name.keccak() == keccak256(rrsigname));
+            } else if (nameLabels == labels + 1) {
+                // It's a wildcard domain; make sure it ends with rrsigname and starts with *.
+                require(name.suffixOf(2, rrsigname));
+                require(name.uint16At(0) == 0x012A);
             } else {
-              // Anything else is invalid
-              revert();
+                // Anything else is invalid
+                revert();
             }
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
@@ -220,9 +216,9 @@ contract DNSSEC is Owned {
      * @param data The original data to verify.
      * @param sig The signature data.
      */
-    function verifySignature(uint16 class, bytes name, BytesUtils.slice memory rdata, bytes data, bytes sig) internal constant {
+    function verifySignature(uint16 class, bytes name, BytesUtils.Slice memory rdata, bytes data, bytes sig) internal constant {
         // Extract signer name
-        BytesUtils.slice memory signerName;
+        BytesUtils.Slice memory signerName;
         rdata.dnsNameAt(RRSIG_SIGNER_NAME, signerName);
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
@@ -238,21 +234,21 @@ contract DNSSEC is Owned {
 
         // Look for a matching key and verify the signature with it
         var keys = rrsets[signerName.keccak()][DNSTYPE_DNSKEY][class];
-        BytesUtils.slice memory keydata;
+        BytesUtils.Slice memory keydata;
         keydata.fromBytes(keys.rrs);
 
-        BytesUtils.slice memory keyname;
-        BytesUtils.slice memory keyrdata;
-        for(var (dnstype,,) = keydata.nextRR(keyname, keyrdata); dnstype != 0; (dnstype,,) = keydata.nextRR(keyname, keyrdata)) {
-            if(verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) return;
+        BytesUtils.Slice memory keyname;
+        BytesUtils.Slice memory keyrdata;
+        for (var (dnstype,,) = keydata.nextRR(keyname, keyrdata); dnstype != 0; (dnstype,,) = keydata.nextRR(keyname, keyrdata)) {
+            if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) return;
         }
 
         // Perhaps it's self-signed and verified by a DS record?
-        for((dnstype,,) = rdata.nextRR(keyname, keyrdata); dnstype != 0; (dnstype,,) = rdata.nextRR(keyname, keyrdata)) {
-            if(dnstype != DNSTYPE_DNSKEY) break;
-            if(verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
+        for ((dnstype,,) = rdata.nextRR(keyname, keyrdata); dnstype != 0; (dnstype,,) = rdata.nextRR(keyname, keyrdata)) {
+            if (dnstype != DNSTYPE_DNSKEY) break;
+            if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
                 // It's self-signed - look for a DS record to verify it.
-                if(verifyKeyWithDS(class, keyname, keyrdata, keytag, algorithm)) return;
+                if (verifyKeyWithDS(class, keyname, keyrdata, keytag, algorithm)) return;
                 // If we found a valid signature but no valid DS, no use checking other records too.
                 break;
             }
@@ -271,22 +267,22 @@ contract DNSSEC is Owned {
      * @param sig The signature to use.
      * @return True if the key verifies the signature.
      */
-    function verifySignatureWithKey(BytesUtils.slice memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns(bool) {
-        if(algorithms[algorithm] == address(0)) return false;
+    function verifySignatureWithKey(BytesUtils.Slice memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns (bool) {
+        if (algorithms[algorithm] == address(0)) return false;
         // TODO: Check key isn't expired, unless updating key itself
 
         // o The RRSIG RR's Signer's Name, Algorithm, and Key Tag fields MUST
         //   match the owner name, algorithm, and key tag for some DNSKEY RR in
         //   the zone's apex DNSKEY RRset.
-        if(keyrdata.uint8At(DNSKEY_PROTOCOL) != 3) return false;
-        if(keyrdata.uint8At(DNSKEY_ALGORITHM) != algorithm) return false;
+        if (keyrdata.uint8At(DNSKEY_PROTOCOL) != 3) return false;
+        if (keyrdata.uint8At(DNSKEY_ALGORITHM) != algorithm) return false;
         var computedkeytag = computeKeytag(keyrdata);
-        if(computedkeytag != keytag) return false;
+        if (computedkeytag != keytag) return false;
 
         // o The matching DNSKEY RR MUST be present in the zone's apex DNSKEY
         //   RRset, and MUST have the Zone Flag bit (DNSKEY RDATA Flag bit 7)
         //   set.
-        if(keyrdata.uint16At(DNSKEY_FLAGS) & DNSKEY_FLAG_ZONEKEY == 0) return false;
+        if (keyrdata.uint16At(DNSKEY_FLAGS) & DNSKEY_FLAG_ZONEKEY == 0) return false;
 
         return algorithms[algorithm].verify(keyrdata.toBytes(), data, sig);
     }
@@ -296,9 +292,9 @@ contract DNSSEC is Owned {
      * @param data The data to compute a keytag for.
      * @return The computed key tag.
      */
-    function computeKeytag(BytesUtils.slice memory data) internal pure returns(uint16) {
+    function computeKeytag(BytesUtils.Slice memory data) internal pure returns (uint16) {
         uint ac;
-        for(uint i = 0; i < data.len; i += 2) {
+        for (uint i = 0; i < data.len; i += 2) {
             ac += data.uint16At(i);
         }
         ac += (ac >> 16) & 0xFFFF;
@@ -314,20 +310,20 @@ contract DNSSEC is Owned {
      * @param algorithm The algorithm ID of the key.
      * @return True if a DS record verifies this key.
      */
-    function verifyKeyWithDS(uint16 class, BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, uint16 keytag, uint8 algorithm) internal constant returns (bool) {
+    function verifyKeyWithDS(uint16 class, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, uint16 keytag, uint8 algorithm) internal constant returns (bool) {
         var dss = rrsets[keyname.keccak()][DNSTYPE_DS][class];
 
-        BytesUtils.slice memory data;
+        BytesUtils.Slice memory data;
         data.fromBytes(dss.rrs);
 
-        BytesUtils.slice memory dsname;
-        BytesUtils.slice memory dsrdata;
-        for(var (dnstype,,) = data.nextRR(dsname, dsrdata); dnstype != 0; (dnstype,,) = data.nextRR(dsname, dsrdata)) {
-            if(dsrdata.uint16At(DS_KEY_TAG) != keytag) continue;
-            if(dsrdata.uint8At(DS_ALGORITHM) != algorithm) continue;
+        BytesUtils.Slice memory dsname;
+        BytesUtils.Slice memory dsrdata;
+        for (var (dnstype,,) = data.nextRR(dsname, dsrdata); dnstype != 0; (dnstype,,) = data.nextRR(dsname, dsrdata)) {
+            if (dsrdata.uint16At(DS_KEY_TAG) != keytag) continue;
+            if (dsrdata.uint8At(DS_ALGORITHM) != algorithm) continue;
 
             var digesttype = dsrdata.uint8At(DS_DIGEST_TYPE);
-            if(verifyDSHash(digesttype, keyname, keyrdata, dsrdata)) return true;
+            if (verifyDSHash(digesttype, keyname, keyrdata, dsrdata)) return true;
         }
         return false;
     }
@@ -340,11 +336,11 @@ contract DNSSEC is Owned {
      * @param digest The digest data to check against.
      * @return True if the digest matches.
      */
-    function verifyDSHash(uint8 digesttype, BytesUtils.slice memory keyname, BytesUtils.slice memory keyrdata, BytesUtils.slice memory digest) internal view returns (bool) {
-        if(digests[digesttype] == address(0)) return false;
+    function verifyDSHash(uint8 digesttype, BytesUtils.Slice memory keyname, BytesUtils.Slice memory keyrdata, BytesUtils.Slice memory digest) internal view returns (bool) {
+        if (digests[digesttype] == address(0)) return false;
 
         bytes memory data = new bytes(keyname.len + keyrdata.len);
-        BytesUtils.slice memory dataslice;
+        BytesUtils.Slice memory dataslice;
         dataslice.fromBytes(data);
         dataslice.memcpy(0, keyname, 0, keyname.len);
         dataslice.memcpy(keyname.len, keyrdata, 0, keyrdata.len);

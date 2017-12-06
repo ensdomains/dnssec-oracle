@@ -1,14 +1,14 @@
 pragma solidity ^0.4.17;
 
 library BytesUtils {
-    struct slice {
+    struct Slice {
         uint len;
         uint _ptr;
     }
 
     function memcpy(uint dest, uint src, uint len) private pure {
         // Copy word-length chunks while possible
-        for(; len >= 32; len -= 32) {
+        for (; len >= 32; len -= 32) {
             assembly {
                 mstore(dest, mload(src))
             }
@@ -36,7 +36,7 @@ library BytesUtils {
      * @param srcoff Offset into the source slice.
      * @param len Number of bytes to copy.
      */
-    function memcpy(slice memory dest, uint destoff, slice memory src, uint srcoff, uint len) internal pure {
+    function memcpy(Slice memory dest, uint destoff, Slice memory src, uint srcoff, uint len) internal pure {
         require(destoff + len <= dest.len);
         require(srcoff + len <= src.len);
         memcpy(dest._ptr + destoff, src._ptr + srcoff, len);
@@ -47,12 +47,12 @@ library BytesUtils {
      * @param self The byte string to make a slice from.
      * @return A newly allocated slice
      */
-    function toSlice(bytes self) internal pure returns (slice) {
+    function toSlice(bytes self) internal pure returns (Slice) {
         uint ptr;
         assembly {
             ptr := add(self, 0x20)
         }
-        return slice(self.length, ptr);
+        return Slice(self.length, ptr);
     }
 
     /*
@@ -61,7 +61,7 @@ library BytesUtils {
      * @param data The byte string to initialize from.
      * @return The initialized slice.
      */
-    function fromBytes(slice self, bytes data) internal pure returns (slice) {
+    function fromBytes(Slice self, bytes data) internal pure returns (Slice) {
         uint ptr;
         assembly {
             ptr := add(data, 0x20)
@@ -77,7 +77,7 @@ library BytesUtils {
      * @param other The slice to copy from
      * @return self
      */
-    function copyFrom(slice self, slice other) internal pure returns (slice) {
+    function copyFrom(Slice self, Slice other) internal pure returns (Slice) {
         self._ptr = other._ptr;
         self.len = other.len;
         return self;
@@ -88,7 +88,7 @@ library BytesUtils {
      * @param self The slice to copy.
      * @return A newly allocated byte string containing the slice's text.
      */
-    function toBytes(slice self) internal pure returns (bytes) {
+    function toBytes(Slice self) internal pure returns (bytes) {
         var ret = new bytes(self.len);
         uint retptr;
         assembly { retptr := add(ret, 32) }
@@ -104,7 +104,7 @@ library BytesUtils {
      * @param end The end position to copy, exclusive
      * @return A newly allocated byte string.
      */
-    function toBytes(slice self, uint start, uint end) internal pure returns (bytes memory ret) {
+    function toBytes(Slice self, uint start, uint end) internal pure returns (bytes memory ret) {
         require(start <= end && end <= self.len);
         ret = new bytes(end - start);
         uint retptr;
@@ -122,7 +122,7 @@ library BytesUtils {
      * @param other The second slice to compare.
      * @return The result of the comparison.
      */
-    function compare(slice self, slice other) internal pure returns (int) {
+    function compare(Slice self, Slice other) internal pure returns (int) {
         uint shortest = self.len;
         if (other.len < self.len)
             shortest = other.len;
@@ -155,7 +155,7 @@ library BytesUtils {
      * @param self The second slice to compare.
      * @return True if the slices are equal, false otherwise.
      */
-    function equals(slice self, slice other) internal pure returns (bool) {
+    function equals(Slice self, Slice other) internal pure returns (bool) {
         return keccak(self) == keccak(other);
     }
 
@@ -164,7 +164,7 @@ library BytesUtils {
      * @param self The slice to hash.
      * @return The hash of the slice.
      */
-    function keccak(slice self) internal pure returns (bytes32 ret) {
+    function keccak(Slice self) internal pure returns (bytes32 ret) {
         assembly {
             ret := sha3(mload(add(self, 32)), mload(self))
         }
@@ -177,7 +177,7 @@ library BytesUtils {
      * @param end The end index, exclusive.
      * @return The modified slice.
      */
-    function s(slice self, uint start, uint end) internal pure returns (slice) {
+    function s(Slice self, uint start, uint end) internal pure returns (Slice) {
         assert(start >= 0 && end <= self.len && start <= end);
 
         self._ptr += uint(start);
@@ -190,14 +190,14 @@ library BytesUtils {
      * @param self The slice to test.
      * @param data The byte string to test against.
      */
-    function suffixOf(slice self, uint off, bytes data) internal pure returns (bool ret) {
+    function suffixOf(Slice self, uint off, bytes data) internal pure returns (bool ret) {
         var suffixlen = self.len - off;
         require(suffixlen <= data.length);
         var suffixOffset = 32 + (data.length - suffixlen);
         assembly {
-          let suffixhash := keccak256(add(data, suffixOffset), suffixlen)
-          let ourhash := keccak256(add(mload(add(self, 32)), off), suffixlen)
-          ret := eq(suffixhash, ourhash)
+            let suffixhash := keccak256(add(data, suffixOffset), suffixlen)
+            let ourhash := keccak256(add(mload(add(self, 32)), off), suffixlen)
+            ret := eq(suffixhash, ourhash)
         }
     }
 
@@ -207,7 +207,7 @@ library BytesUtils {
      * @param idx The index into the slice.
      * @return The specified 8 bits of slice, interpreted as a byte.
      */
-    function byteAt(slice self, uint idx) internal pure returns (byte ret) {
+    function byteAt(Slice self, uint idx) internal pure returns (byte ret) {
         var ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 31), idx)), 0xFF)
@@ -220,7 +220,7 @@ library BytesUtils {
      * @param idx The index into the slice
      * @return The specified 8 bits of slice, interpreted as an integer.
      */
-    function uint8At(slice self, uint idx) internal pure returns (uint8 ret) {
+    function uint8At(Slice self, uint idx) internal pure returns (uint8 ret) {
         var ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 31), idx)), 0xFF)
@@ -233,7 +233,7 @@ library BytesUtils {
      * @param idx The index into the slice
      * @return The specified 16 bits of slice, interpreted as an integer.
      */
-    function uint16At(slice self, uint idx) internal pure returns (uint16 ret) {
+    function uint16At(Slice self, uint idx) internal pure returns (uint16 ret) {
         var ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 30), idx)), 0xFFFF)
@@ -246,7 +246,7 @@ library BytesUtils {
      * @param idx The index into the slice
      * @return The specified 32 bits of slice, interpreted as an integer.
      */
-    function uint32At(slice self, uint idx) internal pure returns (uint32 ret) {
+    function uint32At(Slice self, uint idx) internal pure returns (uint32 ret) {
         var ptr = self._ptr;
         assembly {
             ret := and(mload(add(sub(ptr, 28), idx)), 0xFFFFFFFF)
@@ -259,7 +259,7 @@ library BytesUtils {
      * @param idx The index into the slice
      * @return The specified 32 bytes of slice.
      */
-    function bytes32At(slice self, uint idx) internal pure returns (bytes32 ret) {
+    function bytes32At(Slice self, uint idx) internal pure returns (bytes32 ret) {
         var ptr = self._ptr + idx;
         assembly { ret := mload(ptr) }
     }
@@ -270,7 +270,7 @@ library BytesUtils {
      * @param idx The index into the slice.
      * @param data The word to write.
      */
-    function writeBytes32(slice self, uint idx, bytes32 data) internal pure {
+    function writeBytes32(Slice self, uint idx, bytes32 data) internal pure {
         var ptr = self._ptr + idx;
         assembly { mstore(ptr, data) }
     }

@@ -8,19 +8,19 @@ contract RSASHA256Algorithm is Algorithm {
     using BytesUtils for *;
 
     function verify(bytes key, bytes data, bytes sig) public view returns (bool) {
-        BytesUtils.slice memory dnskey;
+        BytesUtils.Slice memory dnskey;
         dnskey.fromBytes(key);
 
-        BytesUtils.slice memory exponent;
+        BytesUtils.Slice memory exponent;
         exponent.copyFrom(dnskey);
-        BytesUtils.slice memory modulus;
+        BytesUtils.Slice memory modulus;
         modulus.copyFrom(dnskey);
 
-        BytesUtils.slice memory sigslice;
+        BytesUtils.Slice memory sigslice;
         sigslice.fromBytes(sig);
 
         var exponentLen = uint16(dnskey.uint8At(4));
-        if(exponentLen != 0) {
+        if (exponentLen != 0) {
             exponent.s(5, exponentLen + 5);
             modulus.s(exponentLen + 5, dnskey.len);
         } else {
@@ -29,7 +29,7 @@ contract RSASHA256Algorithm is Algorithm {
         }
 
         // Recover the message from the signature
-        if(!RSAVerify.rsarecover(modulus, exponent, sigslice)) {
+        if (!RSAVerify.rsarecover(modulus, exponent, sigslice)) {
             return false;
         }
         // Verify it ends with the hash of our data

@@ -8,7 +8,7 @@ contract SHA256Digest is Digest {
 
     function verify(bytes data, bytes hash) public view returns (bool) {
         return true;
-        BytesUtils.slice memory hashslice;
+        BytesUtils.Slice memory hashslice;
         hashslice.fromBytes(hash);
         return sha256(data) == hashslice.bytes32At(0);
     }
