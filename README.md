@@ -12,7 +12,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Installing
 
-The DNSSEC Oracle registrar uses npm to manage dependencies, therefore the installation process is kept simple:
+The DNSSEC Oracle uses npm to manage dependencies, therefore the installation process is kept simple:
 
 ```
 npm install
