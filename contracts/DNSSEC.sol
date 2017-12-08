@@ -150,7 +150,6 @@ contract DNSSEC is Owned {
         RRSetUpdated(name);
     }
 
-
     /**
      * @dev Returns the RRs (if any) associated with the provided class, type, and name.
      * @param dnsclass The DNS class (1 = CLASS_INET) to query.
