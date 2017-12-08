@@ -100,23 +100,6 @@ contract DNSSEC is Owned {
         DigestUpdated(id, digest);
     }
 
-    /**
-     * @dev Returns the RRs (if any) associated with the provided class, type, and name.
-     * @param dnsclass The DNS class (1 = CLASS_INET) to query.
-     * @param dnstype The DNS record type to query.
-     * @param name The name to query, in DNS label-sequence format.
-     * @return inception The unix timestamp at which the signature for this RRSET was created.
-     * @return expiration The unix timestamp at which the signature for this RRSET expires.
-     * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
-     * @return rrs The wire-format RR records.
-     */
-    function rrset(uint16 dnsclass, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
-        RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
-        if (result.expiration < now) {
-            return (0, 0, 0, "");
-        }
-        return (result.inception, result.expiration, result.inserted, result.rrs);
-    }
 
     /**
      * @dev Submits a signed set of RRs to the oracle.
@@ -165,6 +148,25 @@ contract DNSSEC is Owned {
 
         insertRRs(set, data, name, dnsclass, typecovered, labels);
         RRSetUpdated(name);
+    }
+
+
+    /**
+     * @dev Returns the RRs (if any) associated with the provided class, type, and name.
+     * @param dnsclass The DNS class (1 = CLASS_INET) to query.
+     * @param dnstype The DNS record type to query.
+     * @param name The name to query, in DNS label-sequence format.
+     * @return inception The unix timestamp at which the signature for this RRSET was created.
+     * @return expiration The unix timestamp at which the signature for this RRSET expires.
+     * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
+     * @return rrs The wire-format RR records.
+     */
+    function rrset(uint16 dnsclass, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
+        RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
+        if (result.expiration < now) {
+            return (0, 0, 0, "");
+        }
+        return (result.inception, result.expiration, result.inserted, result.rrs);
     }
 
     /**
@@ -289,20 +291,6 @@ contract DNSSEC is Owned {
     }
 
     /**
-     * @dev Computes the keytag for a chunk of data.
-     * @param data The data to compute a keytag for.
-     * @return The computed key tag.
-     */
-    function computeKeytag(BytesUtils.Slice memory data) internal pure returns (uint16) {
-        uint ac;
-        for (uint i = 0; i < data.len; i += 2) {
-            ac += data.uint16At(i);
-        }
-        ac += (ac >> 16) & 0xFFFF;
-        return uint16(ac & 0xFFFF);
-    }
-
-    /**
      * @dev Attempts to verify a key using DS records.
      * @param dnsclass The DNS class of the key.
      * @param keyname The DNS name of the key, in DNS label-sequence format.
@@ -347,4 +335,19 @@ contract DNSSEC is Owned {
         dataslice.memcpy(keyname.len, keyrdata, 0, keyrdata.len);
         return digests[digesttype].verify(dataslice.toBytes(), digest.toBytes(4, digest.len));
     }
+
+    /**
+     * @dev Computes the keytag for a chunk of data.
+     * @param data The data to compute a keytag for.
+     * @return The computed key tag.
+     */
+    function computeKeytag(BytesUtils.Slice memory data) internal pure returns (uint16) {
+        uint ac;
+        for (uint i = 0; i < data.len; i += 2) {
+            ac += data.uint16At(i);
+        }
+        ac += (ac >> 16) & 0xFFFF;
+        return uint16(ac & 0xFFFF);
+    }
+
 }
