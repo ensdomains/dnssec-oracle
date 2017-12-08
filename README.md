@@ -12,7 +12,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Installing
 
-The ENS Subdomain registrar uses npm to manage dependencies, therefore the installation process is kept simple:
+The DNSSEC Oracle registrar uses npm to manage dependencies, therefore the installation process is kept simple:
 
 ```
 npm install
@@ -20,7 +20,7 @@ npm install
 
 ### Running tests
 
-The ENS Subdomain registrar uses truffle for its ethereum development environment. All tests can be run using truffle:
+The DNSSEC Oracle uses truffle for its ethereum development environment. All tests can be run using truffle:
 
 ```
 truffle test
