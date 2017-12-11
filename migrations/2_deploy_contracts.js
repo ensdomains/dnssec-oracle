@@ -16,7 +16,7 @@ function encodeAnchors(anchors) {
 }
 
 module.exports = function(deployer, network) {
-  var dev = network == "development";
+  var dev = (network == "test" || network == "local");
   // From http://data.iana.org/root-anchors/root-anchors.xml
   var anchors = [
     {
