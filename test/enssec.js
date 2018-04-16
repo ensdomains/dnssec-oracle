@@ -37,7 +37,7 @@ const test_rrsets = [
 async function verifySubmission(instance, name, data, sig) {
   var name = dns.hexEncodeName(name);
   var tx = await instance.submitRRSet(1, name, data, sig);
-  assert.equal(tx.receipt.status, "0x1");
+  assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[0].args.name, name);
   return tx;
