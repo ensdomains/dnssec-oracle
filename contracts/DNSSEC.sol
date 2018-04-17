@@ -140,11 +140,11 @@ contract DNSSEC is Owned {
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
-        assert(expiration > now);
+        require(expiration > now);
 
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
-        assert(inception < now);
+        require(inception < now);
 
         insertRRs(set, data, name, dnsclass, typecovered, labels);
         RRSetUpdated(name);
