@@ -45,9 +45,15 @@ async function verifySubmission(instance, name, data, sig) {
 
 async function verifyFailedSubmission(instance, name, data, sig) {
   var name = dns.hexEncodeName(name);
-  var tx = await instance.submitRRSet(1, name, data, sig);
-  assert.equal(tx.receipt.status, "0x0");
-  return tx;
+  try{
+    var tx = await instance.submitRRSet(1, name, data, sig);
+    // Assert geth failed transaction
+    assert.equal(parseInt(tx.receipt.status), parseInt('0x0'));
+  }
+  catch(error){
+    // Assert ganache revert exception
+    assert.equal(error.message, 'VM Exception while processing transaction: revert');
+  }
 }
 
 contract('DNSSEC', function(accounts) {
