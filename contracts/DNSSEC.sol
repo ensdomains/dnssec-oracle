@@ -131,7 +131,7 @@ contract DNSSEC is Owned {
         RRSet storage set = rrsets[keccak256(name)][typecovered][dnsclass];
         if (set.rrs.length > 0) {
             // To replace an existing rrset, the signature must be newer
-            assert(inception > set.inception);
+            require(inception > set.inception);
         }
 
         set.inception = inception;
