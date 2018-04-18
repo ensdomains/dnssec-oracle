@@ -161,6 +161,26 @@ contract DNSSEC is Owned {
     }
 
     /**
+     * @dev Deletes a RR from the oracle.
+     *
+     * 1. lookup nsecname nsec type NSEC
+     * 2. quit if the nsecname not found
+     * 3. if found, check nsecname comes before delete name
+     * 4. then check if delete name comes before next authorative record
+     *
+     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
+     * @param nsecname which contains the next authorative record
+     * @param deletetype The DNS record type to delete.
+     * @param deletename which you want to delete
+     * 
+     * Open questions
+     * - Can we delete record in subdomain directly?
+     */
+    function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
+        delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+    }
+
+    /**
      * @dev Returns the RRs (if any) associated with the provided class, type, and name.
      * @param dnsclass The DNS class (1 = CLASS_INET) to query.
      * @param dnstype The DNS record type to query.

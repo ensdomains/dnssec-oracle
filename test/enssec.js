@@ -293,4 +293,37 @@ contract('DNSSEC', function(accounts) {
     }
     console.log("Gas used: " + totalGas);
   });
+
+  function createTxtKeys(rrs) {
+    return {
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 1,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [rrs],
+    };
+  };
+
+  async function submitTextEntry(instance, name){
+    var keys = createTxtKeys({name: name, type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]});
+    await verifySubmission(instance, name, dns.hexEncodeSignedSet(keys), "0x");
+    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName(name));
+    assert.notEqual(rrs, '0x');  
+  }
+
+  describe('deleteRRSet', function(){
+    it('deletes RRset if entry', async function(){
+      var instance = await dnssec.deployed();
+      await submitTextEntry(instance, 'a.');
+      await submitTextEntry(instance, 'b.');
+      await submitTextEntry(instance, 'd.');
+      instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      assert.equal(rrs, '0x');
+    })
+  })
 });
