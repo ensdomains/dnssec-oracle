@@ -123,6 +123,14 @@ contract('DNSSEC', function(accounts) {
     await verifySubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
   });
 
+  it('should check if root DNSKEY exist', async function(){
+    var instance = await dnssec.deployed();
+    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
+    assert.equal(rrs, '0x');
+    [_, rrs] = await instance.rrset.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
+    assert.notEqual(rrs, '0x');
+  })
+
   it('should reject signatures with non-matching classes', async function() {
     var instance = await dnssec.deployed();
     await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({

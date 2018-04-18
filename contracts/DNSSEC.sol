@@ -49,7 +49,6 @@ contract DNSSEC is Owned {
 
     struct RRSet {
         uint32 inception;
-        uint32 expiration;
         uint64 inserted;
         bytes rrs;
     }
@@ -75,7 +74,6 @@ contract DNSSEC is Owned {
         // of trust for all other records.
         rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
             inception: 0,
-            expiration: 0xFFFFFFFF,
             inserted: uint64(now),
             rrs: anchors
         });
@@ -148,7 +146,6 @@ contract DNSSEC is Owned {
         }
 
         set.inception = inception;
-        set.expiration = expiration;
         set.inserted = uint64(now);
 
         // o  The validator's notion of the current time MUST be less than or
@@ -173,12 +170,9 @@ contract DNSSEC is Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrset(uint16 dnsclass, uint16 dnstype, bytes name) public view returns (uint32, uint32, uint64, bytes) {
+    function rrset(uint16 dnsclass, uint16 dnstype, bytes name) public view returns (uint64, bytes) {
         RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
-        if (result.expiration < now) {
-            return (0, 0, 0, "");
-        }
-        return (result.inception, result.expiration, result.inserted, result.rrs);
+        return (result.inserted, result.rrs);
     }
 
     /**
