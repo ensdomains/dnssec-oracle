@@ -324,6 +324,29 @@ contract('DNSSEC', function(accounts) {
       instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
       var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
       assert.equal(rrs, '0x');
+        typeCovered: dns.TYPE_NSEC,
+        algorithm: 253,
+        originalTTL: 3600,
+        expiration: 0xFFFFFFFF,
+        inception: 1,
+        keytag: 5647,
+        signerName: ".",
+        rrs: [
+          { name:'a.', type: dns.TYPE_NSEC, klass: 1, ttl: 3600,  next:'d.', rrtypes:[dns.TYPE_TXT] }
+        ]
+      }
+
+      var buf = new Buffer(4096);
+      var off = dns.encodeSignedSet(buf, 0, rec);
+      var string = "0x" + buf.toString("hex", 0, off);
+      console.log('string', string);
+      await verifySubmission(instance, 'a.', string, "0x");
+      var [_, rrs] = await instance.rrset.call(1, dns.TYPE_NSEC, dns.hexEncodeName('a.'));
+      assert.notEqual(rrs, '0x');
+  
+      // instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      // var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      // assert.equal(rrs, '0x');
     })
   })
 });
