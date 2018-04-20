@@ -22,6 +22,7 @@ contract DNSSEC is Owned {
 
     uint16 constant DNSTYPE_DS = 43;
     uint16 constant DNSTYPE_RRSIG = 46;
+    uint16 constant DNSTYPE_NSEC = 47;
     uint16 constant DNSTYPE_DNSKEY = 48;
 
     uint constant DS_KEY_TAG = 0;
@@ -66,6 +67,8 @@ contract DNSSEC is Owned {
     event DigestUpdated(uint8 id, address addr);
     event NSEC3DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
+    event Logger(string comment);
+    event LoggerBytes(bytes comment);
 
     /**
      * @dev Constructor.
@@ -177,7 +180,20 @@ contract DNSSEC is Owned {
      * - Can we delete record in subdomain directly?
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
-        delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+        RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
+        if(result.inserted != 0){
+            Logger('Found');
+            LoggerBytes(result.rrs);
+
+            BytesUtils.Slice memory name;
+            BytesUtils.Slice memory rdata;
+            BytesUtils.Slice memory data;
+            name.fromBytes(nsecname);
+            data.fromBytes(result.rrs);
+            delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+        }else{
+            Logger('Not Found');
+        }
     }
 
     /**

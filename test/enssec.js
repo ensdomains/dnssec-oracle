@@ -316,16 +316,25 @@ contract('DNSSEC', function(accounts) {
   }
 
   describe('deleteRRSet', function(){
-    it('deletes RRset if entry', async function(){
+
+    it('rejects if NSEC record is not found', async function(){
       var instance = await dnssec.deployed();
-      await submitTextEntry(instance, 'a.');
       await submitTextEntry(instance, 'b.');
-      await submitTextEntry(instance, 'd.');
-      instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
       var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
-      assert.equal(rrs, '0x');
+      assert.notEqual(rrs, '0x');
+
+      await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      assert.notEqual(rrs, '0x');
+    })
+
+    it('deletes RRset if NSEC entry is found', async function(){
+      var instance = await dnssec.deployed();
+
+      var rec = {
         typeCovered: dns.TYPE_NSEC,
         algorithm: 253,
+        labels: 1,
         originalTTL: 3600,
         expiration: 0xFFFFFFFF,
         inception: 1,
@@ -344,9 +353,12 @@ contract('DNSSEC', function(accounts) {
       var [_, rrs] = await instance.rrset.call(1, dns.TYPE_NSEC, dns.hexEncodeName('a.'));
       assert.notEqual(rrs, '0x');
   
-      // instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-      // var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
-      // assert.equal(rrs, '0x');
+      var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      tx.logs.forEach(function(l){
+        console.log('tx', l.event, l.args)
+      })
+      var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
+      assert.equal(rrs, '0x');
     })
   })
 });
