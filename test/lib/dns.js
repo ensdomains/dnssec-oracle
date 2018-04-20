@@ -1,6 +1,6 @@
 var dns = require("../../lib/dns.js");
 contract('DNSSEC', function(accounts) {
-    describe.only('encodeTypeBitMap', function(){
+    describe('encodeTypeBitMap', function(){
         let buffer, off, result;
 
         beforeEach(async function(){
