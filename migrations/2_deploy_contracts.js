@@ -1,4 +1,6 @@
+var rsasha1 = artifacts.require("./RSASHA1Algorithm.sol");
 var rsasha256 = artifacts.require("./RSASHA256Algorithm.sol");
+var sha1 = artifacts.require("./SHA1Digest.sol");
 var sha256 = artifacts.require("./SHA256Digest.sol");
 var dnssec = artifacts.require("./DNSSEC.sol");
 var dummyalgorithm = artifacts.require("./DummyAlgorithm.sol");
@@ -53,11 +55,16 @@ module.exports = function(deployer, network) {
     });
   }
   return deployer.deploy(dnssec, encodeAnchors(anchors))
-    .then(() => deployer.deploy([[rsasha256], [sha256]]))
+    .then(() => deployer.deploy([[rsasha256], [rsasha1], [sha256], [sha1]]))
     .then(() => dev?deployer.deploy([[dummyalgorithm], [dummydigest]]):null)
     .then(() => dnssec.deployed().then(function(instance) {
       tasks = [];
+      tasks.push(rsasha1.deployed().then(async function(algorithm) {
+        await instance.setAlgorithm(5, algorithm.address);
+        await instance.setAlgorithm(7, algorithm.address);
+      }));
       tasks.push(rsasha256.deployed().then((algorithm) => instance.setAlgorithm(8, algorithm.address)));
+      tasks.push(sha1.deployed().then((digest) => instance.setDigest(1, digest.address)));
       tasks.push(sha256.deployed().then((digest) => instance.setDigest(2, digest.address)));
       if(dev) {
         tasks.push(dummyalgorithm.deployed().then((algorithm) => instance.setAlgorithm(253, algorithm.address)));

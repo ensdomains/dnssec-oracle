@@ -10,5 +10,8 @@
     "test": "truffle test",
     "watch": "npm-watch",
     "lint": "solium --dir ./contracts"
+  },
+  "dependencies": {
+    "Base64": "^1.0.1"
   }
 }
