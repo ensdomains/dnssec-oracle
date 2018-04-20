@@ -190,7 +190,13 @@ contract DNSSEC is Owned {
             BytesUtils.Slice memory data;
             name.fromBytes(nsecname);
             data.fromBytes(result.rrs);
-            delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+            for (var (dnstype, class, ttl) = data.nextRR(name, rdata); dnstype != 0; (dnstype, class, ttl) = data.nextRR(name, rdata)) {
+                Logger('nextRR record Found');
+                if (dnstype == DNSTYPE_NSEC){
+                    delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+                    Logger('DNSTYPE_NSEC record found');
+                }
+            }
         }else{
             Logger('Not Found');
         }
