@@ -284,9 +284,14 @@ contract('DNSSEC', function(accounts) {
   });
 
   // Test delete RRsec
-  function createTxtKeys(rrs) {
-    return 
-  };
+  async function verifyPresence(instance, bool, type, name){
+    var result = (await instance.rrset.call(1, type, dns.hexEncodeName(name)))[1];
+    if(bool){
+      assert.notEqual(result,'0x');  
+    }else{
+      assert.equal(result,'0x');  
+    }
+  }
 
   async function submitEntry(instance, type, name, option){
     var rrs = {name: name, type: type, klass: 1, ttl: 3600};
@@ -310,45 +315,20 @@ contract('DNSSEC', function(accounts) {
   it('rejects if NSEC record is not found', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
-    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    assert.notEqual(rrs, '0x');
-
+    verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
     await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    assert.notEqual(rrs, '0x');
+    verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
   })
 
   it('deletes RRset if NSEC entry is found', async function(){
     var instance = await dnssec.deployed();
-
-    var rec = {
-      typeCovered: dns.TYPE_NSEC,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 1,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        { name:'a.', type: dns.TYPE_NSEC, klass: 1, ttl: 3600,  next:'d.', rrtypes:[dns.TYPE_TXT] }
-      ]
-    }
-
-    var buf = new Buffer(4096);
-    var off = dns.encodeSignedSet(buf, 0, rec);
-    var string = "0x" + buf.toString("hex", 0, off);
-    console.log('string', string);
-    await verifySubmission(instance, 'a.', string, "0x");
-    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_NSEC, dns.hexEncodeName('a.'));
-    assert.notEqual(rrs, '0x');
-
+    await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
+    verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
     tx.logs.forEach(function(l){
       console.log('tx', l.event, l.args)
     })
-    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    assert.equal(rrs, '0x');
+    verifyPresence(instance, false, dns.TYPE_TXT, 'b.')
   })
 
   // Test against real record
