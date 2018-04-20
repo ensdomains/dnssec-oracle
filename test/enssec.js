@@ -315,20 +315,31 @@ contract('DNSSEC', function(accounts) {
   it('rejects if NSEC record is not found', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
-    verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
+    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
     await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
+    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
+  })
+
+  it('rejects if NSEC record does not match deleting record type', async function(){
+    var instance = await dnssec.deployed();
+    // proving record is not NSEC
+    var option = {klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")}
+    await submitEntry(instance, dns.TYPE_DNSKEY, 'a.',  option);
+    await verifyPresence(instance, true, dns.TYPE_DNSKEY, 'a.')
+    await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
+    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
   })
 
   it('deletes RRset if NSEC entry is found', async function(){
     var instance = await dnssec.deployed();
+    // proving record is NSEC
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
-    verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
+    await verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
     tx.logs.forEach(function(l){
       console.log('tx', l.event, l.args)
     })
-    verifyPresence(instance, false, dns.TYPE_TXT, 'b.')
+    await verifyPresence(instance, false, dns.TYPE_TXT, 'b.')
   })
 
   // Test against real record
