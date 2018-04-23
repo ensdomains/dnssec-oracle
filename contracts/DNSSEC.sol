@@ -5,6 +5,7 @@ import "./BytesUtils.sol";
 import "./RRUtils.sol";
 import "./Algorithm.sol";
 import "./Digest.sol";
+import "./NSEC3Digest.sol";
 
 /*
  * @dev An oracle contract that verifies and stores DNSSEC-validated DNS records.
@@ -58,9 +59,11 @@ contract DNSSEC is Owned {
 
     mapping (uint8 => Algorithm) public algorithms;
     mapping (uint8 => Digest) public digests;
+    mapping (uint8 => NSEC3Digest) public nsec3Digests;
 
     event AlgorithmUpdated(uint8 id, address addr);
     event DigestUpdated(uint8 id, address addr);
+    event NSEC3DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
 
     /**
@@ -100,6 +103,16 @@ contract DNSSEC is Owned {
         DigestUpdated(id, digest);
     }
 
+    /**
+     * @dev Sets the contract address for an NSEC3 digest algorithm.
+     *      Callable only by the owner.
+     * @param id The digest ID
+     * @param digest The address of the digest contract.
+     */
+    function setNSEC3Digest(uint8 id, NSEC3Digest digest) public owner_only {
+        nsec3Digests[id] = digest;
+        NSEC3DigestUpdated(id, digest);
+    }
 
     /**
      * @dev Submits a signed set of RRs to the oracle.
