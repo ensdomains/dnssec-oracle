@@ -19,14 +19,21 @@ library SHA1 {
 
             let h := 0x6745230100EFCDAB890098BADCFE001032547600C3D2E1F0
 
-            for { let i := 0 } lt(i, totallen) { i := add(i, 64) } {
-                let word := 0
-                if lt(i, len) { word := mload(add(data, i)) }
-                mstore(scratch, word)
+            function readword(ptr, off, count) -> result {
+                result := 0
+                if lt(off, count) {
+                    result := mload(add(ptr, off))
+                    count := sub(count, off)
+                    if lt(count, 32) {
+                        let mask := not(sub(exp(256, sub(32, count)), 1))
+                        result := and(result, mask)
+                    }
+                }
+            }
 
-                word := 0
-                if lt(add(i, 32), len) { word := mload(add(add(data, 32), i)) }
-                mstore(add(scratch, 32), word)
+            for { let i := 0 } lt(i, totallen) { i := add(i, 64) } {
+                mstore(scratch, readword(data, i, len))
+                mstore(add(scratch, 32), readword(data, add(i, 32), len))
 
                 // If we loaded the last byte, store the terminator byte
                 switch lt(sub(len, i), 64)
