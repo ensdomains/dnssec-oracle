@@ -54,4 +54,31 @@ library RRUtils {
             ret += 1;
         }
     }
+
+    function checkTypeBitmap(BytesUtils.Slice memory self, uint16 rrtype) internal pure returns (bool) {
+        uint8 typeWindow = uint8(rrtype >> 8);
+        uint8 windowByte = uint8((rrtype & 0xff) / 8);
+        uint8 windowBitmask = uint8(1 << (7 - (rrtype & 0x7)));
+        for(uint off = 0; off < self.len;) {
+            uint8 window = self.uint8At(off);
+            uint8 len = self.uint8At(off + 1);
+            if(typeWindow < window) {
+                // We've gone past our window; it's not here.
+                return false;
+            } else if(typeWindow == window) {
+                // Check this type bitmap
+                if(len * 8 <= windowByte) {
+                    // Our type is past the end of the bitmap
+                    return false;
+                }
+
+                return (self.uint8At(off + windowByte + 2) & windowBitmask) != 0;
+            } else {
+                // Skip this type bitmap
+                off += len + 2;
+            }
+        }
+
+        return false;
+    }
 }
