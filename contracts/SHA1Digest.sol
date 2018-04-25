@@ -8,9 +8,7 @@ contract SHA1Digest {
     using BytesUtils for *;
 
     function verify(bytes data, bytes hash) public view returns (bool) {
-        BytesUtils.Slice memory hashslice;
-        hashslice.fromBytes(hash);
-        bytes32 expected = hashslice.bytes32At(0);
+        bytes32 expected = hash.readBytes20(0);
         bytes20 computed = SHA1.sha1(data);
         return expected == computed;
     }

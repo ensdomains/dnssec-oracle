@@ -35,7 +35,6 @@ contract("RSASHA256Algorithm", function(accounts) {
     var instance = await rsasha256.deployed();
 
     assert.equal(await instance.verify(vector[0], vector[1], vector[2]), true);
-    console.log(await instance.verify.estimateGas(vector[0], vector[1], vector[2]))
   });
 
   it('should return false for invalid signatures', async function() {
@@ -75,7 +74,6 @@ contract("RSASHA1Algorithm", function(accounts) {
     var instance = await rsasha1.deployed();
 
     assert.equal(await instance.verify(vector[0], vector[1], vector[2]), true);
-    console.log(await instance.verify.estimateGas(vector[0], vector[1], vector[2]))
   });
 
   it('should return false for invalid signatures', async function() {

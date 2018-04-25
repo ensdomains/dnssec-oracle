@@ -6,7 +6,7 @@ library Buffer {
         uint capacity;
     }
 
-    function init(buffer memory buf, uint capacity) internal pure {
+    function init(buffer memory buf, uint capacity) internal pure returns(buffer memory) {
         if(capacity % 32 != 0) capacity += 32 - (capacity % 32);
         // Allocate space for the buffer data
         buf.capacity = capacity;
@@ -16,6 +16,14 @@ library Buffer {
             mstore(ptr, 0)
             mstore(0x40, add(ptr, capacity))
         }
+        return buf;
+    }
+
+    function fromBytes(bytes b) internal pure returns(buffer memory) {
+      buffer memory buf;
+      buf.buf = b;
+      buf.capacity = b.length;
+      return buf;
     }
 
     function resize(buffer memory buf, uint capacity) private pure {
@@ -50,16 +58,18 @@ library Buffer {
      * @param buf The buffer to append to.
      * @param off The start offset to write to.
      * @param data The data to append.
+     * @param len The number of bytes to copy.
      * @return The original buffer.
      */
-    function write(buffer memory buf, uint off, bytes data) internal pure returns(buffer memory) {
-        if(off + data.length + buf.buf.length > buf.capacity) {
-            resize(buf, max(buf.capacity, data.length + off) * 2);
+    function write(buffer memory buf, uint off, bytes data, uint len) internal pure returns(buffer memory) {
+        require(len <= data.length);
+
+        if(off + len + buf.buf.length > buf.capacity) {
+            resize(buf, max(buf.capacity, len + off) * 2);
         }
 
         uint dest;
         uint src;
-        uint len = data.length;
         assembly {
             // Memory address of the buffer data
             let bufptr := mload(buf)
@@ -99,10 +109,22 @@ library Buffer {
      *      the capacity of the buffer.
      * @param buf The buffer to append to.
      * @param data The data to append.
+     * @param len The number of bytes to copy.
+     * @return The original buffer.
+     */
+    function append(buffer memory buf, bytes data, uint len) internal pure returns (buffer memory) {
+      return write(buf, buf.buf.length, data, len);
+    }
+
+    /**
+     * @dev Appends a byte string to a buffer. Resizes if doing so would exceed
+     *      the capacity of the buffer.
+     * @param buf The buffer to append to.
+     * @param data The data to append.
      * @return The original buffer.
      */
     function append(buffer memory buf, bytes data) internal pure returns (buffer memory) {
-      return write(buf, buf.buf.length, data);
+      return write(buf, buf.buf.length, data, data.length);
     }
 
     /**
@@ -113,7 +135,7 @@ library Buffer {
      * @param data The data to append.
      * @return The original buffer.
      */
-    function write(buffer memory buf, uint off, uint8 data) internal pure returns(buffer memory) {
+    function writeUint8(buffer memory buf, uint off, uint8 data) internal pure returns(buffer memory) {
         if(off > buf.capacity) {
             resize(buf, buf.capacity * 2);
         }
@@ -141,8 +163,8 @@ library Buffer {
      * @param data The data to append.
      * @return The original buffer.
      */
-    function append(buffer memory buf, uint8 data) internal pure returns(buffer memory) {
-      return write(buf, buf.buf.length, data);
+    function appendUint8(buffer memory buf, uint8 data) internal pure returns(buffer memory) {
+      return writeUint8(buf, buf.buf.length, data);
     }
 
     /**
@@ -184,7 +206,7 @@ library Buffer {
      * @param data The data to append.
      * @return The original buffer.
      */
-    function write(buffer memory buf, uint off, bytes20 data) internal pure returns (buffer memory) {
+    function writeBytes20(buffer memory buf, uint off, bytes20 data) internal pure returns (buffer memory) {
       return write(buf, off, bytes32(data), 20);
     }
 
@@ -195,8 +217,19 @@ library Buffer {
      * @param data The data to append.
      * @return The original buffer.
      */
-    function append(buffer memory buf, bytes20 data) internal pure returns (buffer memory) {
+    function appendBytes20(buffer memory buf, bytes20 data) internal pure returns (buffer memory) {
       return write(buf, buf.buf.length, bytes32(data), 20);
+    }
+
+    /**
+     * @dev Appends a bytes32 to the buffer. Resizes if doing so would
+     *      exceed the capacity of the buffer.
+     * @param buf The buffer to append to.
+     * @param data The data to append.
+     * @return The original buffer.
+     */
+    function appendBytes32(buffer memory buf, bytes32 data) internal pure returns (buffer memory) {
+      return write(buf, buf.buf.length, data, 32);
     }
 
     /**

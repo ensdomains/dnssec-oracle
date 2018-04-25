@@ -16,17 +16,17 @@ contract SHA1NSEC3Digest is NSEC3Digest {
     bytes20 h = SHA1.sha1(buf.buf);
     if(iterations > 0) {
       buf.truncate();
-      buf.append(bytes20(0));
+      buf.appendBytes20(bytes20(0));
       buf.append(salt);
 
       for(uint i = 0; i < iterations; i++) {
-        buf.write(0, h);
+        buf.writeBytes20(0, h);
         h = SHA1.sha1(buf.buf);
       }
     }
 
     buf.truncate();
-    buf.append(h);
+    buf.appendBytes20(h);
     return buf.buf;
   }
 }
