@@ -329,15 +329,15 @@ contract DNSSEC is Owned {
         if(data.length == 0) return false;
 
         for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
-            if (data.readUint16(iter.rdataOffset + DS_KEY_TAG) == keytag
-               && data.readUint16(iter.rdataOffset + DS_ALGORITHM) != algorithm) {
-                uint8 digesttype = data.readUint8(iter.rdataOffset + DS_DIGEST_TYPE);
-                Buffer.buffer memory buf;
-                buf.init(keyname.length + keyrdata.length);
-                buf.append(keyname);
-                buf.append(keyrdata);
-                if (verifyDSHash(digesttype, buf.buf, data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset))) return true;
-            }
+            if(data.readUint16(iter.rdataOffset + DS_KEY_TAG) != keytag) continue;
+            if(data.readUint8(iter.rdataOffset + DS_ALGORITHM) != algorithm) continue;
+
+            uint8 digesttype = data.readUint8(iter.rdataOffset + DS_DIGEST_TYPE);
+            Buffer.buffer memory buf;
+            buf.init(keyname.length + keyrdata.length);
+            buf.append(keyname);
+            buf.append(keyrdata);
+            if (verifyDSHash(digesttype, buf.buf, data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset))) return true;
         }
         return false;
     }
