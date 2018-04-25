@@ -24,4 +24,25 @@ contract TestBytesUtils {
     Assert.equal(string("hello".substring(1, 4)), "ello", "Copy substring");
     Assert.equal(string("hello".substring(0, 5)), "hello", "Copy whole string");
   }
+
+  function testReadUint8() {
+    Assert.equal(uint("a".readUint8(0)), 0x61, "a == 0x61");
+    Assert.equal(uint("ba".readUint8(1)), 0x61, "a == 0x61");
+  }
+
+  function testReadUint16() {
+    Assert.equal(uint("abc".readUint16(1)), 0x6263, "Read uint 16");
+  }
+
+  function testReadUint32() {
+    Assert.equal(uint("abcde".readUint32(1)), 0x62636465, "Read uint 32");
+  }
+
+  function testReadBytes20() {
+    Assert.equal(bytes32("abcdefghijklmnopqrstuv".readBytes20(1)), bytes32(bytes20(0x62636465666768696A6B6C6D6E6F707172737475)), "readBytes20");
+  }
+
+  function testReadBytes32() {
+    Assert.equal("0123456789abcdef0123456789abcdef".readBytes32(0), bytes32(0x3031323334353637383961626364656630313233343536373839616263646566), "readBytes32");
+  }
 }
