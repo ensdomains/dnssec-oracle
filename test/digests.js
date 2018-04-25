@@ -10,7 +10,7 @@ contract("SHA256Digest", function(accounts) {
 
   it('should return false for invalid hashes', async function() {
     var instance = await sha256.deployed();
-    assert.equal(await instance.verify("", "0x00"), false);
+    assert.equal(await instance.verify("", "0x1111111111111111111111111111111111111111111111111111111111111111"), false);
   });
 })
 
@@ -23,6 +23,6 @@ contract("SHA1Digest", function(accounts) {
 
   it('should return false for invalid hashes', async function() {
     var instance = await sha1.deployed();
-    assert.equal(await instance.verify("", "0x00"), false);
+    assert.equal(await instance.verify("", "0x1111111111111111111111111111111111111111"), false);
   });
 })

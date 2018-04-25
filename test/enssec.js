@@ -85,7 +85,7 @@ contract('DNSSEC', function(accounts) {
     };
   };
 
-  it("should reject signatures with non-matching algorithms", async function() {
+  it("should reject keys if the DS record's algorithm field does not match", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
     keys.rrs = [
@@ -94,7 +94,7 @@ contract('DNSSEC', function(accounts) {
     await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
   });
 
-  it("should reject signatures with non-matching keytags", async function() {
+  it("should reject keys if the DS record's keytag does not match", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
     keys.rrs = [
@@ -103,7 +103,7 @@ contract('DNSSEC', function(accounts) {
     await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
   });
 
-  it("should reject signatures by keys without the ZK bit set", async function() {
+  it("TODO!! should reject signatures by keys without the ZK bit set", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
     keys.rrs = [
