@@ -42,33 +42,54 @@ library RRUtils {
         return count;
     }
 
+    struct RRIterator {
+        bytes data;
+        uint offset;
+        uint16 dnstype;
+        uint16 class;
+        uint32 ttl;
+        uint rdataOffset;
+        uint nextOffset;
+    }
+
     /**
-     * @dev Reads a resource record from a byte string.
+     * @dev Begins iterating over resource records.
      * @param self The byte string to read from.
-     * @param off The offset to start reading at.
-     * @return dnstype The DNS type ID for the RR.
-     * @return class The DNS class ID for the RR.
-     * @return ttl The TTL for the RR.
-     * @return rdataOffset The offset from the start of the byte array to the RR's RDATA.
-     * @return next The offset to the start of the next record (if any).
+     * @param offset The offset to start reading at.
+     * @return An iterator object.
      */
-    function readRR(bytes memory self, uint off) internal pure returns (uint16 dnstype, uint16 class, uint32 ttl, uint rdataOffset, uint next) {
-        if (off >= self.length) {
-            return (0, 0, 0, 0, 0);
-        }
+    function iterateRRs(bytes memory self, uint offset) internal pure returns (RRIterator memory ret) {
+      ret.data = self;
+      ret.nextOffset = offset;
+      next(ret);
+    }
+
+    /**
+     * @dev Returns true iff there are more RRs to iterate.
+     */
+    function done(RRIterator memory iter) internal pure returns(bool) {
+      return iter.offset >= iter.data.length;
+    }
+
+    /**
+     * @dev Moves the iterator to the next resource record.
+     */
+    function next(RRIterator memory iter) internal pure {
+        iter.offset = iter.nextOffset;
+        if(iter.offset >= iter.data.length) return;
 
         // Skip the name
-        off += nameLength(self, off);
+        uint off = iter.offset + nameLength(iter.data, iter.offset);
 
         // Read type, class, and ttl
-        dnstype = self.readUint16(off); off += 2;
-        class = self.readUint16(off); off += 2;
-        ttl = self.readUint32(off); off += 4;
+        iter.dnstype = iter.data.readUint16(off); off += 2;
+        iter.class = iter.data.readUint16(off); off += 2;
+        iter.ttl = iter.data.readUint32(off); off += 4;
 
         // Read the rdata
-        uint rdataLength = self.readUint16(off); off += 2;
-        rdataOffset = off;
-        next = off + rdataLength;
+        uint rdataLength = iter.data.readUint16(off); off += 2;
+        iter.rdataOffset = off;
+        iter.nextOffset = off + rdataLength;
     }
 
     /**

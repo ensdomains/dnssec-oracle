@@ -196,21 +196,16 @@ contract DNSSEC is Owned {
      */
     function insertRRs(RRSet storage set, bytes memory data, bytes memory rrsigname, uint16 rrsetclass, uint16 typecovered, uint8 labels) internal {
         // Iterate over all the RRs
-        uint offset = 0;
-        var (dnstype, class, ttl, rdataOffset, next) = data.readRR(offset);
-        while (dnstype != 0) {
+        for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
             // o  The RRSIG RR and the RRset MUST have the same owner name and the
             //    same class.
             // o  The number of labels in the RRset owner name MUST be greater than
             //    or equal to the value in the RRSIG RR's Labels field.
-            require(class == rrsetclass);
-            checkName(rrsigname, data, offset, labels);
+            require(iter.class == rrsetclass);
+            checkName(rrsigname, data, iter.offset, labels);
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
-            require(dnstype == typecovered);
-
-            offset = next;
-            (dnstype, class, ttl, rdataOffset, next) = data.readRR(next);
+            require(iter.dnstype == typecovered);
         }
 
         set.rrs = data;
@@ -265,11 +260,10 @@ contract DNSSEC is Owned {
 
         // Look for a matching key and verify the signature with it
         bytes memory keydata = rrsets[data.keccak(RRSIG_SIGNER_NAME, signerNameLength)][DNSTYPE_DNSKEY][dnsclass].rrs;
+        if(keydata.length == 0) return false;
 
-        var (dnstype,,,rdataOffset,next) = keydata.readRR(0);
-        while(dnstype != 0) {
-          if (verifySignatureWithKey(keydata.substring(rdataOffset, next - rdataOffset), algorithm, keytag, data, sig)) return true;
-          (dnstype,,,rdataOffset,next) = keydata.readRR(next);
+        for(RRUtils.RRIterator memory iter = keydata.iterateRRs(0); !iter.done(); iter.next()) {
+          if (verifySignatureWithKey(keydata.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset), algorithm, keytag, data, sig)) return true;
         }
 
         return false;
@@ -281,21 +275,17 @@ contract DNSSEC is Owned {
         uint16 keytag = data.readUint16(RRSIG_KEY_TAG);
 
         // Perhaps it's self-signed and verified by a DS record?
-        var (dnstype,,,rdataOffset,next) = data.readRR(offset);
-        while(dnstype != 0) {
-          if (dnstype != DNSTYPE_DNSKEY) return false;
+        for(RRUtils.RRIterator memory iter = data.iterateRRs(offset); !iter.done(); iter.next()) {
+          if (iter.dnstype != DNSTYPE_DNSKEY) return false;
 
-          bytes memory keyrdata = data.substring(rdataOffset, next - rdataOffset);
+          bytes memory keyrdata = data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset);
           if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
-              bytes memory keyname = data.substring(offset, data.nameLength(offset));
+              bytes memory keyname = data.substring(iter.offset, data.nameLength(iter.offset));
               // It's self-signed - look for a DS record to verify it.
-              if (verifyKeyWithDS(dnsclass, keyname, keyrdata, keytag, algorithm)) return true;
+              if (verifyKeyWithDS(iter.class, keyname, keyrdata, keytag, algorithm)) return true;
               // If we found a valid signature but no valid DS, no use checking other records too.
               return false;
           }
-
-          offset = next;
-          (dnstype,,,rdataOffset,next) = data.readRR(offset);
         }
 
         return false;
@@ -341,22 +331,19 @@ contract DNSSEC is Owned {
      */
     function verifyKeyWithDS(uint16 dnsclass, bytes memory keyname, bytes memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
         bytes memory data = rrsets[keccak256(keyname)][DNSTYPE_DS][dnsclass].rrs;
+        if(data.length == 0) return false;
 
-        uint offset = 0;
-        var (dnstype,,,rdataOffset,next) = data.readRR(offset);
-        while(dnstype != 0) {
-            if (data.readUint16(rdataOffset + DS_KEY_TAG) == keytag
-               && data.readUint16(rdataOffset + DS_ALGORITHM) != algorithm) {
-                uint8 digesttype = data.readUint8(rdataOffset + DS_DIGEST_TYPE);
-                uint nameLen = data.nameLength(offset);
+        for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
+            if (data.readUint16(iter.rdataOffset + DS_KEY_TAG) == keytag
+               && data.readUint16(iter.rdataOffset + DS_ALGORITHM) != algorithm) {
+                uint8 digesttype = data.readUint8(iter.rdataOffset + DS_DIGEST_TYPE);
+                uint nameLen = data.nameLength(iter.offset);
                 Buffer.buffer memory buf;
-                buf.init(nameLen + (next - rdataOffset));
+                buf.init(nameLen + (iter.nextOffset - iter.rdataOffset));
                 buf.append(keyname);
                 buf.append(keyrdata);
-                if (verifyDSHash(digesttype, buf.buf, data.substring(rdataOffset, next - rdataOffset))) return true;
+                if (verifyDSHash(digesttype, buf.buf, data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset))) return true;
             }
-            offset = next;
-            (dnstype,,,rdataOffset,next) = data.readRR(offset);
         }
         return false;
     }
