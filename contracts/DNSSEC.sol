@@ -69,6 +69,7 @@ contract DNSSEC is Owned {
     event RRSetUpdated(bytes name);
     event Logger(string comment);
     event LoggerBytes(bytes comment);
+    event LoggerInt(int label);
 
     /**
      * @dev Constructor.
@@ -181,7 +182,7 @@ contract DNSSEC is Owned {
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        if(result.inserted != 0){
+        if(int(result.inserted) != 0){
             Logger('Found');
             LoggerBytes(result.rrs);
 
