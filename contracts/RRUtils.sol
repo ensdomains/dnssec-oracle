@@ -54,7 +54,6 @@ library RRUtils {
             ret += 1;
         }
     }
-
     function checkTypeBitmap(BytesUtils.Slice memory self, uint16 rrtype) internal pure returns (bool) {
         uint8 typeWindow = uint8(rrtype >> 8);
         uint8 windowByte = uint8((rrtype & 0xff) / 8);
@@ -80,5 +79,85 @@ library RRUtils {
         }
 
         return false;
+    }
+
+    event Logger(string name);
+    event LoggerBytes(bytes name);
+    event LoggerInt(int label);
+
+    function compareLabel(bytes a, bytes b) internal returns (int){
+         BytesUtils.Slice memory aSlice = a.toSlice();
+         BytesUtils.Slice memory bSlice = b.toSlice();
+         BytesUtils.Slice memory aHead;
+         BytesUtils.Slice memory bHead;
+         uint aLength = countLabels(aSlice, 0);
+         uint bLength = countLabels(bSlice, 0);
+         uint length;
+         if (aLength < bLength){
+            length = aLength;
+         }else{
+            length = bLength;
+         }
+         emit LoggerInt(int(length));
+
+        uint aTailStart = aLength - length;
+        uint bTailStart = bLength - length;
+        BytesUtils.Slice memory aTail;
+        BytesUtils.Slice memory bTail;
+        if(aLength == length){
+            aTail = aSlice;
+        }else{
+            (aHead, aTail) = headAndTail(aSlice);
+        }
+        if(bLength == length){
+            bTail = bSlice;
+        }else{
+            (bHead, bTail) = headAndTail(bSlice);
+        }
+        int result = compareTail(aTail.toBytes(), bTail.toBytes());
+        if(result != 0){
+            return result;   
+        }else{
+            if(aLength < bLength){
+                return -1;
+            }else if (aLength > bLength){
+                return 1;
+            }else(aLength == bLength){
+                // a and b are identical
+                return 0;
+            }
+        }
+    }
+
+    function compareTail(bytes a, bytes b) internal returns (int) {
+        // when both are '.'
+        if (keccak256(a) == keccak256(hex'00') && keccak256(b) == keccak256(hex'00')){
+            return 0;
+        }
+        BytesUtils.Slice memory aSlice = a.toSlice();
+        BytesUtils.Slice memory bSlice = b.toSlice();
+        // getting head
+        BytesUtils.Slice memory aHead;
+        BytesUtils.Slice memory bHead;
+        BytesUtils.Slice memory aTail;
+        BytesUtils.Slice memory bTail;
+        (aHead, aTail) = headAndTail(aSlice);
+        (bHead, bTail) = headAndTail(bSlice);
+        int result = compareTail(aTail.toBytes(), bTail.toBytes());
+        if(result == 0){
+            return aHead.compare(bHead);
+        }else{
+            return result;
+        }
+    }
+
+    function headAndTail(BytesUtils.Slice aSlice) internal returns(BytesUtils.Slice head, BytesUtils.Slice tail){
+        uint aHeadLength =  aSlice.uint8At(0);
+        BytesUtils.Slice memory aHead;
+        aHead.copyFrom(aSlice).s(1,aHeadLength);
+        // getting tail
+        BytesUtils.Slice memory aTail;
+        aTail.copyFrom(aSlice).s(1 + aHeadLength, aSlice.len);
+        return (aHead, aTail);
     }
 }
