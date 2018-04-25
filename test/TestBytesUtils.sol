@@ -18,10 +18,10 @@ contract TestBytesUtils {
     Assert.equal("hello".equals(1, "jello", 1, 4), true, "Substring to substring equality");
   }
 
-  function testCopy() {
-    Assert.equal(string("hello".copy(0, 0)), "", "Copy 0 bytes");
-    Assert.equal(string("hello".copy(0, 4)), "hell", "Copy substring");
-    Assert.equal(string("hello".copy(1, 4)), "ello", "Copy substring");
-    Assert.equal(string("hello".copy(0, 5)), "hello", "Copy whole substring");
+  function testSubstring() {
+    Assert.equal(string("hello".substring(0, 0)), "", "Copy 0 bytes");
+    Assert.equal(string("hello".substring(0, 4)), "hell", "Copy substring");
+    Assert.equal(string("hello".substring(1, 4)), "ello", "Copy substring");
+    Assert.equal(string("hello".substring(0, 5)), "hello", "Copy whole string");
   }
 }

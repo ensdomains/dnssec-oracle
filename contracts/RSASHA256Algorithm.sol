@@ -13,12 +13,12 @@ contract RSASHA256Algorithm is Algorithm {
 
         uint16 exponentLen = uint16(key.readUint8(4));
         if (exponentLen != 0) {
-            exponent = key.copy(5, exponentLen);
-            modulus = key.copy(exponentLen + 5, key.length - exponentLen - 5);
+            exponent = key.substring(5, exponentLen);
+            modulus = key.substring(exponentLen + 5, key.length - exponentLen - 5);
         } else {
             exponentLen = key.readUint16(5);
-            exponent = key.copy(7, exponentLen);
-            modulus = key.copy(exponentLen + 7, key.length - exponentLen - 7);
+            exponent = key.substring(7, exponentLen);
+            modulus = key.substring(exponentLen + 7, key.length - exponentLen - 7);
         }
 
         // Recover the message from the signature

@@ -126,7 +126,7 @@ library BytesUtils {
      * @param offset The offset to start copying at.
      * @param len The number of bytes to copy.
      */
-    function copy(bytes memory self, uint offset, uint len) internal pure returns(bytes) {
+    function substring(bytes memory self, uint offset, uint len) internal pure returns(bytes) {
         require(offset + len <= self.length);
 
         bytes memory ret = new bytes(len);

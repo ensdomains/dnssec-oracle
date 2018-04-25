@@ -143,7 +143,7 @@ contract DNSSEC is Owned {
 
         // Validate the signature
         uint offset = verifySignature(dnsclass, name, input, sig);
-        bytes memory rrs = input.copy(offset, input.length - offset);
+        bytes memory rrs = input.substring(offset, input.length - offset);
 
         RRSet storage set = rrsets[keccak256(name)][typecovered][dnsclass];
         if (set.rrs.length > 0) {
@@ -268,7 +268,7 @@ contract DNSSEC is Owned {
 
         var (dnstype,,,rdataOffset,next) = keydata.readRR(0);
         while(dnstype != 0) {
-          if (verifySignatureWithKey(keydata.copy(rdataOffset, next - rdataOffset), algorithm, keytag, data, sig)) return true;
+          if (verifySignatureWithKey(keydata.substring(rdataOffset, next - rdataOffset), algorithm, keytag, data, sig)) return true;
           (dnstype,,,rdataOffset,next) = keydata.readRR(next);
         }
 
@@ -285,9 +285,9 @@ contract DNSSEC is Owned {
         while(dnstype != 0) {
           if (dnstype != DNSTYPE_DNSKEY) return false;
 
-          bytes memory keyrdata = data.copy(rdataOffset, next - rdataOffset);
+          bytes memory keyrdata = data.substring(rdataOffset, next - rdataOffset);
           if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
-              bytes memory keyname = data.copy(offset, data.nameLength(offset));
+              bytes memory keyname = data.substring(offset, data.nameLength(offset));
               // It's self-signed - look for a DS record to verify it.
               if (verifyKeyWithDS(dnsclass, keyname, keyrdata, keytag, algorithm)) return true;
               // If we found a valid signature but no valid DS, no use checking other records too.
@@ -353,7 +353,7 @@ contract DNSSEC is Owned {
                 buf.init(nameLen + (next - rdataOffset));
                 buf.append(keyname);
                 buf.append(keyrdata);
-                if (verifyDSHash(digesttype, buf.buf, data.copy(rdataOffset, next - rdataOffset))) return true;
+                if (verifyDSHash(digesttype, buf.buf, data.substring(rdataOffset, next - rdataOffset))) return true;
             }
             offset = next;
             (dnstype,,,rdataOffset,next) = data.readRR(offset);
@@ -370,7 +370,7 @@ contract DNSSEC is Owned {
      */
     function verifyDSHash(uint8 digesttype, bytes data, bytes digest) internal view returns (bool) {
         if (digests[digesttype] == address(0)) return false;
-        return digests[digesttype].verify(data, digest.copy(4, digest.length - 4));
+        return digests[digesttype].verify(data, digest.substring(4, digest.length - 4));
     }
 
     /**
