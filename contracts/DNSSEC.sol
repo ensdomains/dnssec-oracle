@@ -18,10 +18,6 @@ contract DNSSEC is Owned {
     using BytesUtils for *;
     using RRUtils for *;
 
-    event Log(string message, uint value);
-    event Log(string message, bytes value);
-    event Log(string message, bytes32 value);
-
     uint16 constant DNSCLASS_IN = 1;
 
     uint16 constant DNSTYPE_DS = 43;
