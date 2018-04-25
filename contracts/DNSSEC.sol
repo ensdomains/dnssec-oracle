@@ -14,8 +14,8 @@ import "./NSEC3Digest.sol";
  * TODO: Support for NSEC records
  */
 contract DNSSEC is Owned {
-    using Buffer for *;
-    using BytesUtils for *;
+    using Buffer for Buffer.buffer;
+    using BytesUtils for bytes;
     using RRUtils for *;
 
     uint16 constant DNSCLASS_IN = 1;
