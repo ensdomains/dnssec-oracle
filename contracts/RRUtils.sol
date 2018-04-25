@@ -93,6 +93,20 @@ library RRUtils {
     }
 
     /**
+     * @dev Returns the name of the current record.
+     */
+    function name(RRIterator memory iter) internal pure returns(bytes memory) {
+        return iter.data.substring(iter.offset, nameLength(iter.data, iter.offset));
+    }
+
+    /**
+     * @dev Returns the rdata portion of the current record.
+     */
+    function rdata(RRIterator memory iter) internal pure returns(bytes memory) {
+        return iter.data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset);
+    }
+
+    /**
      * @dev Checks if a given RR type exists in a type bitmap.
      * @param self The byte string to read the type bitmap from.
      * @param offset The offset to start reading at.

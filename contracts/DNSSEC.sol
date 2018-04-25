@@ -263,7 +263,7 @@ contract DNSSEC is Owned {
         if(keydata.length == 0) return false;
 
         for(RRUtils.RRIterator memory iter = keydata.iterateRRs(0); !iter.done(); iter.next()) {
-          if (verifySignatureWithKey(keydata.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset), algorithm, keytag, data, sig)) return true;
+          if (verifySignatureWithKey(iter.rdata(), algorithm, keytag, data, sig)) return true;
         }
 
         return false;
@@ -278,11 +278,10 @@ contract DNSSEC is Owned {
         for(RRUtils.RRIterator memory iter = data.iterateRRs(offset); !iter.done(); iter.next()) {
           if (iter.dnstype != DNSTYPE_DNSKEY) return false;
 
-          bytes memory keyrdata = data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset);
+          bytes memory keyrdata = iter.rdata();
           if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
-              bytes memory keyname = data.substring(iter.offset, data.nameLength(iter.offset));
               // It's self-signed - look for a DS record to verify it.
-              if (verifyKeyWithDS(iter.class, keyname, keyrdata, keytag, algorithm)) return true;
+              if (verifyKeyWithDS(iter.class, iter.name(), keyrdata, keytag, algorithm)) return true;
               // If we found a valid signature but no valid DS, no use checking other records too.
               return false;
           }
@@ -337,9 +336,8 @@ contract DNSSEC is Owned {
             if (data.readUint16(iter.rdataOffset + DS_KEY_TAG) == keytag
                && data.readUint16(iter.rdataOffset + DS_ALGORITHM) != algorithm) {
                 uint8 digesttype = data.readUint8(iter.rdataOffset + DS_DIGEST_TYPE);
-                uint nameLen = data.nameLength(iter.offset);
                 Buffer.buffer memory buf;
-                buf.init(nameLen + (iter.nextOffset - iter.rdataOffset));
+                buf.init(keyname.length + keyrdata.length);
                 buf.append(keyname);
                 buf.append(keyrdata);
                 if (verifyDSHash(digesttype, buf.buf, data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset))) return true;
