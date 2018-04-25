@@ -181,7 +181,7 @@ library RRUtils {
                 return -1;
             }else if (aLength > bLength){
                 return 1;
-            }else(aLength == bLength){
+            }else{
                 // a and b are identical
                 return 0;
             }
