@@ -5,7 +5,6 @@ import "../contracts/BytesUtils.sol";
 contract TestRRUtils {
   using BytesUtils for *;
   using RRUtils for bytes;
-  using RRUtils for BytesUtils.Slice;
 
   uint16 constant DNSTYPE_A = 1;
   uint16 constant DNSTYPE_CNAME = 5;
@@ -38,7 +37,6 @@ contract TestRRUtils {
     bytes memory bthLabXyz = hex'066274686c61620378797a00';
     bytes memory ethLabXyz = hex'066574686c61620378797a00';
     bytes memory xyz = hex'0378797a00';
-    // Exists in bitmap
     Assert.equal(xyz.compareLabel(ethLabXyz)       <  0, true, "xyz comes before ethLab.xyz");
     Assert.equal(bthLabXyz.compareLabel(ethLabXyz) <  0, true, "bthLab.xyz comes before ethLab.xyz");
     Assert.equal(bthLabXyz.compareLabel(bthLabXyz) == 0, true, "bthLab.xyz and bthLab.xyz are the same");

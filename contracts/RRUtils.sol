@@ -144,79 +144,70 @@ library RRUtils {
     event LoggerBytes(bytes name);
     event LoggerInt(int label);
 
-    function compareLabel(bytes a, bytes b) internal returns (int){
-         BytesUtils.Slice memory aSlice = a.toSlice();
-         BytesUtils.Slice memory bSlice = b.toSlice();
-         BytesUtils.Slice memory aHead;
-         BytesUtils.Slice memory bHead;
-         uint aLength = countLabels(aSlice, 0);
-         uint bLength = countLabels(bSlice, 0);
-         uint length;
-         if (aLength < bLength){
-            length = aLength;
-         }else{
-            length = bLength;
-         }
-         emit LoggerInt(int(length));
+    function compareLabel(bytes memory self, bytes memory other) internal pure returns (int){
+        uint sLength = labelCount(self, 0);
+        uint oLength = labelCount(other, 0);
+        uint shortest;
 
-        uint aTailStart = aLength - length;
-        uint bTailStart = bLength - length;
-        BytesUtils.Slice memory aTail;
-        BytesUtils.Slice memory bTail;
-        if(aLength == length){
-            aTail = aSlice;
+        if (sLength < oLength){
+            shortest = sLength;
         }else{
-            (aHead, aTail) = headAndTail(aSlice);
+            shortest = oLength;
         }
-        if(bLength == length){
-            bTail = bSlice;
+
+        bytes memory sTail;
+        bytes memory oTail;
+        if(sLength == shortest){
+            sTail = self;
         }else{
-            (bHead, bTail) = headAndTail(bSlice);
+            (, sTail) = headAndTail(self);
         }
-        int result = compareTail(aTail.toBytes(), bTail.toBytes());
+        if(oLength == shortest){
+            oTail = other;
+        }else{
+            (, oTail) = headAndTail(other);
+        }
+        int result = compareTail(sTail, oTail);
         if(result != 0){
             return result;   
         }else{
-            if(aLength < bLength){
+            if(sLength < oLength){
                 return -1;
-            }else if (aLength > bLength){
+            }else if (sLength > oLength){
                 return 1;
             }else{
-                // a and b are identical
+                // self and other are identical
                 return 0;
             }
         }
     }
 
-    function compareTail(bytes a, bytes b) internal returns (int) {
+    function compareTail(bytes memory self, bytes memory other) internal pure returns (int) {
         // when both are '.'
-        if (keccak256(a) == keccak256(hex'00') && keccak256(b) == keccak256(hex'00')){
+        if (keccak256(self) == keccak256(hex'00') && keccak256(other) == keccak256(hex'00')){
             return 0;
         }
-        BytesUtils.Slice memory aSlice = a.toSlice();
-        BytesUtils.Slice memory bSlice = b.toSlice();
         // getting head
-        BytesUtils.Slice memory aHead;
-        BytesUtils.Slice memory bHead;
-        BytesUtils.Slice memory aTail;
-        BytesUtils.Slice memory bTail;
-        (aHead, aTail) = headAndTail(aSlice);
-        (bHead, bTail) = headAndTail(bSlice);
-        int result = compareTail(aTail.toBytes(), bTail.toBytes());
+        bytes memory sHead;
+        bytes memory oHead;
+        bytes memory sTail;
+        bytes memory oTail;
+        (sHead, sTail) = headAndTail(self);
+        (oHead, oTail) = headAndTail(other);
+        int result = compareTail(sTail, oTail);
         if(result == 0){
-            return aHead.compare(bHead);
+            return sHead.compare(oHead);
         }else{
             return result;
         }
     }
 
-    function headAndTail(BytesUtils.Slice aSlice) internal returns(BytesUtils.Slice head, BytesUtils.Slice tail){
-        uint aHeadLength =  aSlice.uint8At(0);
-        BytesUtils.Slice memory aHead;
-        aHead.copyFrom(aSlice).s(1,aHeadLength);
+    function headAndTail(bytes memory body) internal pure returns(bytes, bytes){
+        uint headLength =  body.readUint8(0);
+        bytes memory head = body.substring(1, headLength);
         // getting tail
-        BytesUtils.Slice memory aTail;
-        aTail.copyFrom(aSlice).s(1 + aHeadLength, aSlice.len);
-        return (aHead, aTail);
+        uint tailLength = body.length - 1 - headLength;
+        bytes memory tail = body.substring(1 + headLength, tailLength);
+        return (head, tail);
     }
 }
