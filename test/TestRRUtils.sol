@@ -16,15 +16,21 @@ contract TestRRUtils {
   uint16 constant DNSTYPE_TYPE1234 = 1234;
 
   function testNameLength() public {
-    Assert.equal(hex'00'.nameLength(0), 1, "nameLength('.') == 1");
-    Assert.equal(hex'0361626300'.nameLength(4), 1, "nameLength('.') == 1");
-    Assert.equal(hex'0361626300'.nameLength(0), 5, "nameLength('abc.') == 5");
+    bytes memory name = hex'00';
+    Assert.equal(name.nameLength(0), 1, "nameLength('.') == 1");
+    name = hex'0361626300';
+    Assert.equal(name.nameLength(4), 1, "nameLength('.') == 1");
+    name = hex'0361626300';
+    Assert.equal(name.nameLength(0), 5, "nameLength('abc.') == 5");
   }
 
   function testLabelCount() public {
-    Assert.equal(hex'00'.labelCount(0), 0, "labelCount('.') == 0");
-    Assert.equal(hex'016100'.labelCount(0), 1, "labelCount('a.') == 1");
-    Assert.equal(hex'0162016100'.labelCount(0), 2, "labelCount('b.a.') == 2");
+    bytes memory label = hex'00';
+    Assert.equal(label.labelCount(0), 0, "labelCount('.') == 0");
+    label = hex'016100';
+    Assert.equal(label.labelCount(0), 1, "labelCount('a.') == 1");
+    label = hex'016201610000';
+    Assert.equal(label.labelCount(0), 2, "labelCount('b.a.') == 2");
   }
 
   function testIterateRRs() public {
@@ -34,6 +40,7 @@ contract TestRRUtils {
     string[2] memory names = [hex'016100', hex'0162016100'];
     string[2] memory rdatas = [hex'74000001', hex'c0a80101'];
     uint i = 0;
+    // Test failing with "TypeError: Member "done" not found " error
     for(RRUtils.RRIterator memory iter = rrs.iterateRRs(0); !iter.done(); iter.next()) {
       Assert.equal(uint(iter.dnstype), 1, "Type matches");
       Assert.equal(uint(iter.class), 1, "Class matches");
