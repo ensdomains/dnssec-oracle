@@ -1,13 +1,16 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./NSEC3Digest.sol";
 import "./sha1/contracts/SHA1.sol";
 import "./Buffer.sol";
 
+/**
+ * @dev Implements the DNSSEC iterated SHA1 digest used for NSEC3 records.
+ */
 contract SHA1NSEC3Digest is NSEC3Digest {
   using Buffer for Buffer.buffer;
 
-  function hash(bytes salt, bytes data, uint iterations) public pure returns (bytes) {
+  function hash(bytes salt, bytes data, uint iterations) external pure returns (bytes) {
     Buffer.buffer memory buf;
     buf.init(salt.length + data.length + 16);
 

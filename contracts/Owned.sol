@@ -1,9 +1,12 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
+/**
+ * @dev Contract mixin for 'owned' contracts.
+ */
 contract Owned {
     address public owner;
 
-    function Owned() public {
+    constructor() public {
         owner = msg.sender;
     }
 

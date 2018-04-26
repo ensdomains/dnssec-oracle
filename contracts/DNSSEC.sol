@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./Owned.sol";
 import "./Buffer.sol";
@@ -12,6 +12,7 @@ import "./NSEC3Digest.sol";
  * @dev An oracle contract that verifies and stores DNSSEC-validated DNS records.
  *
  * TODO: Support for NSEC records
+ * TODO: Support for NSEC3 records
  */
 contract DNSSEC is Owned {
     using Buffer for Buffer.buffer;
@@ -75,7 +76,7 @@ contract DNSSEC is Owned {
      * @dev Constructor.
      * @param anchors The binary format RR entries for the root DS records.
      */
-    function DNSSEC(bytes anchors) public {
+    constructor(bytes anchors) public {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
         rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
@@ -93,7 +94,7 @@ contract DNSSEC is Owned {
      */
     function setAlgorithm(uint8 id, Algorithm algo) public owner_only {
         algorithms[id] = algo;
-        AlgorithmUpdated(id, algo);
+        emit AlgorithmUpdated(id, algo);
     }
 
     /**
@@ -104,7 +105,7 @@ contract DNSSEC is Owned {
      */
     function setDigest(uint8 id, Digest digest) public owner_only {
         digests[id] = digest;
-        DigestUpdated(id, digest);
+        emit DigestUpdated(id, digest);
     }
 
     /**
@@ -115,7 +116,7 @@ contract DNSSEC is Owned {
      */
     function setNSEC3Digest(uint8 id, NSEC3Digest digest) public owner_only {
         nsec3Digests[id] = digest;
-        NSEC3DigestUpdated(id, digest);
+        emit NSEC3DigestUpdated(id, digest);
     }
 
     /**
@@ -161,7 +162,7 @@ contract DNSSEC is Owned {
         require(inception < now);
 
         insertRRs(set, rrs, name, dnsclass, typecovered, labels);
-        RRSetUpdated(name);
+        emit RRSetUpdated(name);
     }
 
     /**
@@ -209,13 +210,12 @@ contract DNSSEC is Owned {
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
      * @return inception The unix timestamp at which the signature for this RRSET was created.
-     * @return expiration The unix timestamp at which the signature for this RRSET expires.
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrset(uint16 dnsclass, uint16 dnstype, bytes name) public view returns (uint64, bytes) {
+    function rrset(uint16 dnsclass, uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes) {
         RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
-        return (result.inserted, result.rrs);
+        return (result.inception, result.inserted, result.rrs);
     }
 
     /**
@@ -244,9 +244,9 @@ contract DNSSEC is Owned {
         set.rrs = data;
     }
 
-    function checkName(bytes memory rrsigname, bytes memory data, uint offset, uint8 labels) internal {
-      var nameLabels = data.labelCount(offset);
-      var nameLength = data.nameLength(offset);
+    function checkName(bytes memory rrsigname, bytes memory data, uint offset, uint8 labels) internal pure {
+      uint nameLabels = data.labelCount(offset);
+      uint nameLength = data.nameLength(offset);
       if (nameLabels == labels) {
           require(nameLength == rrsigname.length);
           require(data.equals(0, rrsigname));
@@ -281,9 +281,16 @@ contract DNSSEC is Owned {
         // Set the return offset to point at the first RR
         offset = 18 + signerNameLength;
 
-        require(verifyWithKnownKey(dnsclass, data, sig) || verifyWithDS(dnsclass, data, sig, offset));
+        require(verifyWithKnownKey(dnsclass, data, sig) || verifyWithDS(data, sig, offset));
     }
 
+    /**
+     * @dev Attempts to verify a signed RRSET against an already known public key.
+     * @param dnsclass The DNS class for the records.
+     * @param data The original data to verify.
+     * @param sig The signature data.
+     * @return True if the RRSET could be verified, false otherwise.
+     */
     function verifyWithKnownKey(uint16 dnsclass, bytes memory data, bytes memory sig) internal constant returns(bool) {
         uint signerNameLength = data.nameLength(RRSIG_SIGNER_NAME);
 
@@ -302,7 +309,14 @@ contract DNSSEC is Owned {
         return false;
     }
 
-    function verifyWithDS(uint16 dnsclass, bytes memory data, bytes memory sig, uint offset) internal constant returns(bool) {
+    /**
+     * @dev Attempts to verify a signed RRSET against an already known public key.
+     * @param data The original data to verify.
+     * @param sig The signature data.
+     * @param offset The offset from the start of the data to the first RR.
+     * @return True if the RRSET could be verified, false otherwise.
+     */
+    function verifyWithDS(bytes memory data, bytes memory sig, uint offset) internal constant returns(bool) {
         // Extract algorithm and keytag
         uint8 algorithm = data.readUint8(RRSIG_ALGORITHM);
         uint16 keytag = data.readUint16(RRSIG_KEY_TAG);
@@ -330,7 +344,7 @@ contract DNSSEC is Owned {
      * @param keytag The keytag from the signature.
      * @param data The data to verify.
      * @param sig The signature to use.
-     * @return True if the key verifies the signature.
+     * @return True iff the key verifies the signature.
      */
     function verifySignatureWithKey(bytes memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns (bool) {
         if (algorithms[algorithm] == address(0)) return false;
@@ -384,7 +398,7 @@ contract DNSSEC is Owned {
      * @param digesttype The digest ID from the DS record.
      * @param data The data to digest.
      * @param digest The digest data to check against.
-     * @return True if the digest matches.
+     * @return True iff the digest matches.
      */
     function verifyDSHash(uint8 digesttype, bytes data, bytes digest) internal view returns (bool) {
         if (digests[digesttype] == address(0)) return false;

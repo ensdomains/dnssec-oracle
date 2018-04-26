@@ -1,13 +1,16 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./Algorithm.sol";
 import "./BytesUtils.sol";
 import "./RSAVerify.sol";
 
+/**
+ * @dev Implements the DNSSEC RSASHA256 algorithm.
+ */
 contract RSASHA256Algorithm is Algorithm {
     using BytesUtils for *;
 
-    function verify(bytes key, bytes data, bytes sig) public view returns (bool) {
+    function verify(bytes key, bytes data, bytes sig) external view returns (bool) {
         bytes memory exponent;
         bytes memory modulus;
 
@@ -22,7 +25,9 @@ contract RSASHA256Algorithm is Algorithm {
         }
 
         // Recover the message from the signature
-        var (ok, result) = RSAVerify.rsarecover(modulus, exponent, sig);
+        bool ok;
+        bytes memory result;
+        (ok, result) = RSAVerify.rsarecover(modulus, exponent, sig);
 
         // Verify it ends with the hash of our data
         return ok && sha256(data) == result.readBytes32(result.length - 32);
