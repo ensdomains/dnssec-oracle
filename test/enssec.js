@@ -125,9 +125,9 @@ contract('DNSSEC', function(accounts) {
 
   it('should check if root DNSKEY exist', async function(){
     var instance = await dnssec.deployed();
-    var [_, rrs] = await instance.rrset.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
+    var [_, _, rrs] = await instance.rrset.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
     assert.equal(rrs, '0x');
-    [_, rrs] = await instance.rrset.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
+    [_, _, rrs] = await instance.rrset.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
     assert.notEqual(rrs, '0x');
   })
 
@@ -308,7 +308,7 @@ contract('DNSSEC', function(accounts) {
       rrs: [rrs],
     };
     await verifySubmission(instance, name, dns.hexEncodeSignedSet(keys), "0x");
-    var [_, rrs] = await instance.rrset.call(1, type, dns.hexEncodeName(name));
+    var [_, _, rrs] = await instance.rrset.call(1, type, dns.hexEncodeName(name));
     assert.notEqual(rrs, '0x');  
   }
 
