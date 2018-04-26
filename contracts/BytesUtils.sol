@@ -16,6 +16,52 @@ library BytesUtils {
     }
 
     /*
+     * @dev Returns a positive number if `other` comes lexicographically after
+     *      `self`, a negative number if it comes before, or zero if the
+     *      contents of the two slices are equal. Comparison is done per-rune,
+     *      on unicode codepoints.
+     * @param self The first slice to compare.
+     * @param other The second slice to compare.
+     * @return The result of the comparison.
+     */
+    function compare(bytes memory self, bytes memory other) internal pure returns (int) {
+        uint shortest = self.length;
+        if (other.length < self.length)
+            shortest = other.length;
+
+        uint selfptr; 
+        uint otherptr;
+
+        assembly {
+            selfptr := add(self, 32)
+            otherptr := add(other, 32)
+        }
+        for (uint idx = 0; idx < shortest; idx += 32) {
+            uint a;
+            uint b;
+            assembly {
+                a := mload(selfptr)
+                b := mload(otherptr)
+            }
+            if (a != b) {
+                // Mask out irrelevant bytes and check again
+                uint mask;
+                if(shortest > 32){
+                    mask = uint256(- 1); // aka 0xffffff....
+                }else{
+                    mask = ~(2 ** (8 * (32 - shortest + idx)) - 1);
+                }
+                var diff = (a & mask) - (b & mask);
+                if (diff != 0)
+                    return int(diff);
+            }
+            selfptr += 32;
+            otherptr += 32;
+        }
+        return int(self.length) - int(other.length);
+    }
+
+    /*
      * @dev Returns true if the two byte ranges are equal.
      * @param self The first byte range to compare.
      * @param offset The offset into the first byte range.
