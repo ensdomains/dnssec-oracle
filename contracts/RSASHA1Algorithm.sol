@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./Algorithm.sol";
 import "./BytesUtils.sol";
@@ -11,7 +11,7 @@ import "./sha1/contracts/sha1.sol";
 contract RSASHA1Algorithm is Algorithm {
     using BytesUtils for *;
 
-    function verify(bytes key, bytes data, bytes sig) public view returns (bool) {
+    function verify(bytes key, bytes data, bytes sig) external view returns (bool) {
         bytes memory exponent;
         bytes memory modulus;
 
@@ -26,11 +26,11 @@ contract RSASHA1Algorithm is Algorithm {
         }
 
         // Recover the message from the signature
-        var (ok, result) = RSAVerify.rsarecover(modulus, exponent, sig);
+        bool ok;
+        bytes memory result;
+        (ok, result) = RSAVerify.rsarecover(modulus, exponent, sig);
 
         // Verify it ends with the hash of our data
-        bytes20 hash = SHA1.sha1(data);
-        bytes20 sigresult = result.readBytes20(result.length - 20);
-        return ok && hash == sigresult;
+        return ok && SHA1.sha1(data) == result.readBytes20(result.length - 20);
     }
 }

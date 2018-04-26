@@ -7,5 +7,5 @@ import "./Algorithm.sol";
  *      signatures, for testing.
  */
 contract DummyAlgorithm is Algorithm {
-    function verify(bytes, bytes, bytes) public view returns (bool) { return true; }
+    function verify(bytes, bytes, bytes) external view returns (bool) { return true; }
 }

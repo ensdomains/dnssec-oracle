@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import "./Owned.sol";
 import "./Buffer.sol";
@@ -73,7 +73,7 @@ contract DNSSEC is Owned {
      * @dev Constructor.
      * @param anchors The binary format RR entries for the root DS records.
      */
-    function DNSSEC(bytes anchors) public {
+    constructor(bytes anchors) public {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
         rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
@@ -92,7 +92,7 @@ contract DNSSEC is Owned {
      */
     function setAlgorithm(uint8 id, Algorithm algo) public owner_only {
         algorithms[id] = algo;
-        AlgorithmUpdated(id, algo);
+        emit AlgorithmUpdated(id, algo);
     }
 
     /**
@@ -103,7 +103,7 @@ contract DNSSEC is Owned {
      */
     function setDigest(uint8 id, Digest digest) public owner_only {
         digests[id] = digest;
-        DigestUpdated(id, digest);
+        emit DigestUpdated(id, digest);
     }
 
     /**
@@ -114,7 +114,7 @@ contract DNSSEC is Owned {
      */
     function setNSEC3Digest(uint8 id, NSEC3Digest digest) public owner_only {
         nsec3Digests[id] = digest;
-        NSEC3DigestUpdated(id, digest);
+        emit NSEC3DigestUpdated(id, digest);
     }
 
     /**
@@ -161,7 +161,7 @@ contract DNSSEC is Owned {
         require(inception < now);
 
         insertRRs(set, rrs, name, dnsclass, typecovered, labels);
-        RRSetUpdated(name);
+        emit RRSetUpdated(name);
     }
 
     /**
@@ -204,9 +204,9 @@ contract DNSSEC is Owned {
         set.rrs = data;
     }
 
-    function checkName(bytes memory rrsigname, bytes memory data, uint offset, uint8 labels) internal {
-      var nameLabels = data.labelCount(offset);
-      var nameLength = data.nameLength(offset);
+    function checkName(bytes memory rrsigname, bytes memory data, uint offset, uint8 labels) internal pure {
+      uint nameLabels = data.labelCount(offset);
+      uint nameLength = data.nameLength(offset);
       if (nameLabels == labels) {
           require(nameLength == rrsigname.length);
           require(data.equals(0, rrsigname));
@@ -241,7 +241,7 @@ contract DNSSEC is Owned {
         // Set the return offset to point at the first RR
         offset = 18 + signerNameLength;
 
-        require(verifyWithKnownKey(dnsclass, data, sig) || verifyWithDS(dnsclass, data, sig, offset));
+        require(verifyWithKnownKey(dnsclass, data, sig) || verifyWithDS(data, sig, offset));
     }
 
     /**
@@ -271,13 +271,12 @@ contract DNSSEC is Owned {
 
     /**
      * @dev Attempts to verify a signed RRSET against an already known public key.
-     * @param dnsclass The DNS class for the records.
      * @param data The original data to verify.
      * @param sig The signature data.
      * @param offset The offset from the start of the data to the first RR.
      * @return True if the RRSET could be verified, false otherwise.
      */
-    function verifyWithDS(uint16 dnsclass, bytes memory data, bytes memory sig, uint offset) internal constant returns(bool) {
+    function verifyWithDS(bytes memory data, bytes memory sig, uint offset) internal constant returns(bool) {
         // Extract algorithm and keytag
         uint8 algorithm = data.readUint8(RRSIG_ALGORITHM);
         uint16 keytag = data.readUint16(RRSIG_KEY_TAG);

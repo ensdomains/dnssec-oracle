@@ -11,5 +11,5 @@ interface Algorithm {
      * @param signature The signature to verify.
      * @return True iff the signature is valid.
      */
-    function verify(bytes key, bytes data, bytes signature) public view returns (bool);
+    function verify(bytes key, bytes data, bytes signature) external view returns (bool);
 }

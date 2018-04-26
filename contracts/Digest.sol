@@ -10,5 +10,5 @@ interface Digest {
      * @param hash The hash to compare to.
      * @return True iff the hashed data matches the provided hash value.
      */
-    function verify(bytes data, bytes hash) public view returns (bool);
+    function verify(bytes data, bytes hash) external pure returns (bool);
 }

@@ -129,8 +129,8 @@ library RRUtils {
     function checkTypeBitmap(bytes memory self, uint offset, uint16 rrtype) internal pure returns (bool) {
         uint8 typeWindow = uint8(rrtype >> 8);
         uint8 windowByte = uint8((rrtype & 0xff) / 8);
-        uint8 windowBitmask = uint8(1 << (7 - (rrtype & 0x7)));
-        for(uint off = 0; off < self.length;) {
+        uint8 windowBitmask = uint8(uint8(1) << (uint8(7) - uint8(rrtype & 0x7)));
+        for(uint off = offset; off < self.length;) {
             uint8 window = self.readUint8(off);
             uint8 len = self.readUint8(off + 1);
             if(typeWindow < window) {
