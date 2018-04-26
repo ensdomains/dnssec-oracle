@@ -183,24 +183,11 @@ contract DNSSEC is Owned {
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        if(int(result.inserted) != 0){
-            Logger('Found');
-            LoggerBytes(result.rrs);
-
-            BytesUtils.Slice memory name;
-            BytesUtils.Slice memory rdata;
-            BytesUtils.Slice memory data;
-            name.fromBytes(nsecname);
-            data.fromBytes(result.rrs);
-            for (var (dnstype, class, ttl) = data.nextRR(name, rdata); dnstype != 0; (dnstype, class, ttl) = data.nextRR(name, rdata)) {
-                Logger('nextRR record Found');
-                if (dnstype == DNSTYPE_NSEC){
-                    delete rrsets[keccak256(deletename)][deletetype][dnsclass];
-                    Logger('DNSTYPE_NSEC record found');
-                }
+        if(int(result.inserted) == 0) return;
+        for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
+            if (iter.dnstype == DNSTYPE_NSEC){
+                delete rrsets[keccak256(deletename)][deletetype][dnsclass];
             }
-        }else{
-            Logger('Not Found');
         }
     }
 

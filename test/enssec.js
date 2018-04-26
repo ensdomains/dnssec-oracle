@@ -285,7 +285,7 @@ contract('DNSSEC', function(accounts) {
 
   // Test delete RRsec
   async function verifyPresence(instance, bool, type, name){
-    var result = (await instance.rrset.call(1, type, dns.hexEncodeName(name)))[1];
+    var result = (await instance.rrset.call(1, type, dns.hexEncodeName(name)))[2];
     if(bool){
       assert.notEqual(result,'0x');  
     }else{
