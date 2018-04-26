@@ -4,6 +4,9 @@ import "./NSEC3Digest.sol";
 import "./sha1/contracts/SHA1.sol";
 import "./Buffer.sol";
 
+/**
+ * @dev Implements the DNSSEC iterated SHA1 digest used for NSEC3 records.
+ */
 contract SHA1NSEC3Digest is NSEC3Digest {
   using Buffer for Buffer.buffer;
 

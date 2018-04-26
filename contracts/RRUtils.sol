@@ -3,6 +3,9 @@ pragma solidity ^0.4.17;
 import "./BytesUtils.sol";
 import "./Buffer.sol";
 
+/**
+ * @dev RRUtils is a library that provides utilities for parsing DNS resource records.
+ */
 library RRUtils {
     using BytesUtils for *;
     using Buffer for *;
@@ -42,6 +45,9 @@ library RRUtils {
         return count;
     }
 
+    /**
+     * @dev An iterator over resource records.
+     */
     struct RRIterator {
         bytes data;
         uint offset;
@@ -66,6 +72,8 @@ library RRUtils {
 
     /**
      * @dev Returns true iff there are more RRs to iterate.
+     * @param iter The iterator to check.
+     * @return True iff the iterator has finished.
      */
     function done(RRIterator memory iter) internal pure returns(bool) {
       return iter.offset >= iter.data.length;
@@ -73,6 +81,7 @@ library RRUtils {
 
     /**
      * @dev Moves the iterator to the next resource record.
+     * @param iter The iterator to advance.
      */
     function next(RRIterator memory iter) internal pure {
         iter.offset = iter.nextOffset;
@@ -94,6 +103,8 @@ library RRUtils {
 
     /**
      * @dev Returns the name of the current record.
+     * @param iter The iterator.
+     * @return A new bytes object containing the owner name from the RR.
      */
     function name(RRIterator memory iter) internal pure returns(bytes memory) {
         return iter.data.substring(iter.offset, nameLength(iter.data, iter.offset));
@@ -101,6 +112,8 @@ library RRUtils {
 
     /**
      * @dev Returns the rdata portion of the current record.
+     * @param iter The iterator.
+     * @return A new bytes object containing the RR's RDATA.
      */
     function rdata(RRIterator memory iter) internal pure returns(bytes memory) {
         return iter.data.substring(iter.rdataOffset, iter.nextOffset - iter.rdataOffset);

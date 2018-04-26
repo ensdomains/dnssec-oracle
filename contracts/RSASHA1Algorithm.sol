@@ -5,6 +5,9 @@ import "./BytesUtils.sol";
 import "./RSAVerify.sol";
 import "./sha1/contracts/sha1.sol";
 
+/**
+ * @dev Implements the DNSSEC RSASHA1 algorithm.
+ */
 contract RSASHA1Algorithm is Algorithm {
     using BytesUtils for *;
 
