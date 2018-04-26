@@ -173,12 +173,9 @@ contract DNSSEC is Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrset(uint16 dnsclass, uint16 dnstype, bytes memory name) public view returns (uint32, uint32, uint64, bytes) {
+    function rrset(uint16 dnsclass, uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes) {
         RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
-        if (result.expiration < now) {
-            return (0, 0, 0, "");
-        }
-        return (result.inception, result.expiration, result.inserted, result.rrs);
+        return (result.inception, result.inserted, result.rrs);
     }
 
     /**
