@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 library SHA1 {
     event Debug(bytes32 x);
@@ -46,12 +46,12 @@ library SHA1 {
                 // Expand the 16 32-bit words into 80
                 for { let j := 64 } lt(j, 128) { j := add(j, 12) } {
                     let temp := xor(xor(mload(add(scratch, sub(j, 12))), mload(add(scratch, sub(j, 32)))), xor(mload(add(scratch, sub(j, 56))), mload(add(scratch, sub(j, 64)))))
-                    temp := or(and(mul(temp, 2), 0xFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFE), and(div(temp, exp(2, 31)), 0x0000000100000001000000010000000100000001000000010000000100000001))
+                    temp := or(and(mul(temp, 2), 0xFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFEFFFFFFFE), and(div(temp, 0x80000000), 0x0000000100000001000000010000000100000001000000010000000100000001))
                     mstore(add(scratch, j), temp)
                 }
                 for { let j := 128 } lt(j, 320) { j := add(j, 24) } {
                     let temp := xor(xor(mload(add(scratch, sub(j, 24))), mload(add(scratch, sub(j, 64)))), xor(mload(add(scratch, sub(j, 112))), mload(add(scratch, sub(j, 128)))))
-                    temp := or(and(mul(temp, 4), 0xFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFC), and(div(temp, exp(2, 30)), 0x0000000300000003000000030000000300000003000000030000000300000003))
+                    temp := or(and(mul(temp, 4), 0xFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFCFFFFFFFC), and(div(temp, 0x40000000), 0x0000000300000003000000030000000300000003000000030000000300000003))
                     mstore(add(scratch, j), temp)
                 }
 
@@ -62,44 +62,44 @@ library SHA1 {
                     switch div(j, 20)
                     case 0 {
                         // f = d xor (b and (c xor d))
-                        f := xor(div(x, exp(2, 80)), div(x, exp(2, 40)))
-                        f := and(div(x, exp(2, 120)), f)
-                        f := xor(div(x, exp(2, 40)), f)
+                        f := xor(div(x, 0x100000000000000000000), div(x, 0x10000000000))
+                        f := and(div(x, 0x1000000000000000000000000000000), f)
+                        f := xor(div(x, 0x10000000000), f)
                         k := 0x5A827999
                     }
                     case 1{
                         // f = b xor c xor d
-                        f := xor(div(x, exp(2, 120)), div(x, exp(2, 80)))
-                        f := xor(div(x, exp(2, 40)), f)
+                        f := xor(div(x, 0x1000000000000000000000000000000), div(x, 0x100000000000000000000))
+                        f := xor(div(x, 0x10000000000), f)
                         k := 0x6ED9EBA1
                     }
                     case 2 {
                         // f = (b and c) or (d and (b or c))
-                        f := or(div(x, exp(2, 120)), div(x, exp(2, 80)))
-                        f := and(div(x, exp(2, 40)), f)
-                        f := or(and(div(x, exp(2, 120)), div(x, exp(2, 80))), f)
+                        f := or(div(x, 0x1000000000000000000000000000000), div(x, 0x100000000000000000000))
+                        f := and(div(x, 0x10000000000), f)
+                        f := or(and(div(x, 0x1000000000000000000000000000000), div(x, 0x100000000000000000000)), f)
                         k := 0x8F1BBCDC
                     }
                     case 3 {
                         // f = b xor c xor d
-                        f := xor(div(x, exp(2, 120)), div(x, exp(2, 80)))
-                        f := xor(div(x, exp(2, 40)), f)
+                        f := xor(div(x, 0x1000000000000000000000000000000), div(x, 0x100000000000000000000))
+                        f := xor(div(x, 0x10000000000), f)
                         k := 0xCA62C1D6
                     }
                     // temp = (a leftrotate 5) + f + e + k + w[i]
-                    let temp := and(div(x, exp(2, 187)), 0x1F)
-                    temp := or(and(div(x, exp(2, 155)), 0xFFFFFFE0), temp)
+                    let temp := and(div(x, 0x80000000000000000000000000000000000000000000000), 0x1F)
+                    temp := or(and(div(x, 0x800000000000000000000000000000000000000), 0xFFFFFFE0), temp)
                     temp := add(f, temp)
                     temp := add(and(x, 0xFFFFFFFF), temp)
                     temp := add(k, temp)
-                    temp := add(div(mload(add(scratch, mul(j, 4))), exp(2, 224)), temp)
-                    x := or(div(x, exp(2, 40)), mul(temp, exp(2, 160)))
-                    x := or(and(x, 0xFFFFFFFF00FFFFFFFF000000000000FFFFFFFF00FFFFFFFF), mul(or(and(div(x, exp(2, 50)), 0xC0000000), and(div(x, exp(2, 82)), 0x3FFFFFFF)), exp(2, 80)))
+                    temp := add(div(mload(add(scratch, mul(j, 4))), 0x100000000000000000000000000000000000000000000000000000000), temp)
+                    x := or(div(x, 0x10000000000), mul(temp, 0x10000000000000000000000000000000000000000))
+                    x := or(and(x, 0xFFFFFFFF00FFFFFFFF000000000000FFFFFFFF00FFFFFFFF), mul(or(and(div(x, 0x4000000000000), 0xC0000000), and(div(x, 0x400000000000000000000), 0x3FFFFFFF)), 0x100000000000000000000))
                 }
 
                 h := and(add(h, x), 0xFFFFFFFF00FFFFFFFF00FFFFFFFF00FFFFFFFF00FFFFFFFF)
             }
-            ret := mul(or(or(or(or(and(div(h, exp(2, 32)), 0xFFFFFFFF00000000000000000000000000000000), and(div(h, exp(2, 24)), 0xFFFFFFFF000000000000000000000000)), and(div(h, exp(2, 16)), 0xFFFFFFFF0000000000000000)), and(div(h, exp(2, 8)), 0xFFFFFFFF00000000)), and(h, 0xFFFFFFFF)), exp(256, 12))
+            ret := mul(or(or(or(or(and(div(h, 0x100000000), 0xFFFFFFFF00000000000000000000000000000000), and(div(h, 0x1000000), 0xFFFFFFFF000000000000000000000000)), and(div(h, 0x10000), 0xFFFFFFFF0000000000000000)), and(div(h, 0x100), 0xFFFFFFFF00000000)), and(h, 0xFFFFFFFF)), 0x1000000000000000000000000)
         }
     }
 }
