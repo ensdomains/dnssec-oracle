@@ -182,11 +182,48 @@ contract DNSSEC is Owned {
      * - Can we delete record in subdomain directly?
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
+        Logger("deleteRRSet 0");
+        LoggerInt(int(dnsclass));
+        LoggerBytes(nsecname);
+        LoggerInt(int(deletetype));
+        LoggerBytes(deletename);
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
+        Logger("deleteRRSet 1");
         if(int(result.inserted) == 0) return;
+        Logger("deleteRRSet 2");
         for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
+            Logger("deleteRRSet 3");
             if (iter.dnstype == DNSTYPE_NSEC){
-                delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+                Logger("DNSTYPE_NSEC");
+                LoggerBytes(iter.data);
+                bytes memory name = iter.name();
+                bytes memory rdata = iter.rdata();
+                LoggerBytes(name);
+                Logger('rdata');
+                LoggerBytes(rdata);
+                uint nextNameLength = rdata.nameLength(0);
+                Logger('rdata.nameLength');
+                LoggerInt(int(nextNameLength));
+                uint rDataLength = rdata.length;
+                Logger('rDataLength');
+                LoggerInt(int(rDataLength));
+                bytes memory nextName = rdata.substring(0,nextNameLength);
+                Logger('nextName');
+                LoggerBytes(nextName);
+
+                // bytes memory typeBitMap = rdata.substring(nextNameLength +1 ,rDataLength - nextNameLength);
+                // Logger('typeBitMap');
+                // LoggerBytes(typeBitMap);
+
+                LoggerInt(int(iter.nextOffset));
+                LoggerInt(int(iter.rdataOffset));
+                LoggerInt(int(iter.nextOffset));
+                if (nextName.compareLabel(deletename) > 0){
+                    Logger("Deleting entry");
+                    delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+                }else{
+                    Logger("name comes after deletename");
+                }
             }
         }
     }
