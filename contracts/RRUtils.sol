@@ -153,10 +153,6 @@ library RRUtils {
         return false;
     }
 
-    event Logger(string name);
-    event LoggerBytes(bytes name);
-    event LoggerInt(int label);
-
     function compareLabel(bytes memory self, bytes memory other) internal pure returns (int){
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
