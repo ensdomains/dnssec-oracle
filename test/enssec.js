@@ -326,17 +326,16 @@ contract('DNSSEC', function(accounts) {
   it('rejects if NSEC record is not found', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
     await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
     await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
   })
 
   it('rejects if NSEC record does not match deleting record type', async function(){
     var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
     // proving record is not NSEC
     var option = {klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")}
     await submitEntry(instance, dns.TYPE_DNSKEY, 'a.',  option);
-    await verifyPresence(instance, true, dns.TYPE_DNSKEY, 'a.')
     await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
     await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
   })
@@ -346,8 +345,6 @@ contract('DNSSEC', function(accounts) {
     // z. comes after d.
     await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
-    await verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'z.')
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('z.'));
     tx.logs.forEach(function(l){
       console.log('tx', l.event, l.args)
@@ -359,37 +356,17 @@ contract('DNSSEC', function(accounts) {
 
   it('deletes RRset if nsec name and delete name is same but with different rrtypes', async function(){
     var instance = await dnssec.deployed();
-    console.log('rejects 1');
-    await submitEntry(instance, dns.TYPE_TXT, 'a.', {text: ["foo"]});
-    console.log('rejects 2');
-    await verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
-    console.log('rejects 3');
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'a.')
-    console.log('rejects 4');
-    await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[]});
-    console.log('rejects 5');
+    await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] });
+    await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[] });
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('a.'));
-    console.log('rejects 6');
-    tx.logs.forEach(function(l){
-      console.log('tx', l.event, l.args)
-    })
     await verifyPresence(instance, false, dns.TYPE_TXT, 'a.')
   })
 
   it('deletes RRset if NSEC next comes after delete name', async function(){
     var instance = await dnssec.deployed();
-    console.log('rejects 0');
-    await verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
-    console.log('rejects 1');
-    await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
-    console.log('rejects 2');
-    await verifyPresence(instance, true, dns.TYPE_NSEC, 'a.')
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
+    await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
+    await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    console.log('rejects 3');
-    tx.logs.forEach(function(l){
-      console.log('tx', l.event, l.args)
-    })
     await verifyPresence(instance, false, dns.TYPE_TXT, 'b.')
   })
 
