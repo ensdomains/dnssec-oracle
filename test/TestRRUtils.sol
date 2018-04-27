@@ -16,21 +16,15 @@ contract TestRRUtils {
   uint16 constant DNSTYPE_TYPE1234 = 1234;
 
   function testNameLength() public {
-    bytes memory name = hex'00';
-    Assert.equal(name.nameLength(0), 1, "nameLength('.') == 1");
-    name = hex'0361626300';
-    Assert.equal(name.nameLength(4), 1, "nameLength('.') == 1");
-    name = hex'0361626300';
-    Assert.equal(name.nameLength(0), 5, "nameLength('abc.') == 5");
+    Assert.equal(hex'00'.nameLength(0), 1, "nameLength('.') == 1");
+    Assert.equal(hex'0361626300'.nameLength(4), 1, "nameLength('.') == 1");
+    Assert.equal(hex'0361626300'.nameLength(0), 5, "nameLength('abc.') == 5");
   }
 
   function testLabelCount() public {
-    bytes memory label = hex'00';
-    Assert.equal(label.labelCount(0), 0, "labelCount('.') == 0");
-    label = hex'016100';
-    Assert.equal(label.labelCount(0), 1, "labelCount('a.') == 1");
-    label = hex'016201610000';
-    Assert.equal(label.labelCount(0), 2, "labelCount('b.a.') == 2");
+    Assert.equal(hex'00'.labelCount(0), 0, "labelCount('.') == 0");
+    Assert.equal(hex'016100'.labelCount(0), 1, "labelCount('a.') == 1");
+    Assert.equal(hex'016201610000'.labelCount(0), 2, "labelCount('b.a.') == 2");
   }
 
   function testIterateRRs() public {
