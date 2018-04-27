@@ -173,7 +173,7 @@ contract DNSSEC is Owned {
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        if(int(result.inserted) == 0) return;
+        if(result.inserted == 0) return;
         for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
             if (iter.dnstype == DNSTYPE_NSEC){
                 bytes memory rdata = iter.rdata();
