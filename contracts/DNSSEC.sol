@@ -210,17 +210,26 @@ contract DNSSEC is Owned {
                 bytes memory nextName = rdata.substring(0,nextNameLength);
                 Logger('nextName');
                 LoggerBytes(nextName);
-
-                // bytes memory typeBitMap = rdata.substring(nextNameLength +1 ,rDataLength - nextNameLength);
-                // Logger('typeBitMap');
-                // LoggerBytes(typeBitMap);
-
-                LoggerInt(int(iter.nextOffset));
-                LoggerInt(int(iter.rdataOffset));
-                LoggerInt(int(iter.nextOffset));
-                if (nextName.compareLabel(deletename) > 0){
-                    Logger("Deleting entry");
+                Logger('deletename');
+                LoggerBytes(deletename);
+                int compareResult = deletename.compareLabel(nextName);
+                if (compareResult < 0){
+                    Logger("delete name comes before nextName is Deleting entry");
                     delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+                }else if (compareResult == 0) {
+                    Logger("name and deletename are the same");
+                    LoggerInt(int(nextNameLength + 1));
+                    LoggerInt(int(rDataLength - nextNameLength -1));
+                    bytes memory typeBitMap = rdata.substring(nextNameLength + 1 ,rDataLength - nextNameLength - 1);
+                    Logger('typeBitMap');
+                    LoggerBytes(typeBitMap);
+
+                    if(typeBitMap.checkTypeBitmap(1, deletetype)){
+                        Logger('typeBitMap matches');
+                    }else{
+                        Logger('typeBitMap not match');
+                        delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+                    }                    
                 }else{
                     Logger("name comes after deletename");
                 }
