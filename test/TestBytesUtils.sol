@@ -20,7 +20,7 @@ contract TestBytesUtils {
     Assert.equal("hello".equals(1, "jello", 1, 4), true, "Substring to substring equality");
   }
 
-  function testCompare() {
+  function testCompare() public {
     Assert.equal("a".compare("a")  == 0, true,  "Compare equal");
     Assert.equal("a".compare("b")   < 0, true,   "Compare different value with same length");
     Assert.equal("b".compare("a")   > 0, true,   "Compare different value with same length");
@@ -33,7 +33,7 @@ contract TestBytesUtils {
     Assert.equal(longChar.compare(otherLongChar) < 0, true,   "Compare long char with difference at start");
   }
 
-  function testSubstring() {
+  function testSubstring() public {
     Assert.equal(string("hello".substring(0, 0)), "", "Copy 0 bytes");
     Assert.equal(string("hello".substring(0, 4)), "hell", "Copy substring");
     Assert.equal(string("hello".substring(1, 4)), "ello", "Copy substring");

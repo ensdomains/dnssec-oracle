@@ -68,9 +68,6 @@ contract DNSSEC is Owned {
     event DigestUpdated(uint8 id, address addr);
     event NSEC3DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
-    event Logger(string comment);
-    event LoggerBytes(bytes comment);
-    event LoggerInt(int label);
 
     /**
      * @dev Constructor.
@@ -186,7 +183,6 @@ contract DNSSEC is Owned {
         if(int(result.inserted) == 0) return;
         for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
             if (iter.dnstype == DNSTYPE_NSEC){
-                bytes memory name = iter.name();
                 bytes memory rdata = iter.rdata();
                 uint nextNameLength = rdata.nameLength(0);
                 uint rDataLength = rdata.length;
@@ -196,13 +192,9 @@ contract DNSSEC is Owned {
                     delete rrsets[keccak256(deletename)][deletetype][dnsclass];
                 }else if (compareResult == 0) {
                     bytes memory typeBitMap = rdata.substring(nextNameLength + 1 ,rDataLength - nextNameLength - 1);
-                    if(typeBitMap.checkTypeBitmap(1, deletetype)){
-                        Logger('typeBitMap matches');
-                    }else{
+                    if(!typeBitMap.checkTypeBitmap(1, deletetype)){
                         delete rrsets[keccak256(deletename)][deletetype][dnsclass];
-                    }                    
-                }else{
-                    Logger("name comes after deletename");
+                    }
                 }
             }
         }

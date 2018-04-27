@@ -51,7 +51,7 @@ library BytesUtils {
                 }else{
                     mask = ~(2 ** (8 * (32 - shortest + idx)) - 1);
                 }
-                var diff = (a & mask) - (b & mask);
+                uint diff = (a & mask) - (b & mask);
                 if (diff != 0)
                     return int(diff);
             }
