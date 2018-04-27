@@ -284,15 +284,6 @@ contract('DNSSEC', function(accounts) {
   });
 
   // Test delete RRsec
-  async function verifyPresence(instance, bool, type, name){
-    var result = (await instance.rrset.call(1, type, dns.hexEncodeName(name)))[2];
-    if(bool){
-      assert.notEqual(result,'0x');  
-    }else{
-      assert.equal(result,'0x');  
-    }
-  }
-
   async function checkPresence(instance, type, name){
     var result = (await instance.rrset.call(1, type, dns.hexEncodeName(name)))[2];
     return result != '0x';
@@ -313,9 +304,7 @@ contract('DNSSEC', function(accounts) {
       rrs: [rrs],
     };
     var [inception, _, rrs] = await instance.rrset.call(1, type, dns.hexEncodeName(name));
-    console.log("***RRS", rrs);
     if(rrs != '0x'){
-      console.log("Incrementing inception");
       keys.inception=inception + 1;
     };
     trx = await verifySubmission(instance, name, dns.hexEncodeSignedSet(keys), "0x");
@@ -327,7 +316,7 @@ contract('DNSSEC', function(accounts) {
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
     await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
   })
 
   it('rejects if NSEC record does not match deleting record type', async function(){
@@ -337,7 +326,7 @@ contract('DNSSEC', function(accounts) {
     var option = {klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")}
     await submitEntry(instance, dns.TYPE_DNSKEY, 'a.',  option);
     await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'b.')
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
   })
 
   it('rejects if next record does not come before the deleting name', async function(){
@@ -345,21 +334,16 @@ contract('DNSSEC', function(accounts) {
     // z. comes after d.
     await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
-    var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('z.'));
-    tx.logs.forEach(function(l){
-      console.log('tx', l.event, l.args)
-    })
-    await verifyPresence(instance, true, dns.TYPE_TXT, 'z.')
+    await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('z.'));
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'z.')), true);
   })
-
-  // it('handles wild card', async function(){})
 
   it('deletes RRset if nsec name and delete name is same but with different rrtypes', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] });
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[] });
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('a.'));
-    await verifyPresence(instance, false, dns.TYPE_TXT, 'a.')
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), false);
   })
 
   it('deletes RRset if NSEC next comes after delete name', async function(){
@@ -367,7 +351,7 @@ contract('DNSSEC', function(accounts) {
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
     var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
-    await verifyPresence(instance, false, dns.TYPE_TXT, 'b.')
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), false);
   })
 
   // Test against real record
