@@ -196,7 +196,6 @@ library RRUtils {
         if (keccak256(self) == keccak256(hex'00') && keccak256(other) == keccak256(hex'00')){
             return 0;
         }
-        // getting head
         bytes memory sHead;
         bytes memory oHead;
         bytes memory sTail;
@@ -214,7 +213,6 @@ library RRUtils {
     function headAndTail(bytes memory body) internal pure returns(bytes, bytes){
         uint headLength =  body.readUint8(0);
         bytes memory head = body.substring(1, headLength);
-        // getting tail
         uint tailLength = body.length - 1 - headLength;
         bytes memory tail = body.substring(1 + headLength, tailLength);
         return (head, tail);
