@@ -6,7 +6,7 @@ import "../contracts/BytesUtils.sol";
 
 contract TestRRUtils {
   using BytesUtils for *;
-  using RRUtils for bytes;
+  using RRUtils for *;
 
   uint16 constant DNSTYPE_A = 1;
   uint16 constant DNSTYPE_CNAME = 5;
