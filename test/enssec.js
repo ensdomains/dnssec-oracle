@@ -277,12 +277,8 @@ contract('DNSSEC', function(accounts) {
 
   it('should accept real DNSSEC records', async function() {
     var instance = await dnssec.deployed();
-    var totalGas = 0;
     for(var rrset of test_rrsets) {
-      console.log(rrset[0]);
       var tx = await verifySubmission(instance, rrset[0], "0x" + rrset[1], "0x" + rrset[2]);
-      totalGas += tx.receipt.gasUsed;
     }
-    console.log("Gas used: " + totalGas);
   });
 });
