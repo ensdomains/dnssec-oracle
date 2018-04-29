@@ -68,6 +68,9 @@ contract DNSSEC is Owned {
     event DigestUpdated(uint8 id, address addr);
     event NSEC3DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
+    event LoggerBytes(bytes name);
+    event Logger(string name);
+    event LoggerInt(int name);
 
     /**
      * @dev Constructor.
@@ -173,22 +176,32 @@ contract DNSSEC is Owned {
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        if(result.inserted == 0) return;
+        int compareResult = deletename.compareLabel(nsecname);
+        require(compareResult >= 0);
+        require(result.inserted != 0);
+        require(result.rrs.length != 0);
         for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
-            if (iter.dnstype == DNSTYPE_NSEC){
-                bytes memory rdata = iter.rdata();
-                uint nextNameLength = rdata.nameLength(0);
-                uint rDataLength = rdata.length;
-                bytes memory nextName = rdata.substring(0,nextNameLength);
-                int compareResult = deletename.compareLabel(nextName);
-                if (compareResult < 0){
+            bytes memory rdata = iter.rdata();
+            uint nextNameLength = rdata.nameLength(0);
+            uint rDataLength = rdata.length;
+            assert(iter.dnstype == DNSTYPE_NSEC);
+            if(compareResult == 0){
+                emit Logger ('compareResult == 0');
+                // We assume that there is always typed bitmap after the next domain name
+                assert(rdata.length > nextNameLength);
+                bytes memory typeBitMap = rdata.substring(nextNameLength + 1 ,rDataLength - nextNameLength - 1);    
+                // This function does not seem working properly right now.
+                if(typeBitMap.checkTypeBitmap(1, deletetype)){
+                    emit Logger('deletetype does exist on typedBitMap');
+                }else{
+                    emit Logger('deletetype does not exist on typedBitMap');
                     delete rrsets[keccak256(deletename)][deletetype][dnsclass];
-                }else if (compareResult == 0) {
-                    bytes memory typeBitMap = rdata.substring(nextNameLength + 1 ,rDataLength - nextNameLength - 1);
-                    if(!typeBitMap.checkTypeBitmap(1, deletetype)){
-                        delete rrsets[keccak256(deletename)][deletetype][dnsclass];
-                    }
                 }
+            }else{
+                bytes memory nextName = rdata.substring(0,nextNameLength);            
+                compareResult = deletename.compareLabel(nextName);
+                require(compareResult < 0);
+                delete rrsets[keccak256(deletename)][deletetype][dnsclass];
             }
         }
     }
