@@ -11,6 +11,7 @@ contract TestRRUtils {
   uint16 constant DNSTYPE_A = 1;
   uint16 constant DNSTYPE_CNAME = 5;
   uint16 constant DNSTYPE_MX = 15;
+  uint16 constant DNSTYPE_TEXT = 16;
   uint16 constant DNSTYPE_RRSIG = 46;
   uint16 constant DNSTYPE_NSEC = 47;
   uint16 constant DNSTYPE_TYPE1234 = 1234;
@@ -44,6 +45,11 @@ contract TestRRUtils {
       i++;
     }
     Assert.equal(i, 2, "Expected 2 records");
+  }
+
+  function testCheckTypeBitmapText() public {
+    bytes memory tb = hex'03000001';
+    Assert.equal(tb.checkTypeBitmap(1, DNSTYPE_TEXT), true, "A record should exist in type bitmap");
   }
 
   function testCheckTypeBitmap() public {
