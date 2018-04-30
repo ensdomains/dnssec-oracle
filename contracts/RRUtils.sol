@@ -175,11 +175,9 @@ library RRUtils {
         // when comparing one name has a difference of >1 label to the other
         if(sTailLength != oTailLength){ return int(sTailLength) -  int(oTailLength); }
         int result = compareTail(self, sHead.length + 1, other, oHead.length + 1);
-        if(result != 0){
-            return result;
-        }else{
-            return sHead.compare(oHead);
-        }
+        // when only only the left most subdomains are different (eg: a.example.com and b.example.com)
+        if(result == 0){ return sHead.compare(oHead); }
+        return result;
     }
 
     function compareTail(bytes memory self, uint sOff, bytes memory other, uint oOff) internal  returns (int) {
