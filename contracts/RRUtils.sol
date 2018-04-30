@@ -177,18 +177,11 @@ library RRUtils {
             (, oTail) = headAndTail(other);
         }
         int result = compareTail(sTail, oTail);
-        if(result != 0){
-            return result;   
-        }else{
-            if(sLength < oLength){
-                return -1;
-            }else if (sLength > oLength){
-                return 1;
-            }else{
-                // self and other are identical
-                return 0;
-            }
-        }
+
+        if(result != 0){ return result; }
+        if(sLength < oLength){ return -1; }
+        if(sLength > oLength){ return 1; }
+        return 0;
     }
 
     function compareTail(bytes memory self, bytes memory other) internal  returns (int) {
@@ -202,11 +195,8 @@ library RRUtils {
         (sHead, sTail) = headAndTail(self);
         (oHead, oTail) = headAndTail(other);
         int result = compareTail(sTail, oTail);
-        if(result == 0){
-            return sHead.compare(oHead);
-        }else{
-            return result;
-        }
+        if(result == 0){ return sHead.compare(oHead); }
+        return result;
     }
 
     function headAndTail(bytes memory body) internal returns(bytes, bytes){
