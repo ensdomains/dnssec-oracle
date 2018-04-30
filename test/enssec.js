@@ -312,10 +312,27 @@ contract('DNSSEC', function(accounts) {
     assert.notEqual(rrs, '0x');  
   }
 
+  async function deleteEntry(instance, ensname, deletetype, deletename) {
+    var tx, result;
+    try{
+      tx = await instance.deleteRRSet(1, dns.hexEncodeName(ensname), deletetype, dns.hexEncodeName(deletename));
+    }
+    catch(error){
+      // Assert ganache revert exception
+      assert.equal(error.message, 'VM Exception while processing transaction: revert');
+      result = false;
+    }
+    // Assert geth failed transaction
+    if(tx !== undefined) {
+      result = (parseInt(tx.receipt.status) == parseInt('0x1'));
+    }
+    return result;
+  }
+
   it('rejects if NSEC record is not found', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
-    await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.')).catch(()=>{});
+    assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'b.')), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
   })
 
@@ -324,7 +341,7 @@ contract('DNSSEC', function(accounts) {
     // z. comes after d.
     await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
-    await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('z.')).catch(()=>{});
+    assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'z.')), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'z.')), true);
   })
 
@@ -333,7 +350,7 @@ contract('DNSSEC', function(accounts) {
     // a. comes after b.
     await submitEntry(instance, dns.TYPE_TXT, 'a.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'b.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
-    await instance.deleteRRSet(1, dns.hexEncodeName('b.'), dns.TYPE_TXT, dns.hexEncodeName('a.')).catch(()=>{});
+    assert.equal((await deleteEntry(instance, 'b.', dns.TYPE_TXT, 'a.')), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
   })
 
@@ -341,7 +358,7 @@ contract('DNSSEC', function(accounts) {
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
-    await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('a.')).catch(()=>{});
+    assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'a.')), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
   })
 
@@ -350,7 +367,7 @@ contract('DNSSEC', function(accounts) {
     await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] });
     // This test fails if rrtypes is empty ([]), but would that case every happen?
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] });
-    var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('a.'));
+    assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'a.')), true);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), false);
   })
 
@@ -358,7 +375,7 @@ contract('DNSSEC', function(accounts) {
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
-    var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('b.'));
+    assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'b.')), true);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), false);
   })
 
