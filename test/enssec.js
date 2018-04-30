@@ -40,7 +40,7 @@ async function verifySubmission(instance, name, data, sig, proof) {
   }
 
   var name = dns.hexEncodeName(name);
-  var tx = await instance.submitRRSet(1, name, data, sig, proof);
+  var tx = await instance.submitRRSet(name, data, sig, proof);
   assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[0].args.name, name);
@@ -54,7 +54,7 @@ async function verifyFailedSubmission(instance, name, data, sig, proof) {
 
   var name = dns.hexEncodeName(name);
   try{
-    var tx = await instance.submitRRSet(1, name, data, sig, proof);
+    var tx = await instance.submitRRSet(name, data, sig, proof);
   }
   catch(error){
     // Assert ganache revert exception
@@ -130,9 +130,9 @@ contract('DNSSEC', function(accounts) {
 
   it('should check if root DNSKEY exist', async function(){
     var instance = await dnssec.deployed();
-    var [_, _, rrs] = await instance.rrdata.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
+    var [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
     assert.equal(rrs, '0x0000000000000000000000000000000000000000');
-    [_, _, rrs] = await instance.rrdata.call(1, dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
+    [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
     assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
   })
 
@@ -309,7 +309,7 @@ contract('DNSSEC', function(accounts) {
 
   // Test delete RRSET
   async function checkPresence(instance, type, name){
-    var result = (await instance.rrdata.call(1, type, dns.hexEncodeName(name)))[2];
+    var result = (await instance.rrdata.call(type, dns.hexEncodeName(name)))[2];
     return result != '0x0000000000000000000000000000000000000000';
   }
 
@@ -327,12 +327,12 @@ contract('DNSSEC', function(accounts) {
       signerName: ".",
       rrs: [rrs],
     };
-    var [inception, _, rrs] = await instance.rrdata.call(1, type, dns.hexEncodeName(name));
+    var [inception, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
     if(rrs != '0x0000000000000000000000000000000000000000'){
       keys.inception = inception + 1;
     };
     tx = await verifySubmission(instance, name, dns.hexEncodeSignedSet(keys), "0x", proof);
-    [_, _, rrs] = await instance.rrdata.call(1, type, dns.hexEncodeName(name));
+    [_, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
     assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
     return tx;
   }
@@ -340,7 +340,7 @@ contract('DNSSEC', function(accounts) {
   async function deleteEntry(instance, deletetype, deletename, ensname, proof) {
     var tx, result;
     try{
-      tx = await instance.deleteRRSet(1, deletetype, dns.hexEncodeName(deletename), dns.hexEncodeName(ensname), proof);
+      tx = await instance.deleteRRSet(deletetype, dns.hexEncodeName(deletename), dns.hexEncodeName(ensname), proof);
     }
     catch(error){
       // Assert ganache revert exception

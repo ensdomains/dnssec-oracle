@@ -57,8 +57,8 @@ contract DNSSEC is Owned {
         bytes20 hash;
     }
 
-    // (name, type, class) => RRSet
-    mapping (bytes32 => mapping(uint16 => mapping(uint16 => RRSet))) rrsets;
+    // (name, type) => RRSet
+    mapping (bytes32 => mapping(uint16 => RRSet)) rrsets;
 
     bytes public anchors;
 
@@ -79,8 +79,8 @@ contract DNSSEC is Owned {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
         anchors = _anchors;
-        rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
-            inception: 0,
+        rrsets[keccak256(hex"00")][DNSTYPE_DS] = RRSet({
+            inception: uint32(0),
             inserted: uint64(now),
             hash: bytes20(keccak256(anchors))
         });
@@ -127,7 +127,6 @@ contract DNSSEC is Owned {
      * trusted, or if they are self-signed, and the signing key is identified by
      * a DS record that is already trusted.
      *
-     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param name The name of the RRSET, in DNS label-sequence format.
      * @param input The signed RR set. This is in the format described in section
      *        5.3.2 of RFC4035: The RRDATA section from the RRSIG without the signature
@@ -135,18 +134,18 @@ contract DNSSEC is Owned {
      *        applies to.
      * @param sig The signature data from the RRSIG record.
      */
-    function submitRRSet(uint16 dnsclass, bytes memory name, bytes memory input, bytes memory sig, bytes memory proof) public {
+    function submitRRSet(bytes memory name, bytes memory input, bytes memory sig, bytes memory proof) public {
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
         uint32 expiration = input.readUint32(RRSIG_EXPIRATION);
         uint16 typecovered = input.readUint16(RRSIG_TYPE);
         uint8 labels = input.readUint8(RRSIG_LABELS);
 
         // Validate the signature
-        uint offset = verifySignature(dnsclass, name, input, sig, proof);
+        uint offset = verifySignature(name, input, sig, proof);
 
         // TODO: Check inception and expiration using mod2^32 math
 
-        RRSet storage set = rrsets[keccak256(name)][typecovered][dnsclass];
+        RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
             // To replace an existing rrset, the signature must be at least as new
             require(inception >= set.inception);
@@ -161,8 +160,8 @@ contract DNSSEC is Owned {
         require(inception < now);
 
         bytes memory rrs = input.substring(offset, input.length - offset);
-        validateRRs(rrs, name, dnsclass, typecovered, labels);
-        rrsets[keccak256(name)][typecovered][dnsclass] = RRSet({
+        validateRRs(rrs, name, typecovered, labels);
+        rrsets[keccak256(name)][typecovered] = RRSet({
             inception: inception,
             inserted: uint64(now),
             hash: bytes20(keccak256(rrs))
@@ -173,14 +172,13 @@ contract DNSSEC is Owned {
     /**
      * @dev Deletes an RR from the oracle.
      *
-     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param nsecname which contains the next authorative record
      * @param deletetype The DNS record type to delete.
      * @param deletename which you want to delete
      *
      */
-    function deleteRRSet(uint16 dnsclass, uint16 deletetype, bytes deletename, bytes nsecname, bytes proof) public {
-        require(rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass].hash == bytes20(keccak256(proof)));
+    function deleteRRSet(uint16 deletetype, bytes deletename, bytes nsecname, bytes proof) public {
+        require(rrsets[keccak256(nsecname)][DNSTYPE_NSEC].hash == bytes20(keccak256(proof)));
 
         int compareResult = deletename.compareNames(nsecname);
 
@@ -201,7 +199,7 @@ contract DNSSEC is Owned {
                 // This happens only when the name to delete come before the NSEC record
                 revert();
             }
-            delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+            delete rrsets[keccak256(deletename)][deletetype];
             return;
         }
         // This should never reach.
@@ -209,16 +207,15 @@ contract DNSSEC is Owned {
     }
 
     /**
-     * @dev Returns the RRs (if any) associated with the provided class, type, and name.
-     * @param dnsclass The DNS class (1 = CLASS_INET) to query.
+     * @dev Returns the RRs (if any) associated with the provided type and name.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
      * @return inception The unix timestamp at which the signature for this RRSET was created.
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return rrs The wire-format RR records.
      */
-    function rrdata(uint16 dnsclass, uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20) {
-        RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
+    function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20) {
+        RRSet storage result = rrsets[keccak256(name)][dnstype];
         return (result.inception, result.inserted, result.hash);
     }
 
@@ -226,18 +223,17 @@ contract DNSSEC is Owned {
      * @dev Validates a set of RRs.
      * @param data The RR data.
      * @param rrsigname The name assigned to the RRSIG record verifying this RRSET.
-     * @param rrsetclass The class value for the RRSIG record.
      * @param typecovered The type covered by the RRSIG record.
      * @param labels The number of labels specified by the RRSIG record.
      */
-    function validateRRs(bytes memory data, bytes memory rrsigname, uint16 rrsetclass, uint16 typecovered, uint8 labels) internal pure {
+    function validateRRs(bytes memory data, bytes memory rrsigname, uint16 typecovered, uint8 labels) internal pure {
         // Iterate over all the RRs
         for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
             // o  The RRSIG RR and the RRset MUST have the same owner name and the
             //    same class.
             // o  The number of labels in the RRset owner name MUST be greater than
             //    or equal to the value in the RRSIG RR's Labels field.
-            require(iter.class == rrsetclass);
+            require(iter.class == DNSCLASS_IN);
             checkName(rrsigname, data, iter.offset, labels);
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
@@ -266,12 +262,11 @@ contract DNSSEC is Owned {
      *
      * Throws or reverts if unable to verify the record.
      *
-     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param name The name of the RRSIG record, in DNS label-sequence format.
      * @param data The original data to verify.
      * @param sig The signature data.
      */
-    function verifySignature(uint16 dnsclass, bytes name, bytes memory data, bytes memory sig, bytes memory proof) internal constant returns(uint offset) {
+    function verifySignature(bytes name, bytes memory data, bytes memory sig, bytes memory proof) internal constant returns(uint offset) {
         uint signerNameLength = data.nameLength(RRSIG_SIGNER_NAME);
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
@@ -284,7 +279,7 @@ contract DNSSEC is Owned {
 
         // Check the proof
         RRUtils.RRIterator memory iter = proof.iterateRRs(0);
-        require(rrsets[data.keccak(RRSIG_SIGNER_NAME, signerNameLength)][iter.dnstype][dnsclass].hash == bytes20(keccak256(proof)));
+        require(rrsets[data.keccak(RRSIG_SIGNER_NAME, signerNameLength)][iter.dnstype].hash == bytes20(keccak256(proof)));
         if(iter.dnstype == DNSTYPE_DS) {
             require(verifyWithDS(data, sig, offset, proof));
         } else if(iter.dnstype == DNSTYPE_DNSKEY) {
@@ -422,5 +417,4 @@ contract DNSSEC is Owned {
         ac += (ac >> 16) & 0xFFFF;
         return uint16(ac & 0xFFFF);
     }
-
 }
