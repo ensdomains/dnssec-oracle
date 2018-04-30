@@ -9,9 +9,6 @@ import "./Buffer.sol";
 library RRUtils {
     using BytesUtils for *;
     using Buffer for *;
-    event LoggerBytes(bytes name);
-    event Logger(string name);
-    event LoggerInt(int name);
 
     /**
      * @dev Returns the number of bytes in the DNS name at 'offset' in 'self'.
@@ -156,55 +153,72 @@ library RRUtils {
         return false;
     }
 
-    function compareLabel(bytes memory self, bytes memory other) internal pure returns (int){
+    function compareLabel(bytes memory self, bytes memory other) internal  returns (int){
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
         uint shortest = sLength;
 
         if (shortest > oLength) { shortest = oLength; }
+        bytes memory sHead;
+        bytes memory oHead;
+        if(sLength == shortest){ oHead = head(other, 0);}
+        if(oLength == shortest){ sHead = head(self, 0); }
+        uint sTailLength = 0;
+        uint oTailLength = 0;
+        if(sHead.length > 0){
+            sTailLength = labelCount(self, sHead.length + 1);
+        }
+        if(oHead.length > 0){
+            oTailLength = labelCount(other, oHead.length + 1);
+        }
 
-        bytes memory sTail;
-        bytes memory oTail;
-        if(sLength == shortest){
-            sTail = self;
-        }else{
-            (, sTail) = headAndTail(self);
-        }
-        if(oLength == shortest){
-            oTail = other;
-        }else{
-            (, oTail) = headAndTail(other);
-        }
-        uint sTailLength = labelCount(sTail, 0);
-        uint oTailLength = labelCount(oTail, 0);
         // when comparing one name has a difference of >1 label to the other
         if(sTailLength != oTailLength){
+            Logger('**2 when comparing one name has a difference of >1 label to the other');
             return int(sTailLength) -  int(oTailLength);
         }
-        int result = compareTail(sTail, oTail);
-        if(result != 0){ return result; }
+        int result = compareTail(self, sHead.length + 1, other, oHead.length + 1);
+
+        if(result != 0){
+            Logger('**3');
+            return result;
+        }else{
+            Logger('**3.1');
+            return sHead.compare(oHead);
+        }
+        Logger('** 4 int(sLength) - int(oLength)');
         return (int(sLength) - int(oLength));
     }
 
-    function compareTail(bytes memory self, bytes memory other) internal pure returns (int) {
-        if(self.compare('') == 0 && self.compare('') == 0){ return 0; }
+    function compareTail(bytes memory self, uint sOff, bytes memory other, uint oOff) internal  returns (int) {
+        if(self.length <= sOff && other.length <= oOff){ return 0; }
+
         bytes memory sHead;
         bytes memory oHead;
-        bytes memory sTail;
-        bytes memory oTail;
-        (sHead, sTail) = headAndTail(self);
-        (oHead, oTail) = headAndTail(other);
-        int result = compareTail(sTail, oTail);
-        if(result == 0){ return sHead.compare(oHead); }
+        if(self.length > sOff){
+            sHead = head(self, sOff);
+        }
+        if(self.length > oOff){
+            oHead = head(other, oOff);
+        }
+
+        Logger('**6 Heads');
+        LoggerBytes(sHead);
+        LoggerBytes(oHead);
+        int result = compareTail(self, sOff + sHead.length + 1, other, oOff + oHead.length + 1);
+        Logger('**7 Result');
+        LoggerInt(result);
+
+        if(result == 0){
+            int aa = sHead.compare(oHead);
+            Logger('**8 aa');
+            LoggerInt(int(aa));
+            return aa;
+        }
         return result;
     }
 
-    function headAndTail(bytes memory body) internal pure returns(bytes, bytes){
-        uint headLength =  body.readUint8(0);
-        uint tailLength = body.length - 1 - headLength;
-        return (
-            body.substring(1, headLength),
-            body.substring(1 + headLength, tailLength)
-        );
+    function head(bytes memory body, uint off) internal  returns(bytes){
+        return body.substring(off + 1, body.readUint8(off));
     }
 }

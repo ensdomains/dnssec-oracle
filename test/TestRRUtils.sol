@@ -26,6 +26,7 @@ contract TestRRUtils {
     Assert.equal(hex'00'.labelCount(0), 0, "labelCount('.') == 0");
     Assert.equal(hex'016100'.labelCount(0), 1, "labelCount('a.') == 1");
     Assert.equal(hex'016201610000'.labelCount(0), 2, "labelCount('b.a.') == 2");
+    Assert.equal(hex'066574686c61620378797a00'.labelCount(6 +1), 1, "nameLength('(bthlab).xyz.') == 6");
   }
 
   function testIterateRRs() public {
@@ -72,18 +73,9 @@ contract TestRRUtils {
     Assert.equal(tb.checkTypeBitmap(1, 1281), false, "Type 1281 should not exist in type bitmap");
   }
 
-  // Canonical ordering https://tools.ietf.org/html/rfc4034#section-6.1
-  function testCompareLabel() public {
-    bytes memory bthLabXyz = hex'066274686c61620378797a00';
-    bytes memory ethLabXyz = hex'066574686c61620378797a00';
-    bytes memory xyz = hex'0378797a00';
-    Assert.equal(xyz.compareLabel(ethLabXyz)       <  0, true, "xyz comes before ethLab.xyz");
-    Assert.equal(bthLabXyz.compareLabel(ethLabXyz) <  0, true, "bthLab.xyz comes before ethLab.xyz");
-    Assert.equal(bthLabXyz.compareLabel(bthLabXyz) == 0, true, "bthLab.xyz and bthLab.xyz are the same");
-    Assert.equal(ethLabXyz.compareLabel(bthLabXyz) >  0, true, "ethLab.xyz comes after bethLab.xyz");
-    Assert.equal(bthLabXyz.compareLabel(xyz)       >  0, true, "bthLab.xyz comes after xyz");
-  }
-
+  bytes constant bthLabXyz = hex'066274686c61620378797a00';
+  bytes constant ethLabXyz = hex'066574686c61620378797a00';
+  bytes constant xyz = hex'0378797a00';
   bytes constant a_b_c  = hex'01610162016300';
   bytes constant b_b_c  = hex'01620162016300';
   bytes constant c      = hex'016300';
@@ -91,6 +83,27 @@ contract TestRRUtils {
   bytes constant b_a_c  = hex'01620161016300';
   bytes constant ab_c_d = hex'0261620163016400';
   bytes constant a_c_d  = hex'01610163016400';
+
+  // Canonical ordering https://tools.ietf.org/html/rfc4034#section-6.1
+  function testCompareLabelF() public {
+    Assert.equal(xyz.compareLabel(ethLabXyz) < 0, true, "xyz comes before ethLab.xyz");
+  }
+
+  function testCompareLabelG() public {
+    Assert.equal(bthLabXyz.compareLabel(ethLabXyz) < 0, true, "bthLab.xyz comes before ethLab.xyz");
+  }
+
+  function testCompareLabelH() public {
+    Assert.equal(bthLabXyz.compareLabel(bthLabXyz) == 0, true, "bthLab.xyz and bthLab.xyz are the same");
+  }
+
+  function testCompareLabelI() public {
+    Assert.equal(ethLabXyz.compareLabel(bthLabXyz) >  0, true, "ethLab.xyz comes after bethLab.xyz");
+  }
+
+  function testCompareLabelJ() public {
+    Assert.equal(bthLabXyz.compareLabel(xyz)       >  0, true, "bthLab.xyz comes after xyz");
+  }
 
   function testCompareLabelA() public {
     Assert.equal(a_b_c.compareLabel(c)      >  0, true, "one name has a difference of >1 label to the other");
