@@ -181,17 +181,18 @@ contract DNSSEC is Owned {
         require(result.inserted != 0);
         require(result.rrs.length != 0);
         for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
-            bytes memory rdata = iter.rdata();
-            uint nextNameLength = rdata.nameLength(0);
-            uint rDataLength = rdata.length;
+            uint rdataOffset = iter.rdataOffset;
+            uint nextNameLength = iter.data.nameLength(rdataOffset);
+            uint rDataLength = iter.nextOffset - iter.rdataOffset;
+
             // We assume that there is always typed bitmap after the next domain name
             require(rDataLength > nextNameLength);
             assert(iter.dnstype == DNSTYPE_NSEC);
             if(compareResult == 0){
-                bytes memory typeBitMap = rdata.substring(nextNameLength, rDataLength - nextNameLength - 1);    
+                bytes memory typeBitMap = iter.data.substring(rdataOffset + nextNameLength, rDataLength - nextNameLength - 1);    
                 require(!typeBitMap.checkTypeBitmap(0, deletetype));
             }else{
-                bytes memory nextName = rdata.substring(0,nextNameLength);            
+                bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);            
                 require(deletename.compareLabel(nextName) < 0);
             }
             delete rrsets[keccak256(deletename)][deletetype][dnsclass];
