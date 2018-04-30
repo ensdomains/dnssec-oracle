@@ -173,21 +173,13 @@ library RRUtils {
         }
 
         // when comparing one name has a difference of >1 label to the other
-        if(sTailLength != oTailLength){
-            Logger('**2 when comparing one name has a difference of >1 label to the other');
-            return int(sTailLength) -  int(oTailLength);
-        }
+        if(sTailLength != oTailLength){ return int(sTailLength) -  int(oTailLength); }
         int result = compareTail(self, sHead.length + 1, other, oHead.length + 1);
-
         if(result != 0){
-            Logger('**3');
             return result;
         }else{
-            Logger('**3.1');
             return sHead.compare(oHead);
         }
-        Logger('** 4 int(sLength) - int(oLength)');
-        return (int(sLength) - int(oLength));
     }
 
     function compareTail(bytes memory self, uint sOff, bytes memory other, uint oOff) internal  returns (int) {
@@ -195,26 +187,10 @@ library RRUtils {
 
         bytes memory sHead;
         bytes memory oHead;
-        if(self.length > sOff){
-            sHead = head(self, sOff);
-        }
-        if(self.length > oOff){
-            oHead = head(other, oOff);
-        }
-
-        Logger('**6 Heads');
-        LoggerBytes(sHead);
-        LoggerBytes(oHead);
+        if(self.length > sOff){ sHead = head(self, sOff);  }
+        if(self.length > oOff){ oHead = head(other, oOff); }
         int result = compareTail(self, sOff + sHead.length + 1, other, oOff + oHead.length + 1);
-        Logger('**7 Result');
-        LoggerInt(result);
-
-        if(result == 0){
-            int aa = sHead.compare(oHead);
-            Logger('**8 aa');
-            LoggerInt(int(aa));
-            return aa;
-        }
+        if(result == 0){ return sHead.compare(oHead); }
         return result;
     }
 
