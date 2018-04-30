@@ -195,7 +195,9 @@ contract DNSSEC is Owned {
                 require(deletename.compareLabel(nextName) < 0);
             }
             delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+            return;
         }
+        revert();
     }
 
     /**
