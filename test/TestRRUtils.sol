@@ -47,9 +47,9 @@ contract TestRRUtils {
     Assert.equal(i, 2, "Expected 2 records");
   }
 
-  function testCheckTypeBitmapText() public {
-    bytes memory tb = hex'03000001';
-    Assert.equal(tb.checkTypeBitmap(1, DNSTYPE_TEXT), true, "A record should exist in type bitmap");
+  function testCheckTypeBitmapTextType() public {
+    bytes memory tb = hex'0003000080';
+    Assert.equal(tb.checkTypeBitmap(0, DNSTYPE_TEXT), true, "A record should exist in type bitmap");
   }
 
   function testCheckTypeBitmap() public {

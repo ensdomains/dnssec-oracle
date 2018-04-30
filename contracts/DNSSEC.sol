@@ -184,25 +184,17 @@ contract DNSSEC is Owned {
             bytes memory rdata = iter.rdata();
             uint nextNameLength = rdata.nameLength(0);
             uint rDataLength = rdata.length;
+            // We assume that there is always typed bitmap after the next domain name
+            require(rDataLength > nextNameLength);
             assert(iter.dnstype == DNSTYPE_NSEC);
             if(compareResult == 0){
-                emit Logger ('compareResult == 0');
-                // We assume that there is always typed bitmap after the next domain name
-                assert(rdata.length > nextNameLength);
-                bytes memory typeBitMap = rdata.substring(nextNameLength + 1 ,rDataLength - nextNameLength - 1);    
-                // This function does not seem working properly right now.
-                if(typeBitMap.checkTypeBitmap(1, deletetype)){
-                    emit Logger('deletetype does exist on typedBitMap');
-                }else{
-                    emit Logger('deletetype does not exist on typedBitMap');
-                    delete rrsets[keccak256(deletename)][deletetype][dnsclass];
-                }
+                bytes memory typeBitMap = rdata.substring(nextNameLength, rDataLength - nextNameLength - 1);    
+                require(!typeBitMap.checkTypeBitmap(0, deletetype));
             }else{
                 bytes memory nextName = rdata.substring(0,nextNameLength);            
-                compareResult = deletename.compareLabel(nextName);
-                require(compareResult < 0);
-                delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+                require(deletename.compareLabel(nextName) < 0);
             }
+            delete rrsets[keccak256(deletename)][deletetype][dnsclass];
         }
     }
 

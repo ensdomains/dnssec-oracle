@@ -337,17 +337,13 @@ contract('DNSSEC', function(accounts) {
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
   })
 
-  // This is failing because checkTypeBitmap is failing to check 0x03000001 constains TYPE_TXT(16)
-  // it('rejects RRset if trying to delete rrset that is in the type bitmap ', async function(){
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']});
-  //   await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
-  //   var tx = await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('a.')).catch(()=>{});
-  //   if(tx){
-  //     trx.logs.forEach((l)=>{console.log(l.args.name)});
-  //   }
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
-  // })
+  it('rejects RRset if trying to delete rrset that is in the type bitmap ', async function(){
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']});
+    await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
+    await instance.deleteRRSet(1, dns.hexEncodeName('a.'), dns.TYPE_TXT, dns.hexEncodeName('a.')).catch(()=>{});
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+  })
 
   it('deletes RRset if nsec name and delete name is same but with different rrtypes', async function(){
     var instance = await dnssec.deployed();
