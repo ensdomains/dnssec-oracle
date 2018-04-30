@@ -72,6 +72,7 @@ contract TestRRUtils {
     Assert.equal(tb.checkTypeBitmap(1, 1281), false, "Type 1281 should not exist in type bitmap");
   }
 
+  // Canonical ordering https://tools.ietf.org/html/rfc4034#section-6.1
   function testCompareLabel() public {
     bytes memory bthLabXyz = hex'066274686c61620378797a00';
     bytes memory ethLabXyz = hex'066574686c61620378797a00';
@@ -82,4 +83,33 @@ contract TestRRUtils {
     Assert.equal(ethLabXyz.compareLabel(bthLabXyz) >  0, true, "ethLab.xyz comes after bethLab.xyz");
     Assert.equal(bthLabXyz.compareLabel(xyz)       >  0, true, "bthLab.xyz comes after xyz");
   }
+
+  bytes constant a_b_c  = hex'01610162016300';
+  bytes constant b_b_c  = hex'01620162016300';
+  bytes constant c      = hex'016300';
+  bytes constant a_d_c  = hex'01610164016300';
+  bytes constant b_a_c  = hex'01620161016300';
+  bytes constant ab_c_d = hex'0261620163016400';
+  bytes constant a_c_d  = hex'01610163016400';
+
+  function testCompareLabelA() public {
+    Assert.equal(a_b_c.compareLabel(c)      >  0, true, "one name has a difference of >1 label to the other");
+  }
+
+  function testCompareLabelB() public {
+    Assert.equal(a_b_c.compareLabel(a_d_c)  <  0, true, "two names start the same but have differences in later labels");
+  }
+
+  function testCompareLabelC() public {
+    Assert.equal(a_b_c.compareLabel(b_a_c)  >  0, true, "the first label sorts later, but the first label sorts earlier");
+  }
+
+  function testCompareLabelD() public {
+    Assert.equal(ab_c_d.compareLabel(a_c_d) >  0, true, "two names where the first label on one is a prefix of the first label on the other");
+  }
+
+  function testCompareLabelE() public {
+    Assert.equal(a_b_c.compareLabel(b_b_c)  <  0, true, "two names where the first label on one is a prefix of the first label on the other");
+  }
+
 }

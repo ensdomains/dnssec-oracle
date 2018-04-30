@@ -156,13 +156,12 @@ library RRUtils {
         return false;
     }
 
-    function compareLabel(bytes memory self, bytes memory other) internal  returns (int){
+    function compareLabel(bytes memory self, bytes memory other) internal pure returns (int){
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
         uint shortest = sLength;
 
-        if (shortest > oLength)
-            shortest = oLength;
+        if (shortest > oLength) { shortest = oLength; }
 
         bytes memory sTail;
         bytes memory oTail;
@@ -176,18 +175,19 @@ library RRUtils {
         }else{
             (, oTail) = headAndTail(other);
         }
+        uint sTailLength = labelCount(sTail, 0);
+        uint oTailLength = labelCount(oTail, 0);
+        // when comparing one name has a difference of >1 label to the other
+        if(sTailLength != oTailLength){
+            return int(sTailLength) -  int(oTailLength);
+        }
         int result = compareTail(sTail, oTail);
-
         if(result != 0){ return result; }
-        if(sLength < oLength){ return -1; }
-        if(sLength > oLength){ return 1; }
-        return 0;
+        return (int(sLength) - int(oLength));
     }
 
-    function compareTail(bytes memory self, bytes memory other) internal  returns (int) {
-        if(self.compare('') == 0 && self.compare('') == 0){
-            return 0;
-        }
+    function compareTail(bytes memory self, bytes memory other) internal pure returns (int) {
+        if(self.compare('') == 0 && self.compare('') == 0){ return 0; }
         bytes memory sHead;
         bytes memory oHead;
         bytes memory sTail;
@@ -199,11 +199,12 @@ library RRUtils {
         return result;
     }
 
-    function headAndTail(bytes memory body) internal returns(bytes, bytes){
+    function headAndTail(bytes memory body) internal pure returns(bytes, bytes){
         uint headLength =  body.readUint8(0);
-        bytes memory head = body.substring(1, headLength);
         uint tailLength = body.length - 1 - headLength;
-        bytes memory tail = body.substring(1 + headLength, tailLength);
-        return (head, tail);
+        return (
+            body.substring(1, headLength),
+            body.substring(1 + headLength, tailLength)
+        );
     }
 }
