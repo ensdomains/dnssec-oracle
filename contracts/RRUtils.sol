@@ -9,6 +9,9 @@ import "./Buffer.sol";
 library RRUtils {
     using BytesUtils for *;
     using Buffer for *;
+    event LoggerBytes(bytes name);
+    event Logger(string name);
+    event LoggerInt(int name);
 
     /**
      * @dev Returns the number of bytes in the DNS name at 'offset' in 'self'.
@@ -153,16 +156,13 @@ library RRUtils {
         return false;
     }
 
-    function compareLabel(bytes memory self, bytes memory other) internal pure returns (int){
+    function compareLabel(bytes memory self, bytes memory other) internal  returns (int){
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
-        uint shortest;
+        uint shortest = sLength;
 
-        if (sLength < oLength){
-            shortest = sLength;
-        }else{
+        if (shortest > oLength)
             shortest = oLength;
-        }
 
         bytes memory sTail;
         bytes memory oTail;
@@ -191,9 +191,8 @@ library RRUtils {
         }
     }
 
-    function compareTail(bytes memory self, bytes memory other) internal pure returns (int) {
-        // when both are '.'
-        if (keccak256(self) == keccak256(hex'00') && keccak256(other) == keccak256(hex'00')){
+    function compareTail(bytes memory self, bytes memory other) internal  returns (int) {
+        if(self.compare('') == 0 && self.compare('') == 0){
             return 0;
         }
         bytes memory sHead;
@@ -210,7 +209,7 @@ library RRUtils {
         }
     }
 
-    function headAndTail(bytes memory body) internal pure returns(bytes, bytes){
+    function headAndTail(bytes memory body) internal returns(bytes, bytes){
         uint headLength =  body.readUint8(0);
         bytes memory head = body.substring(1, headLength);
         uint tailLength = body.length - 1 - headLength;
