@@ -181,11 +181,13 @@ library RRUtils {
             Logger('Heads');
             if(sLength >= oLength){
                 sHead = head(self, sOff);
+                sTail = self.substring(sOff, sTail.length - sOff);
                 LoggerBytes(sHead);
                 sOff = progress(self, sOff);
             }
             if(sLength <= oLength){
                 oHead = head(other, oOff); 
+                oTail = other.substring(oOff,oTail.length - oOff);
                 LoggerBytes(oHead);
                 oOff = progress(self, oOff);
             }
@@ -210,9 +212,7 @@ library RRUtils {
             LoggerBytes(oTail);
 
             // if (sTail.length > sOff && sTail.length + ){
-            sTail = self.substring(sOff,sTail.length - sOff);
             // }
-            oTail = other.substring(oOff,oTail.length - oOff);
             Logger('Tails');
             LoggerBytes(sTail);
             LoggerBytes(oTail);
