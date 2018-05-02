@@ -143,13 +143,19 @@ contract DNSSEC is Owned {
         // Validate the signature
         uint offset = verifySignature(name, input, sig, proof);
 
-        // TODO: Check inception and expiration using mod2^32 math
+        bytes memory rrs = input.substring(offset, input.length - offset);
 
         RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
             // To replace an existing rrset, the signature must be at least as new
             require(inception >= set.inception);
         }
+        if(set.hash == keccak256(rrs)) {
+          // Already inserted!
+          return;
+        }
+
+        // TODO: Check inception and expiration using mod2^32 math
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
@@ -159,7 +165,6 @@ contract DNSSEC is Owned {
         //    equal to the time listed in the RRSIG RR's Inception field.
         require(inception < now);
 
-        bytes memory rrs = input.substring(offset, input.length - offset);
         validateRRs(rrs, name, typecovered, labels);
         rrsets[keccak256(name)][typecovered] = RRSet({
             inception: inception,
