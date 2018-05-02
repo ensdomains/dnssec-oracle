@@ -99,7 +99,7 @@ library BytesUtils {
     /*
      * @dev Returns the 8-bit number at the specified index of self.
      * @param self The byte string.
-     * @param idx The index into the byte
+     * @param idx The index into the bytes
      * @return The specified 8 bits of the string, interpreted as an integer.
      */
     function readUint8(bytes memory self, uint idx) internal pure returns (uint8 ret) {
@@ -112,7 +112,7 @@ library BytesUtils {
     /*
      * @dev Returns the 16-bit number at the specified index of self.
      * @param self The byte string.
-     * @param idx The index into the byte
+     * @param idx The index into the bytes
      * @return The specified 16 bits of the string, interpreted as an integer.
      */
     function readUint16(bytes memory self, uint idx) internal pure returns (uint16 ret) {
@@ -125,7 +125,7 @@ library BytesUtils {
     /*
      * @dev Returns the 32-bit number at the specified index of self.
      * @param self The byte string.
-     * @param idx The index into the byte
+     * @param idx The index into the bytes
      * @return The specified 32 bits of the string, interpreted as an integer.
      */
     function readUint32(bytes memory self, uint idx) internal pure returns (uint32 ret) {
@@ -138,7 +138,7 @@ library BytesUtils {
     /*
      * @dev Returns the 32 byte value at the specified index of self.
      * @param self The byte string.
-     * @param idx The index into the byte
+     * @param idx The index into the bytes
      * @return The specified 32 bytes of the string.
      */
     function readBytes32(bytes memory self, uint idx) internal pure returns (bytes32 ret) {
@@ -151,7 +151,7 @@ library BytesUtils {
     /*
      * @dev Returns the 32 byte value at the specified index of self.
      * @param self The byte string.
-     * @param idx The index into the byte
+     * @param idx The index into the bytes
      * @return The specified 32 bytes of the string.
      */
     function readBytes20(bytes memory self, uint idx) internal pure returns (bytes20 ret) {
