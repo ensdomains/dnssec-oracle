@@ -74,7 +74,7 @@ contract TestRRUtils {
   }
 
   // Canonical ordering https://tools.ietf.org/html/rfc4034#section-6.1
-  function testCompareLabel() public {
+  function testcompareNames() public {
     bytes memory bthLabXyz = hex'066274686c61620378797a00';
     bytes memory ethLabXyz = hex'066574686c61620378797a00';
     bytes memory xyz = hex'0378797a00';
@@ -86,16 +86,16 @@ contract TestRRUtils {
     bytes memory ab_c_d = hex'0261620163016400';
     bytes memory a_c_d  = hex'01610163016400';
 
-    Assert.equal(a_b_c.compareLabel(c)      >  0, true, "one name has a difference of >1 label to the other");
-    Assert.equal(a_b_c.compareLabel(a_d_c)  <  0, true, "two names start the same but have differences in later labels");
-    Assert.equal(a_b_c.compareLabel(b_a_c)  >  0, true, "the first label sorts later, but the first label sorts earlier");
-    Assert.equal(ab_c_d.compareLabel(a_c_d) >  0, true, "two names where the first label on one is a prefix of the first label on the other");
-    Assert.equal(a_b_c.compareLabel(b_b_c)  <  0, true, "two names where the first label on one is a prefix of the first label on the other");
-    Assert.equal(xyz.compareLabel(ethLabXyz) < 0, true, "xyz comes before ethLab.xyz");
-    Assert.equal(bthLabXyz.compareLabel(ethLabXyz) < 0, true, "bthLab.xyz comes before ethLab.xyz");
-    Assert.equal(bthLabXyz.compareLabel(bthLabXyz) == 0, true, "bthLab.xyz and bthLab.xyz are the same");
-    Assert.equal(ethLabXyz.compareLabel(bthLabXyz) >  0, true, "ethLab.xyz comes after bethLab.xyz");
-    Assert.equal(bthLabXyz.compareLabel(xyz)       >  0, true, "bthLab.xyz comes after xyz");
+    Assert.equal(a_b_c.compareNames(c)      >  0, true, "one name has a difference of >1 label to the other");
+    Assert.equal(a_b_c.compareNames(a_d_c)  <  0, true, "two names start the same but have differences in later labels");
+    Assert.equal(a_b_c.compareNames(b_a_c)  >  0, true, "the first label sorts later, but the first label sorts earlier");
+    Assert.equal(ab_c_d.compareNames(a_c_d) >  0, true, "two names where the first label on one is a prefix of the first label on the other");
+    Assert.equal(a_b_c.compareNames(b_b_c)  <  0, true, "two names where the first label on one is a prefix of the first label on the other");
+    Assert.equal(xyz.compareNames(ethLabXyz) < 0, true, "xyz comes before ethLab.xyz");
+    Assert.equal(bthLabXyz.compareNames(ethLabXyz) < 0, true, "bthLab.xyz comes before ethLab.xyz");
+    Assert.equal(bthLabXyz.compareNames(bthLabXyz) == 0, true, "bthLab.xyz and bthLab.xyz are the same");
+    Assert.equal(ethLabXyz.compareNames(bthLabXyz) >  0, true, "ethLab.xyz comes after bethLab.xyz");
+    Assert.equal(bthLabXyz.compareNames(xyz)       >  0, true, "bthLab.xyz comes after xyz");
   }
 
 }

@@ -153,7 +153,7 @@ library RRUtils {
         return false;
     }
 
-    function compareLabel(bytes memory self, bytes memory other) internal  returns (int){
+    function compareNames(bytes memory self, bytes memory other) internal  returns (int){
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
         uint shortest = sLength;

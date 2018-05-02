@@ -163,7 +163,7 @@ contract DNSSEC is Owned {
     }
 
     /**
-     * @dev Deletes a RR from the oracle.
+     * @dev Deletes an RR from the oracle.
      *
      * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param nsecname which contains the next authorative record
@@ -173,7 +173,7 @@ contract DNSSEC is Owned {
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        int compareResult = deletename.compareLabel(nsecname);
+        int compareResult = deletename.compareNames(nsecname);
         require(compareResult >= 0);
         require(result.inserted != 0);
         require(result.rrs.length != 0);
@@ -190,7 +190,7 @@ contract DNSSEC is Owned {
                 require(!typeBitMap.checkTypeBitmap(0, deletetype));
             }else{
                 bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);            
-                require(deletename.compareLabel(nextName) < 0);
+                require(deletename.compareNames(nextName) < 0);
             }
             delete rrsets[keccak256(deletename)][deletetype][dnsclass];
             return;
