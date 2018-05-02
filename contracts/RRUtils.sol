@@ -157,8 +157,8 @@ library RRUtils {
     }
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
-        // int diff = self.compare(other);
-        bool diff;
+        int diff = self.compare(other);
+        // bool diff;
         // bool diff = (keccak256(self) == keccak256(other));
         // if( !diff ){ return 0; }
         uint sOff = 0;
@@ -176,21 +176,37 @@ library RRUtils {
         uint oLength = labelCount(other, 0);
         uint counter = 0;
         // while (counter < 5) {
-        while ((diff) || (counter < 2)) {
+        while ((diff != 0) || (counter < 2)) {
+            Logger('Counter');
             LoggerInt(int(counter));
             Logger('Heads');
             if(sLength >= oLength){
+                Logger('SSSS');
                 sHead = head(self, sOff);
-                sTail = self.substring(sOff, sTail.length - sOff);
-                LoggerBytes(sHead);
                 sOff = progress(self, sOff);
+                LoggerBytes(sHead);
+                Logger('Before tails');
+                LoggerBytes(sTail);
+                LoggerInt(int(sOff));
+                LoggerInt(int(sTail.length));
+                sTail = self.substring(sOff, self.length - sOff);
+                Logger('Tails');
+                LoggerBytes(sTail);
             }
             if(sLength <= oLength){
+                Logger('OOO');
                 oHead = head(other, oOff); 
-                oTail = other.substring(oOff,oTail.length - oOff);
+                oOff = progress(other, oOff);
                 LoggerBytes(oHead);
-                oOff = progress(self, oOff);
+                Logger('Before tails');
+                LoggerBytes(oTail);
+                LoggerInt(int(oOff));
+                LoggerInt(int(oTail.length));
+                oTail = other.substring(oOff, other.length - oOff);
             }
+            Logger('Tails');
+            LoggerBytes(sTail);
+            LoggerBytes(oTail);
 
             if(sLength != 0 ){ sLength = labelCount(self, sOff); }
             if(oLength != 0 ){ oLength = labelCount(other, oOff); }
@@ -202,23 +218,10 @@ library RRUtils {
                 Logger('BREAK');
                 break;
             }
-            Logger('substring');
-            LoggerInt(int(sOff));
-            LoggerInt(int(oOff));
-            LoggerInt(int(sTail.length));
-            LoggerInt(int(oTail.length));
-            Logger('Before tails');
-            LoggerBytes(sTail);
-            LoggerBytes(oTail);
 
-            // if (sTail.length > sOff && sTail.length + ){
-            // }
-            Logger('Tails');
-            LoggerBytes(sTail);
-            LoggerBytes(oTail);
-
-            diff = (keccak256(sTail) == keccak256(oTail));
-            if(diff){
+            // diff = (keccak256(sTail) == keccak256(oTail));
+            diff = sTail.compare(oTail);
+            if(diff !=0){
                 Logger('diff');
             }else{
                 Logger('no diff');
@@ -227,11 +230,15 @@ library RRUtils {
             counter++;
         }
         Logger('Out of loop!!');
+        LoggerInt(int(counter));
         LoggerBytes(sHead);
         LoggerBytes(oHead);
+        LoggerBytes(sTail);
+        LoggerBytes(oTail);
+
         LoggerInt(int(sHead.compare(oHead)));
-        // return sHead.compare(oHead);
-        return 0;
+        return sHead.compare(oHead);
+        // return 0;
     }
 
     function compareTail(bytes memory self, uint sOff, bytes memory other, uint oOff) internal  returns (int) {
