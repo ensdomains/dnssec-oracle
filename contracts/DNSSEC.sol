@@ -68,9 +68,6 @@ contract DNSSEC is Owned {
     event DigestUpdated(uint8 id, address addr);
     event NSEC3DigestUpdated(uint8 id, address addr);
     event RRSetUpdated(bytes name);
-    event LoggerBytes(bytes name);
-    event Logger(string name);
-    event LoggerInt(int name);
 
     /**
      * @dev Constructor.
