@@ -9,6 +9,9 @@ import "./Buffer.sol";
 library RRUtils {
     using BytesUtils for *;
     using Buffer for *;
+    event Logger(string name);
+    event LoggerInt(int name);
+    event LoggerBytes(bytes name);
 
     /**
      * @dev Returns the number of bytes in the DNS name at 'offset' in 'self'.
@@ -154,34 +157,85 @@ library RRUtils {
     }
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
-        uint sLength = labelCount(self, 0);
-        uint oLength = labelCount(other, 0);
-        uint shortest = sLength;
+        // int diff = self.compare(other);
+        bool diff;
+        // bool diff = (keccak256(self) == keccak256(other));
+        // if( !diff ){ return 0; }
+        uint sOff = 0;
+        uint oOff = 0;
 
-        if (shortest > oLength) { shortest = oLength; }
+        // // This can be removed if you can pass offset to compare()
+        // bytes memory sTail = sTail.substring(sOff, sTail.length - sOff);
+        // bytes memory oTail = oTail.substring(oOff, oTail.length - oOff);
+        bytes memory sTail = self;
+        bytes memory oTail = other;
         bytes memory sHead;
         bytes memory oHead;
-        if(sLength == shortest){ oHead = head(other, 0);}
-        if(oLength == shortest){ sHead = head(self, 0); }
-        uint sTailLength = 0;
-        uint oTailLength = 0;
-        if(sHead.length > 0){
-            sTailLength = labelCount(self, sHead.length + 1);
-        }
-        if(oHead.length > 0){
-            oTailLength = labelCount(other, oHead.length + 1);
-        }
 
-        // when comparing one name has a difference of >1 label to the other
-        if(sTailLength != oTailLength){ return int(sTailLength) -  int(oTailLength); }
-        int result = compareTail(self, sHead.length + 1, other, oHead.length + 1);
-        // when only only the left most subdomains are different (eg: a.example.com and b.example.com)
-        if(result == 0){ return sHead.compare(oHead); }
-        return result;
+        uint sLength = labelCount(self, 0);
+        uint oLength = labelCount(other, 0);
+        uint counter = 0;
+        // while (counter < 5) {
+        while ((diff) || (counter < 2)) {
+            LoggerInt(int(counter));
+            Logger('Heads');
+            if(sLength >= oLength){
+                sHead = head(self, sOff);
+                LoggerBytes(sHead);
+                sOff = progress(self, sOff);
+            }
+            if(sLength <= oLength){
+                oHead = head(other, oOff); 
+                LoggerBytes(oHead);
+                oOff = progress(self, oOff);
+            }
+
+            if(sLength != 0 ){ sLength = labelCount(self, sOff); }
+            if(oLength != 0 ){ oLength = labelCount(other, oOff); }
+            Logger('soLength');
+            LoggerInt(int(sLength));
+            LoggerInt(int(oLength));
+
+            if(sLength == 0 && oLength ==0){
+                Logger('BREAK');
+                break;
+            }
+            Logger('substring');
+            LoggerInt(int(sOff));
+            LoggerInt(int(oOff));
+            LoggerInt(int(sTail.length));
+            LoggerInt(int(oTail.length));
+            Logger('Before tails');
+            LoggerBytes(sTail);
+            LoggerBytes(oTail);
+
+            // if (sTail.length > sOff && sTail.length + ){
+            sTail = self.substring(sOff,sTail.length - sOff);
+            // }
+            oTail = other.substring(oOff,oTail.length - oOff);
+            Logger('Tails');
+            LoggerBytes(sTail);
+            LoggerBytes(oTail);
+
+            diff = (keccak256(sTail) == keccak256(oTail));
+            if(diff){
+                Logger('diff');
+            }else{
+                Logger('no diff');
+            }
+
+            counter++;
+        }
+        Logger('Out of loop!!');
+        LoggerBytes(sHead);
+        LoggerBytes(oHead);
+        LoggerInt(int(sHead.compare(oHead)));
+        // return sHead.compare(oHead);
+        return 0;
     }
 
     function compareTail(bytes memory self, uint sOff, bytes memory other, uint oOff) internal  returns (int) {
-        if(self.length <= sOff && other.length <= oOff){ return 0; }
+        if(self.length <= sOff &&  other.length <= oOff){ return 0; }
 
         bytes memory sHead;
         bytes memory oHead;
@@ -190,6 +244,10 @@ library RRUtils {
         int result = compareTail(self, sOff + sHead.length + 1, other, oOff + oHead.length + 1);
         if(result == 0){ return sHead.compare(oHead); }
         return result;
+    }
+
+    function progress(bytes memory body, uint off) internal  returns(uint){
+        return off + 2;
     }
 
     function head(bytes memory body, uint off) internal  returns(bytes){
