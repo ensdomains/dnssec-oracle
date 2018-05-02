@@ -9,9 +9,6 @@ import "./Buffer.sol";
 library RRUtils {
     using BytesUtils for *;
     using Buffer for *;
-    event Logger(string name);
-    event LoggerInt(int name);
-    event LoggerBytes(bytes name);
 
     /**
      * @dev Returns the number of bytes in the DNS name at 'offset' in 'self'.
@@ -158,15 +155,10 @@ library RRUtils {
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
         int diff = self.compare(other);
-        // bool diff;
-        // bool diff = (keccak256(self) == keccak256(other));
-        // if( !diff ){ return 0; }
         uint sOff = 0;
         uint oOff = 0;
 
-        // // This can be removed if you can pass offset to compare()
-        // bytes memory sTail = sTail.substring(sOff, sTail.length - sOff);
-        // bytes memory oTail = oTail.substring(oOff, oTail.length - oOff);
+        // These can be removed if you can pass offset to compare()
         bytes memory sTail = self;
         bytes memory oTail = other;
         bytes memory sHead;
@@ -174,95 +166,29 @@ library RRUtils {
 
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
-        uint counter = 0;
-        // while (counter < 5) {
         while (diff != 0) {
-        // while ((diff != 0) || (counter < 2)) {
-            Logger('Counter');
-            LoggerInt(int(counter));
-            Logger('Heads');
             if(sLength >= oLength){
-                Logger('SSSS');
                 sHead = head(self, sOff);
                 sOff = progress(self, sOff);
-                LoggerBytes(sHead);
-                Logger('Before tails');
-                LoggerBytes(sTail);
-                LoggerInt(int(sOff));
-                LoggerInt(int(sTail.length));
+                // No need to be copied if we can compare with offsets
                 sTail = self.substring(sOff, self.length - sOff);
-                Logger('Tails');
-                LoggerBytes(sTail);
             }
             if(sLength <= oLength){
-                Logger('OOO');
                 oHead = head(other, oOff); 
                 oOff = progress(other, oOff);
-                LoggerBytes(oHead);
-                Logger('Before tails');
-                LoggerBytes(oTail);
-                LoggerInt(int(oOff));
-                LoggerInt(int(oTail.length));
+                // No need to be copied if we can compare with offsets
                 oTail = other.substring(oOff, other.length - oOff);
             }
-            Logger('Tails');
-            LoggerBytes(sTail);
-            LoggerBytes(oTail);
-
             if(sLength != 0 ){ sLength = labelCount(self, sOff); }
             if(oLength != 0 ){ oLength = labelCount(other, oOff); }
-            Logger('soLength');
-            LoggerInt(int(sLength));
-            LoggerInt(int(oLength));
-
-            if(sLength == 0 && oLength ==0){
-                Logger('BREAK');
-                break;
-            }
-
-            // diff = (keccak256(sTail) == keccak256(oTail));
+            if(sLength == 0 && oLength ==0){ break; }
             diff = sTail.compare(oTail);
-            if(diff !=0){
-                Logger('diff');
-            }else{
-                Logger('no diff');
-            }
-
-            counter++;
         }
-        Logger('Out of loop!!');
-        LoggerInt(int(counter));
-        LoggerBytes(sHead);
-        LoggerBytes(oHead);
-        LoggerBytes(sTail);
-        LoggerBytes(oTail);
-
-        LoggerInt(int(sHead.compare(oHead)));
         return sHead.compare(oHead);
-        // return 0;
-    }
-
-    function compareTail(bytes memory self, uint sOff, bytes memory other, uint oOff) internal  returns (int) {
-        if(self.length <= sOff &&  other.length <= oOff){ return 0; }
-
-        bytes memory sHead;
-        bytes memory oHead;
-        if(self.length > sOff){ sHead = head(self, sOff);  }
-        if(self.length > oOff){ oHead = head(other, oOff); }
-        int result = compareTail(self, sOff + sHead.length + 1, other, oOff + oHead.length + 1);
-        if(result == 0){ return sHead.compare(oHead); }
-        return result;
     }
 
     function progress(bytes memory body, uint off) internal  returns(uint){
-        Logger('**Off before');
-        LoggerInt(int(off));
-        uint length = body.readUint8(off);
-        LoggerInt(int(length));
-        off = off + 1 + length;
-        Logger('**Off after');
-        LoggerInt(int(off));
-        return  off;
+        return  off + 1 + body.readUint8(off);
     }
 
     function head(bytes memory body, uint off) internal  returns(bytes){
