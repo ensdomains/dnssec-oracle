@@ -186,8 +186,7 @@ contract DNSSEC is Owned {
             require(rDataLength > nextNameLength);
             assert(iter.dnstype == DNSTYPE_NSEC);
             if(compareResult == 0){
-                bytes memory typeBitMap = iter.data.substring(rdataOffset + nextNameLength, rDataLength - nextNameLength - 1);    
-                require(!typeBitMap.checkTypeBitmap(0, deletetype));
+                require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deletetype));
             }else{
                 bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);            
                 require(deletename.compareNames(nextName) < 0);
