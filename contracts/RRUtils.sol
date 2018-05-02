@@ -176,7 +176,8 @@ library RRUtils {
         uint oLength = labelCount(other, 0);
         uint counter = 0;
         // while (counter < 5) {
-        while ((diff != 0) || (counter < 2)) {
+        while (diff != 0) {
+        // while ((diff != 0) || (counter < 2)) {
             Logger('Counter');
             LoggerInt(int(counter));
             Logger('Heads');
@@ -254,7 +255,14 @@ library RRUtils {
     }
 
     function progress(bytes memory body, uint off) internal  returns(uint){
-        return off + 2;
+        Logger('**Off before');
+        LoggerInt(int(off));
+        uint length = body.readUint8(off);
+        LoggerInt(int(length));
+        off = off + 1 + length;
+        Logger('**Off after');
+        LoggerInt(int(off));
+        return  off;
     }
 
     function head(bytes memory body, uint off) internal  returns(bytes){
