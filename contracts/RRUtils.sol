@@ -154,35 +154,27 @@ library RRUtils {
     }
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
-        int diff = self.compare(other);
+        bool equal = self.equals(other);
         uint sOff = 0;
         uint oOff = 0;
-
-        // These can be removed if you can pass offset to compare()
-        bytes memory sTail = self;
-        bytes memory oTail = other;
         bytes memory sHead;
         bytes memory oHead;
 
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
-        while (diff != 0) {
+        while (!equal) {
             if(sLength >= oLength){
                 sHead = head(self, sOff);
                 sOff = progress(self, sOff);
-                // No need to be copied if we can compare with offsets
-                sTail = self.substring(sOff, self.length - sOff);
             }
             if(sLength <= oLength){
                 oHead = head(other, oOff); 
                 oOff = progress(other, oOff);
-                // No need to be copied if we can compare with offsets
-                oTail = other.substring(oOff, other.length - oOff);
             }
             if(sLength != 0 ){ sLength = labelCount(self, sOff); }
             if(oLength != 0 ){ oLength = labelCount(other, oOff); }
             if(sLength == 0 && oLength ==0){ break; }
-            diff = sTail.compare(oTail);
+            equal = self.equals(sOff, other, oOff);
         }
         return sHead.compare(oHead);
     }

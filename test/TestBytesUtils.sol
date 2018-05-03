@@ -18,6 +18,7 @@ contract TestBytesUtils {
     Assert.equal("hello".equals("goodbye"), false, "String inequality");
     Assert.equal("hello".equals(1, "ello"), true, "Substring to string equality");
     Assert.equal("hello".equals(1, "jello", 1, 4), true, "Substring to substring equality");
+    Assert.equal("zhello".equals(1, "abchello", 3), true,   "Compare different value with multiple length");
   }
 
   function testCompare() public {

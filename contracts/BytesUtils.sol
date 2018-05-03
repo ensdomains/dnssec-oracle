@@ -75,6 +75,18 @@ library BytesUtils {
     }
 
     /*
+     * @dev Returns true if the two byte ranges are equal with offsets.
+     * @param self The first byte range to compare.
+     * @param offset The offset into the first byte range.
+     * @param other The second byte range to compare.
+     * @param otherOffset The offset into the second byte range.
+     * @return True if the byte ranges are equal, false otherwise.
+     */
+    function equals(bytes memory self, uint offset, bytes memory other, uint otherOffset) internal pure returns (bool) {
+        return keccak(self, offset, self.length - offset) == keccak(other, otherOffset, other.length - otherOffset);
+    }
+
+    /*
      * @dev Compares a range of 'self' to all of 'other' and returns True iff
      *      they are equal.
      * @param self The first byte range to compare.
