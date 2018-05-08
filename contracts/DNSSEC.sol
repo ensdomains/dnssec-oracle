@@ -173,10 +173,11 @@ contract DNSSEC is Owned {
      */
     function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
         RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        int compareResult = deletename.compareNames(nsecname);
-        require(compareResult >= 0);
         require(result.inserted != 0);
         require(result.rrs.length != 0);
+
+        int compareResult = deletename.compareNames(nsecname);
+
         for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
             uint rdataOffset = iter.rdataOffset;
             uint nextNameLength = iter.data.nameLength(rdataOffset);
@@ -187,13 +188,17 @@ contract DNSSEC is Owned {
             assert(iter.dnstype == DNSTYPE_NSEC);
             if(compareResult == 0){
                 require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deletetype));
-            }else{
+            }else if(compareResult > 0){
                 bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);            
                 require(deletename.compareNames(nextName) < 0);
+            }else{
+                // This happens only when the name to delete come before the NSEC record
+                revert();
             }
             delete rrsets[keccak256(deletename)][deletetype][dnsclass];
             return;
         }
+        // This should never reach.
         revert();
     }
 

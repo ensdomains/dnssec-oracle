@@ -142,7 +142,6 @@ library RRUtils {
                     // Our type is past the end of the bitmap
                     return false;
                 }
-
                 return (self.readUint8(off + windowByte + 2) & windowBitmask) != 0;
             } else {
                 // Skip this type bitmap
@@ -161,20 +160,26 @@ library RRUtils {
         uint otheroff = 0;
         uint head;
         uint otherhead;
-        uint len = labelCount(self, 0);
-        uint otherlen = labelCount(other, 0);
+        uint counts = labelCount(self, 0);
+        uint othercounts = labelCount(other, 0);
 
+        // Keep removing labels from the front of the name until both names are equal,
+        // then compare the last nonequal labels to each other
         while (!equal) {
-            if(len >= otherlen){
-                head = headposition(self, off);
+            if(counts >= othercounts){
+                head = off + 1;
                 off = progress(self, off);
             }else{
-                otherhead = headposition(other, otheroff);
+                otherhead = otheroff + 1;
                 otheroff = progress(other, otheroff);
             }
-            if(len != 0 ){ len = labelCount(self, off); }
-            if(otherlen != 0 ){ otherlen = labelCount(other, otheroff); }
-            if(len == 0 && otherlen ==0){ break; }
+            if(counts != 0 )
+                counts = labelCount(self, off);
+            if(othercounts != 0 )
+                othercounts = labelCount(other, otheroff);
+            if(counts == 0 && othercounts ==0)
+                break;
+
             equal = self.equals(off, other, otheroff);
         }
         return self.compare(head, self.readUint8(head), other, otherhead, other.readUint8(otherhead));
@@ -182,9 +187,5 @@ library RRUtils {
 
     function progress(bytes memory body, uint off) internal  returns(uint){
         return  off + 1 + body.readUint8(off);
-    }
-
-    function headposition(bytes memory body, uint off) internal  returns(uint){
-        return (off + 1);
     }
 }

@@ -19,8 +19,7 @@ library BytesUtils {
     /*
      * @dev Returns a positive number if `other` comes lexicographically after
      *      `self`, a negative number if it comes before, or zero if the
-     *      contents of the two bytes are equal. Comparison is done per-rune,
-     *      on unicode codepoints.
+     *      contents of the two bytes are equal.
      * @param self The first bytes to compare.
      * @param other The second bytes to compare.
      * @return The result of the comparison.
