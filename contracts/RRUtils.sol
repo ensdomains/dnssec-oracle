@@ -162,7 +162,7 @@ library RRUtils {
         uint counts = labelCount(self, 0);
         uint othercounts = labelCount(other, 0);
 
-        // Keep removing labels from the front of the name until both names are equal,
+        // Keep removing labels from the front of the name until both names are equal length
         while(counts > othercounts) {
             prevoff = off;
             off = progress(self, off);
