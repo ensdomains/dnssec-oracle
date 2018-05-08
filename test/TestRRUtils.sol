@@ -36,7 +36,6 @@ contract TestRRUtils {
     string[2] memory names = [hex'016100', hex'0162016100'];
     string[2] memory rdatas = [hex'74000001', hex'c0a80101'];
     uint i = 0;
-    // Test failing with "TypeError: Member "done" not found " error
     for(RRUtils.RRIterator memory iter = rrs.iterateRRs(0); !iter.done(); iter.next()) {
       Assert.equal(uint(iter.dnstype), 1, "Type matches");
       Assert.equal(uint(iter.class), 1, "Class matches");

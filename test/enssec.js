@@ -332,13 +332,14 @@ contract('DNSSEC', function(accounts) {
   it('rejects if NSEC record is not found', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]});
+    // nsec a does not exist
     assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'b.')), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
   })
 
   it('rejects if next record does not come before the deleting name', async function(){
     var instance = await dnssec.deployed();
-    // z. comes after d.
+    // text z. comes after next d.
     await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
     assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'z.')), false);
@@ -347,7 +348,7 @@ contract('DNSSEC', function(accounts) {
 
   it('rejects if nsec record starts after the deleting name', async function(){
     var instance = await dnssec.deployed();
-    // a. comes after b.
+    // text a. comes after nsec b.
     await submitEntry(instance, dns.TYPE_TXT, 'a.', {text: ["foo"]});
     await submitEntry(instance, dns.TYPE_NSEC, 'b.', {next:'d.', rrtypes:[dns.TYPE_TXT]});
     assert.equal((await deleteEntry(instance, 'b.', dns.TYPE_TXT, 'a.')), false);
@@ -356,13 +357,14 @@ contract('DNSSEC', function(accounts) {
 
   it('rejects RRset if trying to delete rrset that is in the type bitmap ', async function(){
     var instance = await dnssec.deployed();
+    // text a. has same nsec a. with type bitmap
     await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']});
     await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] });
     assert.equal((await deleteEntry(instance, 'a.', dns.TYPE_TXT, 'a.')), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
   })
 
-  it('deletes RRset if nsec name and delete name is same but with different rrtypes', async function(){
+  it('deletes RRset if nsec name and delete name are the same but with different rrtypes', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] });
     // This test fails if rrtypes is empty ([]), but would that case every happen?
