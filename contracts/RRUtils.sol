@@ -169,15 +169,14 @@ library RRUtils {
             if(counts >= othercounts){
                 head = off + 1;
                 off = progress(self, off);
+                counts-=1;
+
             }
             if(counts <= othercounts){
                 otherhead = otheroff + 1;
                 otheroff = progress(other, otheroff);
+                othercounts-=1;
             }
-            if(counts != 0 )
-                counts = labelCount(self, off);
-            if(othercounts != 0 )
-                othercounts = labelCount(other, otheroff);
             if(counts == 0 && othercounts ==0)
                 break;
 
