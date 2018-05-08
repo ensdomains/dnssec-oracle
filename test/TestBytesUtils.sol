@@ -18,6 +18,26 @@ contract TestBytesUtils {
     Assert.equal("hello".equals("goodbye"), false, "String inequality");
     Assert.equal("hello".equals(1, "ello"), true, "Substring to string equality");
     Assert.equal("hello".equals(1, "jello", 1, 4), true, "Substring to substring equality");
+    Assert.equal("zhello".equals(1, "abchello", 3), true,   "Compare different value with multiple length");
+  }
+
+  function testComparePartial() public {
+    Assert.equal("xax".compare(1, 1, "xxbxx", 2, 1)   < 0, true,  "Compare same length");
+    Assert.equal("xax".compare(1, 1, "xxabxx", 2, 2)  < 0, true,  "Compare different length");
+    Assert.equal("xax".compare(1, 1, "xxaxx", 2, 1)  == 0, true,  "Compare same with different offset");
+  }
+
+  function testCompare() public {
+    Assert.equal("a".compare("a")  == 0, true,  "Compare equal");
+    Assert.equal("a".compare("b")   < 0, true,   "Compare different value with same length");
+    Assert.equal("b".compare("a")   > 0, true,   "Compare different value with same length");
+    Assert.equal("aa".compare("ab") < 0, true,   "Compare different value with multiple length");
+    Assert.equal("a".compare("aa")  < 0, true,   "Compare different value with different length");
+    Assert.equal("aa".compare("a")  > 0, true,   "Compare different value with different length");
+    bytes memory longChar = "1234567890123456789012345678901234";
+    Assert.equal(longChar.compare(longChar) == 0, true,   "Compares more than 32 bytes char");
+    bytes memory otherLongChar = "2234567890123456789012345678901234";
+    Assert.equal(longChar.compare(otherLongChar) < 0, true,   "Compare long char with difference at start");
   }
 
   function testSubstring() public {

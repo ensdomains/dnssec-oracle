@@ -142,7 +142,6 @@ library RRUtils {
                     // Our type is past the end of the bitmap
                     return false;
                 }
-
                 return (self.readUint8(off + windowByte + 2) & windowBitmask) != 0;
             } else {
                 // Skip this type bitmap
@@ -151,5 +150,50 @@ library RRUtils {
         }
 
         return false;
+    }
+
+    function compareNames(bytes memory self, bytes memory other) internal  returns (int){
+        if(self.equals(other)){ return 0; }
+
+        uint off;
+        uint otheroff;
+        uint prevoff;
+        uint otherprevoff;
+        uint counts = labelCount(self, 0);
+        uint othercounts = labelCount(other, 0);
+
+        // Keep removing labels from the front of the name until both names are equal length
+        while(counts > othercounts) {
+            prevoff = off;
+            off = progress(self, off);
+            counts--;
+        }
+
+        while(othercounts > counts) {
+            otherprevoff = otheroff;
+            otheroff = progress(other, otheroff);
+            othercounts--;
+        }
+
+        // Compare the last nonequal labels to each other
+        while (counts > 0 && !self.equals(off, other, otheroff)) {
+            prevoff = off;
+            off = progress(self, off);
+            otherprevoff = otheroff;
+            otheroff = progress(other, otheroff);
+            counts-=1;
+        }
+
+        if(off == 0)
+            return -1;
+
+        if(otheroff == 0)
+            return 1;
+
+        return self.compare(prevoff + 1, self.readUint8(prevoff), other, otherprevoff + 1, other.readUint8(otherprevoff));
+    }
+
+    function progress(bytes memory body, uint off) internal  returns(uint){
+        return  off + 1 + body.readUint8(off);
     }
 }

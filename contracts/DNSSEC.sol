@@ -23,6 +23,7 @@ contract DNSSEC is Owned {
 
     uint16 constant DNSTYPE_DS = 43;
     uint16 constant DNSTYPE_RRSIG = 46;
+    uint16 constant DNSTYPE_NSEC = 47;
     uint16 constant DNSTYPE_DNSKEY = 48;
 
     uint constant DS_KEY_TAG = 0;
@@ -52,7 +53,6 @@ contract DNSSEC is Owned {
 
     struct RRSet {
         uint32 inception;
-        uint32 expiration;
         uint64 inserted;
         bytes rrs;
     }
@@ -78,7 +78,6 @@ contract DNSSEC is Owned {
         // of trust for all other records.
         rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
             inception: 0,
-            expiration: 0xFFFFFFFF,
             inserted: uint64(now),
             rrs: anchors
         });
@@ -149,7 +148,6 @@ contract DNSSEC is Owned {
         }
 
         set.inception = inception;
-        set.expiration = expiration;
         set.inserted = uint64(now);
 
         // o  The validator's notion of the current time MUST be less than or
@@ -162,6 +160,46 @@ contract DNSSEC is Owned {
 
         insertRRs(set, rrs, name, dnsclass, typecovered, labels);
         emit RRSetUpdated(name);
+    }
+
+    /**
+     * @dev Deletes an RR from the oracle.
+     *
+     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
+     * @param nsecname which contains the next authorative record
+     * @param deletetype The DNS record type to delete.
+     * @param deletename which you want to delete
+     * 
+     */
+    function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
+        RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
+        require(result.inserted != 0);
+        require(result.rrs.length != 0);
+
+        int compareResult = deletename.compareNames(nsecname);
+
+        for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
+            uint rdataOffset = iter.rdataOffset;
+            uint nextNameLength = iter.data.nameLength(rdataOffset);
+            uint rDataLength = iter.nextOffset - iter.rdataOffset;
+
+            // We assume that there is always typed bitmap after the next domain name
+            require(rDataLength > nextNameLength);
+            assert(iter.dnstype == DNSTYPE_NSEC);
+            if(compareResult == 0){
+                require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deletetype));
+            }else if(compareResult > 0){
+                bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);            
+                require(deletename.compareNames(nextName) < 0);
+            }else{
+                // This happens only when the name to delete come before the NSEC record
+                revert();
+            }
+            delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+            return;
+        }
+        // This should never reach.
+        revert();
     }
 
     /**
