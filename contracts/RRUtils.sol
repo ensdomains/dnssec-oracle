@@ -169,7 +169,8 @@ library RRUtils {
             if(counts >= othercounts){
                 head = off + 1;
                 off = progress(self, off);
-            }else{
+            }
+            if(counts <= othercounts){
                 otherhead = otheroff + 1;
                 otheroff = progress(other, otheroff);
             }
