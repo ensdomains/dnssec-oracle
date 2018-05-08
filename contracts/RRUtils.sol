@@ -153,36 +153,44 @@ library RRUtils {
     }
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
-        bool equal = self.equals(other);
-        if(equal){ return 0; }
+        if(self.equals(other)){ return 0; }
 
-        uint off = 0;
-        uint otheroff = 0;
-        uint head;
-        uint otherhead;
+        uint off;
+        uint otheroff;
+        uint prevoff;
+        uint otherprevoff;
         uint counts = labelCount(self, 0);
         uint othercounts = labelCount(other, 0);
 
         // Keep removing labels from the front of the name until both names are equal,
-        // then compare the last nonequal labels to each other
-        while (!equal) {
-            if(counts >= othercounts){
-                head = off + 1;
-                off = progress(self, off);
-                counts-=1;
-
-            }
-            if(counts <= othercounts){
-                otherhead = otheroff + 1;
-                otheroff = progress(other, otheroff);
-                othercounts-=1;
-            }
-            if(counts == 0 && othercounts ==0)
-                break;
-
-            equal = self.equals(off, other, otheroff);
+        while(counts > othercounts) {
+            prevoff = off;
+            off = progress(self, off);
+            counts--;
         }
-        return self.compare(head, self.readUint8(head), other, otherhead, other.readUint8(otherhead));
+
+        while(othercounts > counts) {
+            otherprevoff = otheroff;
+            otheroff = progress(other, otheroff);
+            othercounts--;
+        }
+
+        // Compare the last nonequal labels to each other
+        while (counts > 0 && !self.equals(off, other, otheroff)) {
+            prevoff = off;
+            off = progress(self, off);
+            otherprevoff = otheroff;
+            otheroff = progress(other, otheroff);
+            counts-=1;
+        }
+
+        if(off == 0)
+            return -1;
+
+        if(otheroff == 0)
+            return 1;
+
+        return self.compare(prevoff + 1, self.readUint8(prevoff), other, otherprevoff + 1, other.readUint8(otherprevoff));
     }
 
     function progress(bytes memory body, uint off) internal  returns(uint){
