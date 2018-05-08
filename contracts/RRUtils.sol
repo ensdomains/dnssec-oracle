@@ -155,26 +155,27 @@ library RRUtils {
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
         bool equal = self.equals(other);
+        if(equal){ return 0; }
+
+        uint off = 0;
         uint otheroff = 0;
-        uint oOff = 0;
         uint head;
         uint otherhead;
-
         uint len = labelCount(self, 0);
         uint otherlen = labelCount(other, 0);
+
         while (!equal) {
             if(len >= otherlen){
-                head = headposition(self, otheroff);
-                otheroff = progress(self, otheroff);
+                head = headposition(self, off);
+                off = progress(self, off);
+            }else{
+                otherhead = headposition(other, otheroff);
+                otheroff = progress(other, otheroff);
             }
-            if(len <= otherlen){
-                otherhead = headposition(other, oOff);
-                oOff = progress(other, oOff);
-            }
-            if(len != 0 ){ len = labelCount(self, otheroff); }
-            if(otherlen != 0 ){ otherlen = labelCount(other, oOff); }
+            if(len != 0 ){ len = labelCount(self, off); }
+            if(otherlen != 0 ){ otherlen = labelCount(other, otheroff); }
             if(len == 0 && otherlen ==0){ break; }
-            equal = self.equals(otheroff, other, oOff);
+            equal = self.equals(off, other, otheroff);
         }
         return self.compare(head, self.readUint8(head), other, otherhead, other.readUint8(otherhead));
     }

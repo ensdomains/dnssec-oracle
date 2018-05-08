@@ -283,7 +283,7 @@ contract('DNSSEC', function(accounts) {
     await verifyFailedSubmission(instance, test_rrsets[0][0], "0x" + test_rrsets[0][1], "0x" + sig.slice(0, sig.length - 2) + "FF");
   });
 
-  // Test delete RRset
+  // Test delete RRSET
   async function checkPresence(instance, type, name){
     var result = (await instance.rrset.call(1, type, dns.hexEncodeName(name)))[2];
     return result != '0x';
