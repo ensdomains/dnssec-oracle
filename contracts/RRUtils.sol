@@ -155,28 +155,28 @@ library RRUtils {
 
     function compareNames(bytes memory self, bytes memory other) internal  returns (int){
         bool equal = self.equals(other);
-        uint sOff = 0;
+        uint otheroff = 0;
         uint oOff = 0;
-        uint sHead;
-        uint oHead;
+        uint head;
+        uint otherhead;
 
-        uint sLength = labelCount(self, 0);
-        uint oLength = labelCount(other, 0);
+        uint len = labelCount(self, 0);
+        uint otherlen = labelCount(other, 0);
         while (!equal) {
-            if(sLength >= oLength){
-                sHead = headposition(self, sOff);
-                sOff = progress(self, sOff);
+            if(len >= otherlen){
+                head = headposition(self, otheroff);
+                otheroff = progress(self, otheroff);
             }
-            if(sLength <= oLength){
-                oHead = headposition(other, oOff);
+            if(len <= otherlen){
+                otherhead = headposition(other, oOff);
                 oOff = progress(other, oOff);
             }
-            if(sLength != 0 ){ sLength = labelCount(self, sOff); }
-            if(oLength != 0 ){ oLength = labelCount(other, oOff); }
-            if(sLength == 0 && oLength ==0){ break; }
-            equal = self.equals(sOff, other, oOff);
+            if(len != 0 ){ len = labelCount(self, otheroff); }
+            if(otherlen != 0 ){ otherlen = labelCount(other, oOff); }
+            if(len == 0 && otherlen ==0){ break; }
+            equal = self.equals(otheroff, other, oOff);
         }
-        return self.compare(sHead, self.readUint8(sHead), other, oHead, other.readUint8(oHead));
+        return self.compare(head, self.readUint8(head), other, otherhead, other.readUint8(otherhead));
     }
 
     function progress(bytes memory body, uint off) internal  returns(uint){
