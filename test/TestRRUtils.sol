@@ -87,8 +87,8 @@ contract TestRRUtils {
     bytes memory ab_c_d = hex'0261620163016400';
     bytes memory a_c_d  = hex'01610163016400';
 
-    Assert.equal(a_b_c.compareNames(c)      >  0, true, "one name has a difference of >1 label to the other");
-    Assert.equal(a_b_c.compareNames(d)      <  0, true, "one name has a difference of >1 label to the other");
+    Assert.equal(a_b_c.compareNames(c)      >  0 , true,  "one name has a difference of >1 label to with the same root name");
+    Assert.equal(a_b_c.compareNames(d)      <  0, true, "one name has a difference of >1 label to with different root name");
     Assert.equal(a_b_c.compareNames(a_d_c)  <  0, true, "two names start the same but have differences in later labels");
     Assert.equal(a_b_c.compareNames(b_a_c)  >  0, true, "the first label sorts later, but the first label sorts earlier");
     Assert.equal(ab_c_d.compareNames(a_c_d) >  0, true, "two names where the first label on one is a prefix of the first label on the other");

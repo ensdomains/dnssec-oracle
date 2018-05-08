@@ -157,18 +157,18 @@ library RRUtils {
         bool equal = self.equals(other);
         uint sOff = 0;
         uint oOff = 0;
-        bytes memory sHead;
-        bytes memory oHead;
+        uint sHead;
+        uint oHead;
 
         uint sLength = labelCount(self, 0);
         uint oLength = labelCount(other, 0);
         while (!equal) {
             if(sLength >= oLength){
-                sHead = head(self, sOff);
+                sHead = headposition(self, sOff);
                 sOff = progress(self, sOff);
             }
             if(sLength <= oLength){
-                oHead = head(other, oOff); 
+                oHead = headposition(other, oOff);
                 oOff = progress(other, oOff);
             }
             if(sLength != 0 ){ sLength = labelCount(self, sOff); }
@@ -176,14 +176,14 @@ library RRUtils {
             if(sLength == 0 && oLength ==0){ break; }
             equal = self.equals(sOff, other, oOff);
         }
-        return sHead.compare(oHead);
+        return self.compare(sHead, self.readUint8(sHead), other, oHead, other.readUint8(oHead));
     }
 
     function progress(bytes memory body, uint off) internal  returns(uint){
         return  off + 1 + body.readUint8(off);
     }
 
-    function head(bytes memory body, uint off) internal  returns(bytes){
-        return body.substring(off + 1, body.readUint8(off));
+    function headposition(bytes memory body, uint off) internal  returns(uint){
+        return (off + 1);
     }
 }
