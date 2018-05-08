@@ -15,6 +15,7 @@ library BytesUtils {
         }
     }
 
+
     /*
      * @dev Returns a positive number if `other` comes lexicographically after
      *      `self`, a negative number if it comes before, or zero if the
@@ -25,16 +26,33 @@ library BytesUtils {
      * @return The result of the comparison.
      */
     function compare(bytes memory self, bytes memory other) internal pure returns (int) {
-        uint shortest = self.length;
-        if (other.length < self.length)
-            shortest = other.length;
+        return compare(self, 0, self.length, other, 0, other.length);
+    }
+
+    /*
+     * @dev Returns a positive number if `other` comes lexicographically after
+     *      `self`, a negative number if it comes before, or zero if the
+     *      contents of the two bytes are equal. Comparison is done per-rune,
+     *      on unicode codepoints.
+     * @param self The first bytes to compare.
+     * @param offset The offset of self.
+     * @param len    The length of self.
+     * @param other The second bytes to compare.
+     * @param otheroffset The offset of the other string.
+     * @param otherlen    The length of the other string.
+     * @return The result of the comparison.
+     */
+    function compare(bytes memory self, uint offset, uint len, bytes memory other, uint otheroffset, uint otherlen) internal pure returns (int) {
+        uint shortest = len;
+        if (otherlen < len)
+            shortest = otherlen;
 
         uint selfptr; 
         uint otherptr;
 
         assembly {
-            selfptr := add(self, 32)
-            otherptr := add(other, 32)
+            selfptr := add(self, add(offset, 32))
+            otherptr := add(other, add(otheroffset, 32))
         }
         for (uint idx = 0; idx < shortest; idx += 32) {
             uint a;
@@ -58,7 +76,8 @@ library BytesUtils {
             selfptr += 32;
             otherptr += 32;
         }
-        return int(self.length) - int(other.length);
+
+        return int(len) - int(otherlen);
     }
 
     /*

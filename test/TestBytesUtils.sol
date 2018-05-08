@@ -21,6 +21,12 @@ contract TestBytesUtils {
     Assert.equal("zhello".equals(1, "abchello", 3), true,   "Compare different value with multiple length");
   }
 
+  function testComparePartial() public {
+    Assert.equal("xax".compare(1, 1, "xxbxx", 2, 1)   < 0, true,  "Compare same length");
+    Assert.equal("xax".compare(1, 1, "xxabxx", 2, 2)  < 0, true,  "Compare different length");
+    Assert.equal("xax".compare(1, 1, "xxaxx", 2, 1)  == 0, true,  "Compare same with different offset");
+  }
+
   function testCompare() public {
     Assert.equal("a".compare("a")  == 0, true,  "Compare equal");
     Assert.equal("a".compare("b")   < 0, true,   "Compare different value with same length");
