@@ -243,10 +243,7 @@ contract DNSSEC is Owned {
     function validateRRs(bytes memory data, bytes memory rrsigname, uint16 typecovered, uint8 labels) internal pure {
         // Iterate over all the RRs
         for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
-            // o  The RRSIG RR and the RRset MUST have the same owner name and the
-            //    same class.
-            // o  The number of labels in the RRset owner name MUST be greater than
-            //    or equal to the value in the RRSIG RR's Labels field.
+            // We only support class IN (Internet)
             require(iter.class == DNSCLASS_IN);
             checkName(rrsigname, data, iter.offset, labels);
 
@@ -256,6 +253,10 @@ contract DNSSEC is Owned {
     }
 
     function checkName(bytes memory rrsigname, bytes memory data, uint offset, uint8 labels) internal pure {
+        // o  The RRSIG RR and the RRset MUST have the same owner name and the
+        //    same class.
+        // o  The number of labels in the RRset owner name MUST be greater than
+        //    or equal to the value in the RRSIG RR's Labels field.
         uint nameLabels = data.labelCount(offset);
         uint nameLength = data.nameLength(offset);
         if (nameLabels == labels) {
