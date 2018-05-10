@@ -4,8 +4,8 @@ import "./Digest.sol";
 import "./BytesUtils.sol";
 
 /**
- * @dev Implements the DNSSEC SHA256 digest.
- */
+* @dev Implements the DNSSEC SHA256 digest.
+*/
 contract SHA256Digest is Digest {
     using BytesUtils for *;
 

@@ -1,8 +1,8 @@
 pragma solidity ^0.4.23;
 
 /**
- * @dev Contract mixin for 'owned' contracts.
- */
+* @dev Contract mixin for 'owned' contracts.
+*/
 contract Owned {
     address public owner;
 

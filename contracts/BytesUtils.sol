@@ -2,12 +2,12 @@ pragma solidity ^0.4.17;
 
 library BytesUtils {
     /*
-     * @dev Returns the keccak-256 hash of a byte range.
-     * @param self The byte string to hash.
-     * @param offset The position to start hashing at.
-     * @param len The number of bytes to hash.
-     * @return The hash of the byte range.
-     */
+    * @dev Returns the keccak-256 hash of a byte range.
+    * @param self The byte string to hash.
+    * @param offset The position to start hashing at.
+    * @param len The number of bytes to hash.
+    * @return The hash of the byte range.
+    */
     function keccak(bytes memory self, uint offset, uint len) internal pure returns (bytes32 ret) {
         require(offset + len <= self.length);
         assembly {
@@ -17,36 +17,36 @@ library BytesUtils {
 
 
     /*
-     * @dev Returns a positive number if `other` comes lexicographically after
-     *      `self`, a negative number if it comes before, or zero if the
-     *      contents of the two bytes are equal.
-     * @param self The first bytes to compare.
-     * @param other The second bytes to compare.
-     * @return The result of the comparison.
-     */
+    * @dev Returns a positive number if `other` comes lexicographically after
+    *      `self`, a negative number if it comes before, or zero if the
+    *      contents of the two bytes are equal.
+    * @param self The first bytes to compare.
+    * @param other The second bytes to compare.
+    * @return The result of the comparison.
+    */
     function compare(bytes memory self, bytes memory other) internal pure returns (int) {
         return compare(self, 0, self.length, other, 0, other.length);
     }
 
     /*
-     * @dev Returns a positive number if `other` comes lexicographically after
-     *      `self`, a negative number if it comes before, or zero if the
-     *      contents of the two bytes are equal. Comparison is done per-rune,
-     *      on unicode codepoints.
-     * @param self The first bytes to compare.
-     * @param offset The offset of self.
-     * @param len    The length of self.
-     * @param other The second bytes to compare.
-     * @param otheroffset The offset of the other string.
-     * @param otherlen    The length of the other string.
-     * @return The result of the comparison.
-     */
+    * @dev Returns a positive number if `other` comes lexicographically after
+    *      `self`, a negative number if it comes before, or zero if the
+    *      contents of the two bytes are equal. Comparison is done per-rune,
+    *      on unicode codepoints.
+    * @param self The first bytes to compare.
+    * @param offset The offset of self.
+    * @param len    The length of self.
+    * @param other The second bytes to compare.
+    * @param otheroffset The offset of the other string.
+    * @param otherlen    The length of the other string.
+    * @return The result of the comparison.
+    */
     function compare(bytes memory self, uint offset, uint len, bytes memory other, uint otheroffset, uint otherlen) internal pure returns (int) {
         uint shortest = len;
         if (otherlen < len)
-            shortest = otherlen;
+        shortest = otherlen;
 
-        uint selfptr; 
+        uint selfptr;
         uint otherptr;
 
         assembly {
@@ -63,14 +63,14 @@ library BytesUtils {
             if (a != b) {
                 // Mask out irrelevant bytes and check again
                 uint mask;
-                if(shortest > 32){
+                if (shortest > 32) {
                     mask = uint256(- 1); // aka 0xffffff....
-                }else{
+                } else {
                     mask = ~(2 ** (8 * (32 - shortest + idx)) - 1);
                 }
                 uint diff = (a & mask) - (b & mask);
                 if (diff != 0)
-                    return int(diff);
+                return int(diff);
             }
             selfptr += 32;
             otherptr += 32;
@@ -80,58 +80,58 @@ library BytesUtils {
     }
 
     /*
-     * @dev Returns true if the two byte ranges are equal.
-     * @param self The first byte range to compare.
-     * @param offset The offset into the first byte range.
-     * @param other The second byte range to compare.
-     * @param otherOffset The offset into the second byte range.
-     * @param len The number of bytes to compare
-     * @return True if the byte ranges are equal, false otherwise.
-     */
+    * @dev Returns true if the two byte ranges are equal.
+    * @param self The first byte range to compare.
+    * @param offset The offset into the first byte range.
+    * @param other The second byte range to compare.
+    * @param otherOffset The offset into the second byte range.
+    * @param len The number of bytes to compare
+    * @return True if the byte ranges are equal, false otherwise.
+    */
     function equals(bytes memory self, uint offset, bytes memory other, uint otherOffset, uint len) internal pure returns (bool) {
         return keccak(self, offset, len) == keccak(other, otherOffset, len);
     }
 
     /*
-     * @dev Returns true if the two byte ranges are equal with offsets.
-     * @param self The first byte range to compare.
-     * @param offset The offset into the first byte range.
-     * @param other The second byte range to compare.
-     * @param otherOffset The offset into the second byte range.
-     * @return True if the byte ranges are equal, false otherwise.
-     */
+    * @dev Returns true if the two byte ranges are equal with offsets.
+    * @param self The first byte range to compare.
+    * @param offset The offset into the first byte range.
+    * @param other The second byte range to compare.
+    * @param otherOffset The offset into the second byte range.
+    * @return True if the byte ranges are equal, false otherwise.
+    */
     function equals(bytes memory self, uint offset, bytes memory other, uint otherOffset) internal pure returns (bool) {
         return keccak(self, offset, self.length - offset) == keccak(other, otherOffset, other.length - otherOffset);
     }
 
     /*
-     * @dev Compares a range of 'self' to all of 'other' and returns True iff
-     *      they are equal.
-     * @param self The first byte range to compare.
-     * @param offset The offset into the first byte range.
-     * @param other The second byte range to compare.
-     * @return True if the byte ranges are equal, false otherwise.
-     */
+    * @dev Compares a range of 'self' to all of 'other' and returns True iff
+    *      they are equal.
+    * @param self The first byte range to compare.
+    * @param offset The offset into the first byte range.
+    * @param other The second byte range to compare.
+    * @return True if the byte ranges are equal, false otherwise.
+    */
     function equals(bytes memory self, uint offset, bytes memory other) internal pure returns (bool) {
         return self.length >= offset + other.length && equals(self, offset, other, 0, other.length);
     }
 
     /*
-     * @dev Returns true if the two byte ranges are equal.
-     * @param self The first byte range to compare.
-     * @param other The second byte range to compare.
-     * @return True if the byte ranges are equal, false otherwise.
-     */
+    * @dev Returns true if the two byte ranges are equal.
+    * @param self The first byte range to compare.
+    * @param other The second byte range to compare.
+    * @return True if the byte ranges are equal, false otherwise.
+    */
     function equals(bytes memory self, bytes memory other) internal pure returns(bool) {
-      return self.length == other.length && equals(self, 0, other, 0, self.length);
+        return self.length == other.length && equals(self, 0, other, 0, self.length);
     }
 
     /*
-     * @dev Returns the 8-bit number at the specified index of self.
-     * @param self The byte string.
-     * @param idx The index into the bytes
-     * @return The specified 8 bits of the string, interpreted as an integer.
-     */
+    * @dev Returns the 8-bit number at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes
+    * @return The specified 8 bits of the string, interpreted as an integer.
+    */
     function readUint8(bytes memory self, uint idx) internal pure returns (uint8 ret) {
         require(idx + 1 <= self.length);
         assembly {
@@ -140,11 +140,11 @@ library BytesUtils {
     }
 
     /*
-     * @dev Returns the 16-bit number at the specified index of self.
-     * @param self The byte string.
-     * @param idx The index into the bytes
-     * @return The specified 16 bits of the string, interpreted as an integer.
-     */
+    * @dev Returns the 16-bit number at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes
+    * @return The specified 16 bits of the string, interpreted as an integer.
+    */
     function readUint16(bytes memory self, uint idx) internal pure returns (uint16 ret) {
         require(idx + 2 <= self.length);
         assembly {
@@ -153,11 +153,11 @@ library BytesUtils {
     }
 
     /*
-     * @dev Returns the 32-bit number at the specified index of self.
-     * @param self The byte string.
-     * @param idx The index into the bytes
-     * @return The specified 32 bits of the string, interpreted as an integer.
-     */
+    * @dev Returns the 32-bit number at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes
+    * @return The specified 32 bits of the string, interpreted as an integer.
+    */
     function readUint32(bytes memory self, uint idx) internal pure returns (uint32 ret) {
         require(idx + 4 <= self.length);
         assembly {
@@ -166,11 +166,11 @@ library BytesUtils {
     }
 
     /*
-     * @dev Returns the 32 byte value at the specified index of self.
-     * @param self The byte string.
-     * @param idx The index into the bytes
-     * @return The specified 32 bytes of the string.
-     */
+    * @dev Returns the 32 byte value at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes
+    * @return The specified 32 bytes of the string.
+    */
     function readBytes32(bytes memory self, uint idx) internal pure returns (bytes32 ret) {
         require(idx + 32 <= self.length);
         assembly {
@@ -179,11 +179,11 @@ library BytesUtils {
     }
 
     /*
-     * @dev Returns the 32 byte value at the specified index of self.
-     * @param self The byte string.
-     * @param idx The index into the bytes
-     * @return The specified 32 bytes of the string.
-     */
+    * @dev Returns the 32 byte value at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes
+    * @return The specified 32 bytes of the string.
+    */
     function readBytes20(bytes memory self, uint idx) internal pure returns (bytes20 ret) {
         require(idx + 20 <= self.length);
         assembly {
@@ -211,11 +211,11 @@ library BytesUtils {
     }
 
     /*
-     * @dev Copies a substring into a new byte string.
-     * @param self The byte string to copy from.
-     * @param offset The offset to start copying at.
-     * @param len The number of bytes to copy.
-     */
+    * @dev Copies a substring into a new byte string.
+    * @param self The byte string to copy from.
+    * @param offset The offset to start copying at.
+    * @param len The number of bytes to copy.
+    */
     function substring(bytes memory self, uint offset, uint len) internal pure returns(bytes) {
         require(offset + len <= self.length);
 
@@ -224,8 +224,8 @@ library BytesUtils {
         uint src;
 
         assembly {
-          dest := add(ret, 32)
-          src := add(add(self, 32), offset)
+            dest := add(ret, 32)
+            src := add(add(self, 32), offset)
         }
         memcpy(dest, src, len);
 
