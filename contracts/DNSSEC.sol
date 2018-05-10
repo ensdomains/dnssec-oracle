@@ -87,6 +87,11 @@ contract DNSSEC is Owned {
         emit RRSetUpdated(hex"00", anchors);
     }
 
+    function validProof(bytes name, bytes memory proof) internal view returns(bool) {
+      uint16 dnstype = proof.readUint16(proof.nameLength(0));
+      return rrsets[keccak256(name)][dnstype].hash == bytes20(keccak256(proof));
+    }
+
     /**
      * @dev Sets the contract address for a signature verification algorithm.
      *      Callable only by the owner.
@@ -134,7 +139,11 @@ contract DNSSEC is Owned {
      *        applies to.
      * @param sig The signature data from the RRSIG record.
      */
-    function submitRRSet(bytes memory name, bytes memory input, bytes memory sig, bytes memory proof) public {
+    function submitRRSet(bytes memory name, bytes memory input, bytes memory sig, bytes memory proof)
+        public
+    {
+        require(validProof(input.readName(RRSIG_SIGNER_NAME), proof));
+
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
         uint32 expiration = input.readUint32(RRSIG_EXPIRATION);
         uint16 typecovered = input.readUint16(RRSIG_TYPE);
@@ -183,7 +192,7 @@ contract DNSSEC is Owned {
      *
      */
     function deleteRRSet(uint16 deletetype, bytes deletename, bytes nsecname, bytes proof) public {
-        require(rrsets[keccak256(nsecname)][DNSTYPE_NSEC].hash == bytes20(keccak256(proof)));
+        require(validProof(nsecname, proof));
 
         int compareResult = deletename.compareNames(nsecname);
 
@@ -194,7 +203,7 @@ contract DNSSEC is Owned {
 
             // We assume that there is always typed bitmap after the next domain name
             require(rDataLength > nextNameLength);
-            assert(iter.dnstype == DNSTYPE_NSEC);
+            require(iter.dnstype == DNSTYPE_NSEC);
             if(compareResult == 0){
                 require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deletetype));
             }else if(compareResult > 0){
@@ -283,11 +292,10 @@ contract DNSSEC is Owned {
         offset = 18 + signerNameLength;
 
         // Check the proof
-        RRUtils.RRIterator memory iter = proof.iterateRRs(0);
-        require(rrsets[data.keccak(RRSIG_SIGNER_NAME, signerNameLength)][iter.dnstype].hash == bytes20(keccak256(proof)));
-        if(iter.dnstype == DNSTYPE_DS) {
+        uint16 dnstype = proof.readUint16(proof.nameLength(0));
+        if(dnstype == DNSTYPE_DS) {
             require(verifyWithDS(data, sig, offset, proof));
-        } else if(iter.dnstype == DNSTYPE_DNSKEY) {
+        } else if(dnstype == DNSTYPE_DNSKEY) {
             require(verifyWithKnownKey(data, sig, proof));
         } else {
             revert("Unsupported proof record type");

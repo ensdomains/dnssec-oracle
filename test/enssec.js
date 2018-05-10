@@ -357,8 +357,8 @@ contract('DNSSEC', function(accounts) {
   it('rejects if NSEC record is not found', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
-    // nsec a does not exist
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', 'a.', "0x")), false);
+    // Submit with a proof for an irrelevant record.
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', 'a.', rootKeyProof)), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
   })
 

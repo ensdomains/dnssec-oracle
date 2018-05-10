@@ -28,6 +28,17 @@ library RRUtils {
     }
 
     /**
+     * @dev Returns a DNS format name at the specified offset of self.
+     * @param self The byte array to read a name from.
+     * @param offset The offset to start reading at.
+     * @return The name.
+     */
+    function readName(bytes memory self, uint offset) internal pure returns(bytes memory ret) {
+        uint len = nameLength(self, offset);
+        return self.substring(offset, len);
+    }
+
+    /**
      * @dev Returns the number of labels in the DNS name at 'offset' in 'self'.
      * @param self The byte array to read a name from.
      * @param offset The offset to start reading at.
