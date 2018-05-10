@@ -354,7 +354,7 @@ contract('DNSSEC', function(accounts) {
     return result;
   }
 
-  it('rejects if NSEC record is not found', async function(){
+  it('rejects if a proof with the wrong type is supplied', async function(){
     var instance = await dnssec.deployed();
     await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
     // Submit with a proof for an irrelevant record.
@@ -396,6 +396,15 @@ contract('DNSSEC', function(accounts) {
     var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] }, rootKeyProof);
     assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset)), true);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), false);
+  })
+
+  it('rejects if the proof hash does not match', async function(){
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
+    // This test fails if rrtypes is empty ([]), but would that case every happen?
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] }, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset + '00')), false);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
   })
 
   it('deletes RRset if NSEC next comes after delete name', async function(){
