@@ -221,12 +221,12 @@ contract DNSSEC is Owned {
     }
 
     /**
-     * @dev Returns the RRs (if any) associated with the provided type and name.
+     * @dev Returns data about the RRs (if any) known to this oracle with the provided type and name.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
      * @return inception The unix timestamp at which the signature for this RRSET was created.
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
-     * @return rrs The wire-format RR records.
+     * @return hash The hash of the RRset that was inserted.
      */
     function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
