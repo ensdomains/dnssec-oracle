@@ -54,11 +54,13 @@ contract DNSSEC is Owned {
     struct RRSet {
         uint32 inception;
         uint64 inserted;
-        bytes rrs;
+        bytes20 hash;
     }
 
-    // (name, type, class) => RRSet
-    mapping (bytes32 => mapping(uint16 => mapping(uint16 => RRSet))) rrsets;
+    // (name, type) => RRSet
+    mapping (bytes32 => mapping(uint16 => RRSet)) rrsets;
+
+    bytes public anchors;
 
     mapping (uint8 => Algorithm) public algorithms;
     mapping (uint8 => Digest) public digests;
@@ -67,20 +69,27 @@ contract DNSSEC is Owned {
     event AlgorithmUpdated(uint8 id, address addr);
     event DigestUpdated(uint8 id, address addr);
     event NSEC3DigestUpdated(uint8 id, address addr);
-    event RRSetUpdated(bytes name);
+    event RRSetUpdated(bytes name, bytes rrset);
 
     /**
      * @dev Constructor.
-     * @param anchors The binary format RR entries for the root DS records.
+     * @param _anchors The binary format RR entries for the root DS records.
      */
-    constructor(bytes anchors) public {
+    constructor(bytes _anchors) public {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
-        rrsets[keccak256(hex"00")][DNSTYPE_DS][DNSCLASS_IN] = RRSet({
-            inception: 0,
+        anchors = _anchors;
+        rrsets[keccak256(hex"00")][DNSTYPE_DS] = RRSet({
+            inception: uint32(0),
             inserted: uint64(now),
-            rrs: anchors
+            hash: bytes20(keccak256(anchors))
         });
+        emit RRSetUpdated(hex"00", anchors);
+    }
+
+    function validProof(bytes name, bytes memory proof) internal view returns(bool) {
+      uint16 dnstype = proof.readUint16(proof.nameLength(0));
+      return rrsets[keccak256(name)][dnstype].hash == bytes20(keccak256(proof));
     }
 
     /**
@@ -123,7 +132,6 @@ contract DNSSEC is Owned {
      * trusted, or if they are self-signed, and the signing key is identified by
      * a DS record that is already trusted.
      *
-     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param name The name of the RRSET, in DNS label-sequence format.
      * @param input The signed RR set. This is in the format described in section
      *        5.3.2 of RFC4035: The RRDATA section from the RRSIG without the signature
@@ -131,24 +139,32 @@ contract DNSSEC is Owned {
      *        applies to.
      * @param sig The signature data from the RRSIG record.
      */
-    function submitRRSet(uint16 dnsclass, bytes memory name, bytes memory input, bytes memory sig) public {
+    function submitRRSet(bytes memory name, bytes memory input, bytes memory sig, bytes memory proof)
+        public
+    {
+        require(validProof(input.readName(RRSIG_SIGNER_NAME), proof));
+
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
         uint32 expiration = input.readUint32(RRSIG_EXPIRATION);
         uint16 typecovered = input.readUint16(RRSIG_TYPE);
         uint8 labels = input.readUint8(RRSIG_LABELS);
 
         // Validate the signature
-        uint offset = verifySignature(dnsclass, name, input, sig);
+        uint offset = verifySignature(name, input, sig, proof);
+
         bytes memory rrs = input.substring(offset, input.length - offset);
 
-        RRSet storage set = rrsets[keccak256(name)][typecovered][dnsclass];
-        if (set.rrs.length > 0) {
-            // To replace an existing rrset, the signature must be newer
-            require(inception > set.inception);
+        RRSet storage set = rrsets[keccak256(name)][typecovered];
+        if (set.inserted > 0) {
+            // To replace an existing rrset, the signature must be at least as new
+            require(inception >= set.inception);
+        }
+        if(set.hash == keccak256(rrs)) {
+          // Already inserted!
+          return;
         }
 
-        set.inception = inception;
-        set.inserted = uint64(now);
+        // TODO: Check inception and expiration using mod2^32 math
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
@@ -158,44 +174,46 @@ contract DNSSEC is Owned {
         //    equal to the time listed in the RRSIG RR's Inception field.
         require(inception < now);
 
-        insertRRs(set, rrs, name, dnsclass, typecovered, labels);
-        emit RRSetUpdated(name);
+        validateRRs(rrs, name, typecovered, labels);
+        rrsets[keccak256(name)][typecovered] = RRSet({
+            inception: inception,
+            inserted: uint64(now),
+            hash: bytes20(keccak256(rrs))
+        });
+        emit RRSetUpdated(name, rrs);
     }
 
     /**
      * @dev Deletes an RR from the oracle.
      *
-     * @param dnsclass The DNS class (1 = CLASS_INET) of the records being inserted.
      * @param nsecname which contains the next authorative record
      * @param deletetype The DNS record type to delete.
      * @param deletename which you want to delete
-     * 
+     *
      */
-    function deleteRRSet(uint16 dnsclass, bytes nsecname, uint16 deletetype, bytes deletename) public {
-        RRSet storage result = rrsets[keccak256(nsecname)][DNSTYPE_NSEC][dnsclass];
-        require(result.inserted != 0);
-        require(result.rrs.length != 0);
+    function deleteRRSet(uint16 deletetype, bytes deletename, bytes nsecname, bytes proof) public {
+        require(validProof(nsecname, proof));
 
         int compareResult = deletename.compareNames(nsecname);
 
-        for(RRUtils.RRIterator memory iter = result.rrs.iterateRRs(0); !iter.done(); iter.next()) {
+        for(RRUtils.RRIterator memory iter = proof.iterateRRs(0); !iter.done(); iter.next()) {
             uint rdataOffset = iter.rdataOffset;
             uint nextNameLength = iter.data.nameLength(rdataOffset);
             uint rDataLength = iter.nextOffset - iter.rdataOffset;
 
             // We assume that there is always typed bitmap after the next domain name
             require(rDataLength > nextNameLength);
-            assert(iter.dnstype == DNSTYPE_NSEC);
+            require(iter.dnstype == DNSTYPE_NSEC);
             if(compareResult == 0){
                 require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deletetype));
             }else if(compareResult > 0){
-                bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);            
+                bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);
                 require(deletename.compareNames(nextName) < 0);
             }else{
                 // This happens only when the name to delete come before the NSEC record
                 revert();
             }
-            delete rrsets[keccak256(deletename)][deletetype][dnsclass];
+            delete rrsets[keccak256(deletename)][deletetype];
             return;
         }
         // This should never reach.
@@ -203,59 +221,55 @@ contract DNSSEC is Owned {
     }
 
     /**
-     * @dev Returns the RRs (if any) associated with the provided class, type, and name.
-     * @param dnsclass The DNS class (1 = CLASS_INET) to query.
+     * @dev Returns data about the RRs (if any) known to this oracle with the provided type and name.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
      * @return inception The unix timestamp at which the signature for this RRSET was created.
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
-     * @return rrs The wire-format RR records.
+     * @return hash The hash of the RRset that was inserted.
      */
-    function rrset(uint16 dnsclass, uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes) {
-        RRSet storage result = rrsets[keccak256(name)][dnstype][dnsclass];
-        return (result.inception, result.inserted, result.rrs);
+    function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20) {
+        RRSet storage result = rrsets[keccak256(name)][dnstype];
+        return (result.inception, result.inserted, result.hash);
     }
 
     /**
-     * @dev Validates and inserts a set of RRs.
-     * @param set The storage location to insert the RRs into.
+     * @dev Validates a set of RRs.
      * @param data The RR data.
      * @param rrsigname The name assigned to the RRSIG record verifying this RRSET.
-     * @param rrsetclass The class value for the RRSIG record.
      * @param typecovered The type covered by the RRSIG record.
      * @param labels The number of labels specified by the RRSIG record.
      */
-    function insertRRs(RRSet storage set, bytes memory data, bytes memory rrsigname, uint16 rrsetclass, uint16 typecovered, uint8 labels) internal {
+    function validateRRs(bytes memory data, bytes memory rrsigname, uint16 typecovered, uint8 labels) internal pure {
         // Iterate over all the RRs
         for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
-            // o  The RRSIG RR and the RRset MUST have the same owner name and the
-            //    same class.
-            // o  The number of labels in the RRset owner name MUST be greater than
-            //    or equal to the value in the RRSIG RR's Labels field.
-            require(iter.class == rrsetclass);
+            // We only support class IN (Internet)
+            require(iter.class == DNSCLASS_IN);
             checkName(rrsigname, data, iter.offset, labels);
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
             require(iter.dnstype == typecovered);
         }
-
-        set.rrs = data;
     }
 
     function checkName(bytes memory rrsigname, bytes memory data, uint offset, uint8 labels) internal pure {
-      uint nameLabels = data.labelCount(offset);
-      uint nameLength = data.nameLength(offset);
-      if (nameLabels == labels) {
-          require(nameLength == rrsigname.length);
-          require(data.equals(0, rrsigname));
-      } else if (nameLabels == labels + 1) {
-          // It's a wildcard domain; make sure it ends with rrsigname and starts with *.
-          require(data.readUint16(0) == 0x012A);
-          require(data.equals(2, rrsigname, rrsigname.length - nameLength + 2, nameLength - 2));
-      } else {
-          // Anything else is invalid
-          revert();
-      }
+        // o  The RRSIG RR and the RRset MUST have the same owner name and the
+        //    same class.
+        // o  The number of labels in the RRset owner name MUST be greater than
+        //    or equal to the value in the RRSIG RR's Labels field.
+        uint nameLabels = data.labelCount(offset);
+        uint nameLength = data.nameLength(offset);
+        if (nameLabels == labels) {
+            require(nameLength == rrsigname.length);
+            require(data.equals(0, rrsigname));
+        } else if (nameLabels == labels + 1) {
+            // It's a wildcard domain; make sure it ends with rrsigname and starts with *.
+            require(data.readUint16(0) == 0x012A);
+            require(data.equals(2, rrsigname, rrsigname.length - nameLength + 2, nameLength - 2));
+        } else {
+            // Anything else is invalid
+            revert();
+        }
     }
 
     /**
@@ -263,12 +277,11 @@ contract DNSSEC is Owned {
      *
      * Throws or reverts if unable to verify the record.
      *
-     * @param dnsclass The DNS class for the records.
      * @param name The name of the RRSIG record, in DNS label-sequence format.
      * @param data The original data to verify.
      * @param sig The signature data.
      */
-    function verifySignature(uint16 dnsclass, bytes name, bytes memory data, bytes sig) internal constant returns(uint offset) {
+    function verifySignature(bytes name, bytes memory data, bytes memory sig, bytes memory proof) internal constant returns(uint offset) {
         uint signerNameLength = data.nameLength(RRSIG_SIGNER_NAME);
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
@@ -279,28 +292,34 @@ contract DNSSEC is Owned {
         // Set the return offset to point at the first RR
         offset = 18 + signerNameLength;
 
-        require(verifyWithKnownKey(dnsclass, data, sig) || verifyWithDS(data, sig, offset));
+        // Check the proof
+        uint16 dnstype = proof.readUint16(proof.nameLength(0));
+        if(dnstype == DNSTYPE_DS) {
+            require(verifyWithDS(data, sig, offset, proof));
+        } else if(dnstype == DNSTYPE_DNSKEY) {
+            require(verifyWithKnownKey(data, sig, proof));
+        } else {
+            revert("Unsupported proof record type");
+        }
     }
 
     /**
      * @dev Attempts to verify a signed RRSET against an already known public key.
-     * @param dnsclass The DNS class for the records.
      * @param data The original data to verify.
      * @param sig The signature data.
      * @return True if the RRSET could be verified, false otherwise.
      */
-    function verifyWithKnownKey(uint16 dnsclass, bytes memory data, bytes memory sig) internal constant returns(bool) {
+    function verifyWithKnownKey(bytes memory data, bytes memory sig, bytes memory proof) internal constant returns(bool) {
         uint signerNameLength = data.nameLength(RRSIG_SIGNER_NAME);
 
         // Extract algorithm and keytag
         uint8 algorithm = data.readUint8(RRSIG_ALGORITHM);
         uint16 keytag = data.readUint16(RRSIG_KEY_TAG);
 
-        // Look for a matching key and verify the signature with it
-        bytes memory keydata = rrsets[data.keccak(RRSIG_SIGNER_NAME, signerNameLength)][DNSTYPE_DNSKEY][dnsclass].rrs;
-        if(keydata.length == 0) return false;
-
-        for(RRUtils.RRIterator memory iter = keydata.iterateRRs(0); !iter.done(); iter.next()) {
+        for(RRUtils.RRIterator memory iter = proof.iterateRRs(0); !iter.done(); iter.next()) {
+          // Check the DNSKEY's owner name matches the signer name on the RRSIG
+          require(proof.nameLength(0) == signerNameLength);
+          require(proof.equals(0, data, RRSIG_SIGNER_NAME, signerNameLength));
           if (verifySignatureWithKey(iter.rdata(), algorithm, keytag, data, sig)) return true;
         }
 
@@ -314,7 +333,7 @@ contract DNSSEC is Owned {
      * @param offset The offset from the start of the data to the first RR.
      * @return True if the RRSET could be verified, false otherwise.
      */
-    function verifyWithDS(bytes memory data, bytes memory sig, uint offset) internal constant returns(bool) {
+    function verifyWithDS(bytes memory data, bytes memory sig, uint offset, bytes memory proof) internal constant returns(bool) {
         // Extract algorithm and keytag
         uint8 algorithm = data.readUint8(RRSIG_ALGORITHM);
         uint16 keytag = data.readUint16(RRSIG_KEY_TAG);
@@ -326,7 +345,7 @@ contract DNSSEC is Owned {
           bytes memory keyrdata = iter.rdata();
           if (verifySignatureWithKey(keyrdata, algorithm, keytag, data, sig)) {
               // It's self-signed - look for a DS record to verify it.
-              if (verifyKeyWithDS(iter.class, iter.name(), keyrdata, keytag, algorithm)) return true;
+              if (verifyKeyWithDS(iter.name(), keyrdata, keytag, algorithm, proof)) return true;
               // If we found a valid signature but no valid DS, no use checking other records too.
               return false;
           }
@@ -366,17 +385,13 @@ contract DNSSEC is Owned {
 
     /**
      * @dev Attempts to verify a key using DS records.
-     * @param dnsclass The DNS class of the key.
      * @param keyname The DNS name of the key, in DNS label-sequence format.
      * @param keyrdata The RDATA section of the key.
      * @param keytag The keytag of the key.
      * @param algorithm The algorithm ID of the key.
      * @return True if a DS record verifies this key.
      */
-    function verifyKeyWithDS(uint16 dnsclass, bytes memory keyname, bytes memory keyrdata, uint16 keytag, uint8 algorithm) internal view returns (bool) {
-        bytes memory data = rrsets[keccak256(keyname)][DNSTYPE_DS][dnsclass].rrs;
-        if(data.length == 0) return false;
-
+    function verifyKeyWithDS(bytes memory keyname, bytes memory keyrdata, uint16 keytag, uint8 algorithm, bytes memory data) internal view returns (bool) {
         for(RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
             if(data.readUint16(iter.rdataOffset + DS_KEY_TAG) != keytag) continue;
             if(data.readUint8(iter.rdataOffset + DS_ALGORITHM) != algorithm) continue;
@@ -416,5 +431,4 @@ contract DNSSEC is Owned {
         ac += (ac >> 16) & 0xFFFF;
         return uint16(ac & 0xFFFF);
     }
-
 }
