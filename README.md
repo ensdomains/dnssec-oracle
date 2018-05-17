@@ -32,6 +32,27 @@ To run linting, use solium:
 solium --dir ./contracts
 ```
 
+## Including DNSSEC Oracle in your project
+
+### Installation
+
+```
+npm install dnssec-oracle
+```
+
+### Within Your contracts
+
+```
+import "dnssec-oracle/build/contracts/DNSSEC"
+```
+
+### Within Javascript code
+
+```
+var data = require("dnssec-oracle/build/contracts/DNSSEC.json")
+```
+
+The JSON file is same as the one generated using `truffle compile`. You can pass the loaded data to `truffle-contract` or use it via web3 by passing `data.abi`.
 
 ### Usage
 
