@@ -1,6 +1,6 @@
 {
   "name": "dnssec-oracle",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
@@ -13,7 +13,7 @@
     "test": "truffle test",
     "watch": "npm-watch",
     "lint": "solium --dir ./contracts",
-    "prepare": "truffle compile"
+    "prepare": "truffle networks --clean && truffle compile"
   },
   "dependencies": {
   }
