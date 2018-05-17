@@ -1,4 +1,5 @@
 {
+  "name": "dnssec-oracle",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
