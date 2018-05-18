@@ -47,7 +47,6 @@ async function verifySubmission(instance, name, data, sig, proof) {
   if(proof === undefined) {
     proof = await instance.anchors();
   }
-  console.log('verifySubmission', name);
   var name = dns.hexEncodeName(name);
   var tx = await instance.submitRRSet(name, data, sig, proof);
   assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
@@ -76,363 +75,359 @@ async function verifyFailedSubmission(instance, name, data, sig, proof) {
 }
 
 contract('DNSSEC', function(accounts) {
-  // it('should have a default algorithm and digest set', async function() {
-  //   var instance = await dnssec.deployed();
-  //   assert.notEqual(await instance.algorithms(8), "0x0000000000000000000000000000000000000000");
-  //   assert.notEqual(await instance.algorithms(253), "0x0000000000000000000000000000000000000000");
-  //   assert.notEqual(await instance.digests(2), "0x0000000000000000000000000000000000000000");
-  //   assert.notEqual(await instance.digests(253), "0x0000000000000000000000000000000000000000");
-  // });
+  it('should have a default algorithm and digest set', async function() {
+    var instance = await dnssec.deployed();
+    assert.notEqual(await instance.algorithms(8), "0x0000000000000000000000000000000000000000");
+    assert.notEqual(await instance.algorithms(253), "0x0000000000000000000000000000000000000000");
+    assert.notEqual(await instance.digests(2), "0x0000000000000000000000000000000000000000");
+    assert.notEqual(await instance.digests(253), "0x0000000000000000000000000000000000000000");
+  });
 
-  // function rootKeys() {
-  //   return {
-  //     typeCovered: dns.TYPE_DNSKEY,
-  //     algorithm: 253,
-  //     labels: 0,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")},
-  //       {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 4, algorithm: 253, pubkey: new Buffer("1111", "HEX")},
-  //       {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 3, algorithm: 253, pubkey: new Buffer("1112", "HEX")}
-  //     ],
-  //   };
-  // };
+  function rootKeys() {
+    return {
+      typeCovered: dns.TYPE_DNSKEY,
+      algorithm: 253,
+      labels: 0,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")},
+        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 4, algorithm: 253, pubkey: new Buffer("1111", "HEX")},
+        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 3, algorithm: 253, pubkey: new Buffer("1112", "HEX")}
+      ],
+    };
+  };
 
-  // it("should reject signatures with non-matching algorithms", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.rrs = [
-  //     {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 254, pubkey: new Buffer("1111", "HEX")}
-  //   ];
-  //   await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should reject signatures with non-matching algorithms", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.rrs = [
+      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 254, pubkey: new Buffer("1111", "HEX")}
+    ];
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // it("should reject signatures with non-matching keytags", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.rrs = [
-  //     {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1112", "HEX")}
-  //   ];
-  //   await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should reject signatures with non-matching keytags", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.rrs = [
+      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1112", "HEX")}
+    ];
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // it("should reject signatures by keys without the ZK bit set", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.rrs = [
-  //     {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0001, protocol: 3, algorithm: 253, pubkey: new Buffer("1211", "HEX")}
-  //   ];
-  //   await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should reject signatures by keys without the ZK bit set", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.rrs = [
+      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0001, protocol: 3, algorithm: 253, pubkey: new Buffer("1211", "HEX")}
+    ];
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // var rootKeyProof = undefined;
-  // it('should accept a root DNSKEY', async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   var tx = await verifySubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  //   rootKeyProof = tx.logs[0].args.rrset;
-  // });
+  var rootKeyProof = undefined;
+  it('should accept a root DNSKEY', async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    var tx = await verifySubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+    rootKeyProof = tx.logs[0].args.rrset;
+  });
 
-  // it('should check if root DNSKEY exist', async function(){
-  //   var instance = await dnssec.deployed();
-  //   var [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
-  //   assert.equal(rrs, '0x0000000000000000000000000000000000000000');
-  //   [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
-  //   assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
-  // })
+  it('should check if root DNSKEY exist', async function(){
+    var instance = await dnssec.deployed();
+    var [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
+    assert.equal(rrs, '0x0000000000000000000000000000000000000000');
+    [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
+    assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
+  })
 
-  // it('should accept a signed RRSET', async function() {
-  //   var instance = await dnssec.deployed();
-  //   var proof = dns.hexEncodeRRs(rootKeys().rrs);
-  //   await verifySubmission(instance, "test.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_TXT,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 1,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "test.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["test"]}
-  //     ],
-  //   }), "0x", proof);
-  // });
+  it('should accept a signed RRSET', async function() {
+    var instance = await dnssec.deployed();
+    var proof = dns.hexEncodeRRs(rootKeys().rrs);
+    await verifySubmission(instance, "test.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 1,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "test.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["test"]}
+      ],
+    }), "0x", proof);
+  });
 
-  // it('should reject signatures with non-matching classes', async function() {
-  //   var instance = await dnssec.deployed();
-  //   await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_TXT,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "net.", type: dns.TYPE_TXT, klass: 2, ttl: 3600, text: ["foo"]}
-  //     ],
-  //   }), "0x");
-  // })
+  it('should reject signatures with non-matching classes', async function() {
+    var instance = await dnssec.deployed();
+    await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "net.", type: dns.TYPE_TXT, klass: 2, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  })
 
-  // it('should reject signatures with non-matching names', async function() {
-  //   var instance = await dnssec.deployed();
-  //   await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_TXT,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "foo.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-  //     ],
-  //   }), "0x");
-  // });
+  it('should reject signatures with non-matching names', async function() {
+    var instance = await dnssec.deployed();
+    await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "foo.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
 
-  // it('should reject signatures with the wrong type covered', async function() {
-  //   var instance = await dnssec.deployed();
-  //   await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_DS,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-  //     ],
-  //   }), "0x");
-  // });
+  it('should reject signatures with the wrong type covered', async function() {
+    var instance = await dnssec.deployed();
+    await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_DS,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
 
-  // it('should reject signatures with too many labels', async function() {
-  //   var instance = await dnssec.deployed();
-  //   await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_TXT,
-  //     algorithm: 253,
-  //     labels: 2,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-  //     ],
-  //   }), "0x");
-  // });
+  it('should reject signatures with too many labels', async function() {
+    var instance = await dnssec.deployed();
+    await verifyFailedSubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 2,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
 
-  // it('should support wildcard subdomains', async function() {
-  //   var instance = await dnssec.deployed();
-  //   var proof = dns.hexEncodeRRs(rootKeys().rrs);
-  //   await verifySubmission(instance, "foo.net.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_TXT,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 1,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "*.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-  //     ],
-  //   }), "0x", proof);
-  // });
+  it('should support wildcard subdomains', async function() {
+    var instance = await dnssec.deployed();
+    var proof = dns.hexEncodeRRs(rootKeys().rrs);
+    await verifySubmission(instance, "foo.net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 1,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "*.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x", proof);
+  });
 
-  // it('should reject signatures with invalid signer names', async function() {
-  //   var instance = await dnssec.deployed();
+  it('should reject signatures with invalid signer names', async function() {
+    var instance = await dnssec.deployed();
 
-  //   await verifySubmission(instance, "net.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_DNSKEY,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [
-  //       {name: "net.", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")}
-  //     ]
-  //   }), "0x");
+    await verifySubmission(instance, "net.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_DNSKEY,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [
+        {name: "net.", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: new Buffer("1111", "HEX")}
+      ]
+    }), "0x");
 
-  //   await verifyFailedSubmission(instance, "com.", dns.hexEncodeSignedSet({
-  //     typeCovered: dns.TYPE_TXT,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 0,
-  //     keytag: 5647,
-  //     signerName: "net.",
-  //     rrs: [
-  //       {name: "com.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-  //     ],
-  //   }), "0x");
-  // });
+    await verifyFailedSubmission(instance, "com.", dns.hexEncodeSignedSet({
+      typeCovered: dns.TYPE_TXT,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 0,
+      keytag: 5647,
+      signerName: "net.",
+      rrs: [
+        {name: "com.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
+      ],
+    }), "0x");
+  });
 
-  // it("should reject entries with expirations in the past", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.inception = 1;
-  //   keys.expiration = 123;
-  //   await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should reject entries with expirations in the past", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.inception = 1;
+    keys.expiration = 123;
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // it("should reject entries with inceptions in the future", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.inception = 0xFFFFFFFF;
-  //   await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should reject entries with inceptions in the future", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.inception = 0xFFFFFFFF;
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // it("should accept updates with newer signatures", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.inception = 1;
-  //   await verifySubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should accept updates with newer signatures", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.inception = 1;
+    await verifySubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // it("should reject entries that are older", async function() {
-  //   var instance = await dnssec.deployed();
-  //   var keys = rootKeys();
-  //   keys.inception = 0;
-  //   await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
-  // });
+  it("should reject entries that are older", async function() {
+    var instance = await dnssec.deployed();
+    var keys = rootKeys();
+    keys.inception = 0;
+    await verifyFailedSubmission(instance, ".", dns.hexEncodeSignedSet(keys), "0x");
+  });
 
-  // it('should reject invalid RSA signatures', async function() {
-  //   var instance = await dnssec.deployed();
-  //   var sig = test_rrsets[0][2];
-  //   await verifyFailedSubmission(instance, test_rrsets[0][0], "0x" + test_rrsets[0][1], "0x" + sig.slice(0, sig.length - 2) + "FF");
-  // });
+  it('should reject invalid RSA signatures', async function() {
+    var instance = await dnssec.deployed();
+    var sig = test_rrsets[0][2];
+    await verifyFailedSubmission(instance, test_rrsets[0][0], "0x" + test_rrsets[0][1], "0x" + sig.slice(0, sig.length - 2) + "FF");
+  });
 
-  // // Test delete RRSET
-  // async function checkPresence(instance, type, name){
-  //   var result = (await instance.rrdata.call(type, dns.hexEncodeName(name)))[2];
-  //   return result != '0x0000000000000000000000000000000000000000';
-  // }
+  // Test delete RRSET
+  async function checkPresence(instance, type, name){
+    var result = (await instance.rrdata.call(type, dns.hexEncodeName(name)))[2];
+    return result != '0x0000000000000000000000000000000000000000';
+  }
 
-  // async function submitEntry(instance, type, name, option, proof){
-  //   var rrs = {name: name, type: type, klass: 1, ttl: 3600};
-  //   Object.assign(rrs, option)
-  //   var keys = {
-  //     typeCovered: type,
-  //     algorithm: 253,
-  //     labels: 1,
-  //     originalTTL: 3600,
-  //     expiration: 0xFFFFFFFF,
-  //     inception: 1,
-  //     keytag: 5647,
-  //     signerName: ".",
-  //     rrs: [rrs],
-  //   };
-  //   var [inception, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
-  //   if(rrs != '0x0000000000000000000000000000000000000000'){
-  //     keys.inception = inception + 1;
-  //   };
-  //   tx = await verifySubmission(instance, name, dns.hexEncodeSignedSet(keys), "0x", proof);
-  //   [_, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
-  //   assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
-  //   return tx;
-  // }
+  async function submitEntry(instance, type, name, option, proof){
+    var rrs = {name: name, type: type, klass: 1, ttl: 3600};
+    Object.assign(rrs, option)
+    var keys = {
+      typeCovered: type,
+      algorithm: 253,
+      labels: 1,
+      originalTTL: 3600,
+      expiration: 0xFFFFFFFF,
+      inception: 1,
+      keytag: 5647,
+      signerName: ".",
+      rrs: [rrs],
+    };
+    var [inception, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
+    if(rrs != '0x0000000000000000000000000000000000000000'){
+      keys.inception = inception + 1;
+    };
+    tx = await verifySubmission(instance, name, dns.hexEncodeSignedSet(keys), "0x", proof);
+    [_, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
+    assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
+    return tx;
+  }
 
-  // async function deleteEntry(instance, deletetype, deletename, ensname, proof) {
-  //   var tx, result;
-  //   try{
-  //     tx = await instance.deleteRRSet(deletetype, dns.hexEncodeName(deletename), dns.hexEncodeName(ensname), proof);
-  //   }
-  //   catch(error){
-  //     // Assert ganache revert exception
-  //     assert.equal(error.message, 'VM Exception while processing transaction: revert');
-  //     result = false;
-  //   }
-  //   // Assert geth failed transaction
-  //   if(tx !== undefined) {
-  //     result = (parseInt(tx.receipt.status) == parseInt('0x1'));
-  //   }
-  //   return result;
-  // }
+  async function deleteEntry(instance, deletetype, deletename, ensname, proof) {
+    var tx, result;
+    try{
+      tx = await instance.deleteRRSet(deletetype, dns.hexEncodeName(deletename), dns.hexEncodeName(ensname), proof);
+    }
+    catch(error){
+      // Assert ganache revert exception
+      assert.equal(error.message, 'VM Exception while processing transaction: revert');
+      result = false;
+    }
+    // Assert geth failed transaction
+    if(tx !== undefined) {
+      result = (parseInt(tx.receipt.status) == parseInt('0x1'));
+    }
+    return result;
+  }
 
-  // it('rejects if a proof with the wrong type is supplied', async function(){
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
-  //   // Submit with a proof for an irrelevant record.
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', 'a.', rootKeyProof)), false);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
-  // })
+  it('rejects if a proof with the wrong type is supplied', async function(){
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
+    // Submit with a proof for an irrelevant record.
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', 'a.', rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
+  })
 
-  // it('rejects if next record does not come before the deleting name', async function(){
-  //   var instance = await dnssec.deployed();
-  //   // text z. comes after next d.
-  //   await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]}, rootKeyProof);
-  //   var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]}, rootKeyProof);
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'z.', 'a.', tx.logs[0].args.rrset)), false);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'z.')), true);
-  // })
+  it('rejects if next record does not come before the deleting name', async function(){
+    var instance = await dnssec.deployed();
+    // text z. comes after next d.
+    await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]}, rootKeyProof);
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', {next:'d.', rrtypes:[dns.TYPE_TXT]}, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'z.', 'a.', tx.logs[0].args.rrset)), false);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'z.')), true);
+  })
 
-  // it('rejects if nsec record starts after the deleting name', async function(){
-  //   var instance = await dnssec.deployed();
-  //   // text a. comes after nsec b.
-  //   await submitEntry(instance, dns.TYPE_TXT, 'a.', {text: ["foo"]}, rootKeyProof);
-  //   var tx = await submitEntry(instance, dns.TYPE_NSEC, 'b.', {next:'d.', rrtypes:[dns.TYPE_TXT]}, rootKeyProof);
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'b.', tx.logs[0].args.rrset)), false);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
-  // })
+  it('rejects if nsec record starts after the deleting name', async function(){
+    var instance = await dnssec.deployed();
+    // text a. comes after nsec b.
+    await submitEntry(instance, dns.TYPE_TXT, 'a.', {text: ["foo"]}, rootKeyProof);
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'b.', {next:'d.', rrtypes:[dns.TYPE_TXT]}, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'b.', tx.logs[0].args.rrset)), false);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+  })
 
-  // it('rejects RRset if trying to delete rrset that is in the type bitmap', async function(){
-  //   var instance = await dnssec.deployed();
-  //   // text a. has same nsec a. with type bitmap
-  //   await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']}, rootKeyProof);
-  //   var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] }, rootKeyProof);
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset)), false);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
-  // })
+  it('rejects RRset if trying to delete rrset that is in the type bitmap', async function(){
+    var instance = await dnssec.deployed();
+    // text a. has same nsec a. with type bitmap
+    await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']}, rootKeyProof);
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] }, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset)), false);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+  })
 
-  // it('deletes RRset if nsec name and delete name are the same but with different rrtypes', async function(){
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
-  //   // This test fails if rrtypes is empty ([]), but would that case every happen?
-  //   var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] }, rootKeyProof);
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset)), true);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), false);
-  // })
+  it('deletes RRset if nsec name and delete name are the same but with different rrtypes', async function(){
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
+    // This test fails if rrtypes is empty ([]), but would that case every happen?
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] }, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset)), true);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), false);
+  })
 
-  // it('rejects if the proof hash does not match', async function(){
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
-  //   // This test fails if rrtypes is empty ([]), but would that case every happen?
-  //   var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] }, rootKeyProof);
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset + '00')), false);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
-  // })
+  it('rejects if the proof hash does not match', async function(){
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
+    // This test fails if rrtypes is empty ([]), but would that case every happen?
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC] }, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', 'a.', tx.logs[0].args.rrset + '00')), false);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+  })
 
-  // it('deletes RRset if NSEC next comes after delete name', async function(){
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
-  //   var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] }, rootKeyProof);
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', 'a.', tx.logs[0].args.rrset)), true);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), false);
-  // })
+  it('deletes RRset if NSEC next comes after delete name', async function(){
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
+    var tx = await submitEntry(instance, dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT] }, rootKeyProof);
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', 'a.', tx.logs[0].args.rrset)), true);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), false);
+  })
 
   // Test against real record
   it('should accept real DNSSEC records', async function() {
     var instance = await dnssec.deployed();
     var proof = await instance.anchors();
     for(var rrset of test_rrsets) {
-      console.log('0', rrset[0]);
-      console.log('1', rrset[1]);
-      console.log('2', rrset[2]);
-      console.log('proof', proof);
       var tx = await verifySubmission(instance, rrset[0], "0x" + rrset[1], "0x" + rrset[2], proof);
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, 'RRSetUpdated');
