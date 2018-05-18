@@ -13,7 +13,7 @@
     "test": "truffle test",
     "watch": "npm-watch",
     "lint": "solium --dir ./contracts",
-    "prepare": "truffle networks --clean && truffle compile"
+    "prepublishOnly": "truffle networks --clean && truffle compile"
   },
   "dependencies": {
   }
