@@ -207,8 +207,11 @@ library RRUtils {
             counts -= 1;
         }
 
-        if (off == 0 || otheroff == 0) {
+        if (off == 0) {
             return -1;
+        }
+        if(otheroff == 0) {
+            return 1;
         }
 
         return self.compare(prevoff + 1, self.readUint8(prevoff), other, otherprevoff + 1, other.readUint8(otherprevoff));
