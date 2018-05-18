@@ -38,6 +38,7 @@ async function verifySubmission(instance, name, data, sig, proof) {
   if(proof === undefined) {
     proof = await instance.anchors();
   }
+
   var name = dns.hexEncodeName(name);
   var tx = await instance.submitRRSet(name, data, sig, proof);
   assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
@@ -419,6 +420,7 @@ contract('DNSSEC', function(accounts) {
     var instance = await dnssec.deployed();
     var proof = await instance.anchors();
     for(var rrset of test_rrsets) {
+      console.log(rrset[0]);
       var tx = await verifySubmission(instance, rrset[0], "0x" + rrset[1], "0x" + rrset[2], proof);
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, 'RRSetUpdated');
