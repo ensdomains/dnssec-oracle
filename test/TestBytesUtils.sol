@@ -67,4 +67,16 @@ contract TestBytesUtils {
   function testReadBytes32() public {
     Assert.equal("0123456789abcdef0123456789abcdef".readBytes32(0), bytes32(0x3031323334353637383961626364656630313233343536373839616263646566), "readBytes32");
   }
+
+  function testBase32HexDecodeWord() public {
+    Assert.equal("C4".base32HexDecodeWord(0, 2), bytes32(bytes1("a")), "Decode 'a'");
+    Assert.equal("C5GG".base32HexDecodeWord(0, 4), bytes32(bytes2("aa")), "Decode 'aa'");
+    Assert.equal("C5GM2".base32HexDecodeWord(0, 5), bytes32(bytes3("aaa")), "Decode 'aaa'");
+    Assert.equal("C5GM2O8".base32HexDecodeWord(0, 7), bytes32(bytes4("aaaa")), "Decode 'aaaa'");
+    Assert.equal("C5GM2OB1".base32HexDecodeWord(0, 8), bytes32(bytes5("aaaaa")), "Decode 'aaaaa'");
+    Assert.equal("c5gm2Ob1".base32HexDecodeWord(0, 8), bytes32(bytes5("aaaaa")), "Decode 'aaaaa' lowercase");
+    Assert.equal("C5H66P35CPJMGQBADDM6QRJFE1ON4SRKELR7EU3PF8".base32HexDecodeWord(0, 42), bytes32(bytes26("abcdefghijklmnopqrstuvwxyz")), "Decode alphabet");
+    Assert.equal("c5h66p35cpjmgqbaddm6qrjfe1on4srkelr7eu3pf8".base32HexDecodeWord(0, 42), bytes32(bytes26("abcdefghijklmnopqrstuvwxyz")), "Decode alphabet lowercase");
+    Assert.equal("C5GM2OB1C5GM2OB1C5GM2OB1C5GM2OB1C5GM2OB1C5GM2OB1C5GG".base32HexDecodeWord(0, 52), bytes32("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "Decode 32*'a'");
+  }
 }
