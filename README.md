@@ -15,7 +15,7 @@ These instructions will get you a copy of the project up and running on your loc
 The DNSSEC Oracle uses npm to manage dependencies, therefore the installation process is kept simple:
 
 ```
-npm install --save
+npm install
 ```
 
 ### Running tests
@@ -37,7 +37,7 @@ solium --dir ./contracts
 ### Installation
 
 ```
-npm install dnssec-oracle
+npm install dnssec-oracle --save
 ```
 
 ### Within Your contracts
