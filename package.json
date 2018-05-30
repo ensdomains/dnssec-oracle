@@ -1,4 +1,6 @@
 {
+  "name": "@ensdomains/dnssec-oracle",
+  "version": "0.0.1",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
@@ -10,7 +12,8 @@
     "pretest": "truffle compile",
     "test": "truffle test",
     "watch": "npm-watch",
-    "lint": "solium --dir ./contracts"
+    "lint": "solium --dir ./contracts",
+    "prepublishOnly": "truffle networks --clean && truffle compile"
   },
   "dependencies": {
   }
