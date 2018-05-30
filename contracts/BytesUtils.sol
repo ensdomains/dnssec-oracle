@@ -191,6 +191,21 @@ library BytesUtils {
         }
     }
 
+    /*
+    * @dev Returns the n byte value at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes.
+    * @param len The number of bytes.
+    * @return The specified 32 bytes of the string.
+    */
+    function readBytesN(bytes memory self, uint idx, uint len) internal pure returns (bytes20 ret) {
+        require(idx + len <= self.length);
+        assembly {
+            let mask := not(sub(exp(256, sub(32, len)), 1))
+            ret := and(mload(add(add(self, 32), idx)),  mask)
+        }
+    }
+
     function memcpy(uint dest, uint src, uint len) private pure {
         // Copy word-length chunks while possible
         for (; len >= 32; len -= 32) {
@@ -243,12 +258,12 @@ library BytesUtils {
      * @param len Number of characters to decode.
      * @return The decoded data, left aligned.
      */
-    function base32HexDecodeWord(string self, uint off, uint len) internal pure returns(bytes32) {
-        require(bytes(self).length <= 52);
+    function base32HexDecodeWord(bytes memory self, uint off, uint len) internal pure returns(bytes32) {
+        require(len <= 52);
 
         uint ret = 0;
         for(uint i = 0; i < len; i++) {
-            byte char = bytes(self)[off + i];
+            byte char = self[off + i];
             require(char >= 0x30 && char <= 0x7A);
             uint8 decoded = uint8(base32HexTable[uint(char) - 0x30]);
             require(decoded <= 0x20);
@@ -258,7 +273,7 @@ library BytesUtils {
             ret = (ret << 5) | decoded;
         }
 
-        uint bitlen = bytes(self).length * 5;
+        uint bitlen = len * 5;
         if(len % 8 == 0) {
             // Multiple of 8 characters, no padding
             ret = (ret << 5) | decoded;

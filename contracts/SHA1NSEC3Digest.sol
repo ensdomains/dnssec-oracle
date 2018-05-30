@@ -10,7 +10,7 @@ import "./Buffer.sol";
 contract SHA1NSEC3Digest is NSEC3Digest {
     using Buffer for Buffer.buffer;
 
-    function hash(bytes salt, bytes data, uint iterations) external pure returns (bytes) {
+    function hash(bytes salt, bytes data, uint iterations) external pure returns (bytes32) {
         Buffer.buffer memory buf;
         buf.init(salt.length + data.length + 16);
 
@@ -28,8 +28,6 @@ contract SHA1NSEC3Digest is NSEC3Digest {
             }
         }
 
-        buf.truncate();
-        buf.appendBytes20(h);
-        return buf.buf;
+        return bytes32(h);
     }
 }

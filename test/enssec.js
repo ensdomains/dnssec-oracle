@@ -1,3 +1,4 @@
+var base32hex = require('rfc4648').base32hex;
 var dns = require("../lib/dns.js");
 var dnssec = artifacts.require("./DNSSEC.sol");
 
@@ -442,6 +443,31 @@ contract('DNSSEC', function(accounts) {
     var nsec = buildEntry(dns.TYPE_NSEC, 'x.', { next:'z.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
     assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'y.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), false);
     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'y.')), true);
+  })
+
+  it('deletes record on the same name using NSEC3', async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'matoken.xyz.', {text: ["foo"]}, rootKeyProof)
+    var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_DNSKEY]});
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'matoken.xyz.')), false);
+  })
+
+  it('deletes records in a zone using NSEC3', async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'quux.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
+    var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'quux.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'quux.matoken.xyz.')), false);
+  })
+
+
+  it('deletes records at the end of a zone using NSEC3', async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
+    var nsec3 = buildEntry(dns.TYPE_NSEC3, 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:[dns.TYPE_TXT]});
+    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'foo.matoken.xyz.')), false);
   })
 
   // Test against real record

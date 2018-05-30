@@ -173,7 +173,7 @@ library RRUtils {
         return false;
     }
 
-    function compareNames(bytes memory self, bytes memory other) internal returns (int) {
+    function compareNames(bytes memory self, bytes memory other) internal pure returns (int) {
         if (self.equals(other)) {
             return 0;
         }
@@ -217,7 +217,7 @@ library RRUtils {
         return self.compare(prevoff + 1, self.readUint8(prevoff), other, otherprevoff + 1, other.readUint8(otherprevoff));
     }
 
-    function progress(bytes memory body, uint off) internal returns(uint) {
+    function progress(bytes memory body, uint off) internal pure returns(uint) {
         return off + 1 + body.readUint8(off);
     }
 }

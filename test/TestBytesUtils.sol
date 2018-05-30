@@ -78,5 +78,6 @@ contract TestBytesUtils {
     Assert.equal("C5H66P35CPJMGQBADDM6QRJFE1ON4SRKELR7EU3PF8".base32HexDecodeWord(0, 42), bytes32(bytes26("abcdefghijklmnopqrstuvwxyz")), "Decode alphabet");
     Assert.equal("c5h66p35cpjmgqbaddm6qrjfe1on4srkelr7eu3pf8".base32HexDecodeWord(0, 42), bytes32(bytes26("abcdefghijklmnopqrstuvwxyz")), "Decode alphabet lowercase");
     Assert.equal("C5GM2OB1C5GM2OB1C5GM2OB1C5GM2OB1C5GM2OB1C5GM2OB1C5GG".base32HexDecodeWord(0, 52), bytes32("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "Decode 32*'a'");
+    Assert.equal(" bst4hlje7r0o8c8p4o8q582lm0ejmiqt\x07matoken\x03xyz\x00".base32HexDecodeWord(1, 32), bytes32(hex"5f3a48d66e3ec18431192611a2a055b01d3b4b5d"), "Decode real bytes32hex");
   }
 }

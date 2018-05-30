@@ -11,5 +11,5 @@ interface NSEC3Digest {
      * @param iterations The number of iterations to perform.
      * @return The result of the iterated hash operation.
      */
-     function hash(bytes salt, bytes data, uint iterations) external pure returns (bytes);
+     function hash(bytes salt, bytes data, uint iterations) external pure returns (bytes32);
 }

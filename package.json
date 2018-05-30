@@ -5,6 +5,7 @@
   "lockfileVersion": 1,
   "devDependencies": {
     "eth-gas-reporter": "^0.1.2",
+    "rfc4648": "^1.1.0",
     "solium": "^1.0.4",
     "truffle": "^4.0.0"
   },
@@ -15,6 +16,5 @@
     "lint": "solium --dir ./contracts",
     "prepublishOnly": "truffle networks --clean && truffle compile"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
