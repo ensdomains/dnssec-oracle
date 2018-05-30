@@ -15,7 +15,7 @@ These instructions will get you a copy of the project up and running on your loc
 The DNSSEC Oracle uses npm to manage dependencies, therefore the installation process is kept simple:
 
 ```
-npm install
+npm install --save
 ```
 
 ### Running tests

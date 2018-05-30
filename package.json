@@ -1,5 +1,5 @@
 {
-  "name": "dnssec-oracle",
+  "name": "@ensdomains/dnssec-oracle",
   "version": "0.0.1",
   "requires": true,
   "lockfileVersion": 1,
