@@ -14,7 +14,7 @@
     "test": "truffle test",
     "watch": "npm-watch",
     "lint": "solium --dir ./contracts",
-    "prepublishOnly": "truffle networks --clean && truffle compile"
+    "prepublishOnly": "truffle migrate && truffle networks --clean"
   },
   "dependencies": {}
 }
