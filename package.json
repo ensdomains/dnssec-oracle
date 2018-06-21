@@ -1,20 +1,20 @@
 {
   "name": "@ensdomains/dnssec-oracle",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
     "eth-gas-reporter": "^0.1.2",
     "rfc4648": "^1.1.0",
     "solium": "^1.0.4",
-    "truffle": "^4.0.0"
+    "truffle": "^4.1.12"
   },
   "scripts": {
     "pretest": "truffle compile",
     "test": "truffle test",
     "watch": "npm-watch",
     "lint": "solium --dir ./contracts",
-    "prepublishOnly": "truffle networks --clean && truffle compile"
+    "prepublishOnly": "truffle compile && truffle networks --clean"
   },
   "dependencies": {}
 }

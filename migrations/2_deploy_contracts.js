@@ -9,53 +9,15 @@ var dummydigest = artifacts.require("./DummyDigest.sol");
 
 var dns = require("../lib/dns.js");
 
-function encodeAnchors(anchors) {
-  var buf = new Buffer(4096);
-  var off = 0;
-  for(var anchor of anchors) {
-    off = dns.encodeDS(buf, off, anchor);
-  }
-  return "0x" + buf.toString("hex", 0, off);
-}
-
 module.exports = function(deployer, network) {
   var dev = (network == "test" || network == "local");
   // From http://data.iana.org/root-anchors/root-anchors.xml
-  var anchors = [
-    {
-      name: ".",
-      type: dns.TYPE_DS,
-      klass: dns.CLASS_INET,
-      ttl: 3600,
-      keytag: 19036,
-      algorithm: 8,
-      digestType: 2,
-      digest: new Buffer("49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5", "hex")
-    },
-    {
-      name: ".",
-      type: dns.TYPE_DS,
-      klass: dns.CLASS_INET,
-      ttl: 3600,
-      keytag: 20326,
-      algorithm: 8,
-      digestType: 2,
-      digest: new Buffer("E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D", "hex")
-    },
-  ];
+  var anchors = dns.anchors;
+
   if(dev) {
-    anchors.push({
-      name: ".",
-      type: dns.TYPE_DS,
-      klass: dns.CLASS_INET,
-      ttl: 3600,
-      keytag: 5647, // Empty body, flags == 0x0101, algorithm = 253, body = 0x1111
-      algorithm: 253,
-      digestType: 253,
-      digest: new Buffer("", "hex")
-    });
+    anchors.push(dns.dummyAnchor);
   }
-  return deployer.deploy(dnssec, encodeAnchors(anchors))
+  return deployer.deploy(dnssec, dns.encodeAnchors(anchors))
     .then(() => deployer.deploy([[rsasha256], [rsasha1], [sha256], [sha1], [nsec3sha1]]))
     .then(() => dev?deployer.deploy([[dummyalgorithm], [dummydigest]]):null)
     .then(() => dnssec.deployed().then(function(instance) {
