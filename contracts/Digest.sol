@@ -8,7 +8,7 @@ interface Digest {
     * @dev Verifies a cryptographic hash.
     * @param data The data to hash.
     * @param hash The hash to compare to.
-    * @return True iff the hashed data matches the provided hash value.
+    * @return True if the hashed data matches the provided hash value.
     */
     function verify(bytes data, bytes hash) external pure returns (bool);
 }
