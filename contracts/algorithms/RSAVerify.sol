@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-import "./BytesUtils.sol";
+import "../BytesUtils.sol";
 import "./ModexpPrecompile.sol";
 
 library RSAVerify {

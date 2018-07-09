@@ -1,5 +1,5 @@
-var rsasha1 = artifacts.require("./RSASHA1Algorithm.sol");
-var rsasha256 = artifacts.require("./RSASHA256Algorithm.sol");
+var rsasha1 = artifacts.require("./algorithms/RSASHA1Algorithm.sol");
+var rsasha256 = artifacts.require("./algorithms/RSASHA256Algorithm.sol");
 
 contract("RSASHA256Algorithm", function(accounts) {
   // This test vector generated from the example in RFC5702 using the following Python script:

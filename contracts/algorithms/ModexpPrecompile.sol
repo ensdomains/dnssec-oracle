@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-import "./Buffer.sol";
+import "../Buffer.sol";
 
 library ModexpPrecompile {
     using Buffer for *;
