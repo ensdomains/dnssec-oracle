@@ -1,5 +1,5 @@
-var sha256 = artifacts.require("./SHA256Digest.sol");
-var sha1 = artifacts.require("./SHA1Digest.sol");
+var sha256 = artifacts.require("./digests/SHA256Digest.sol");
+var sha1 = artifacts.require("./digests/SHA1Digest.sol");
 
 contract("SHA256Digest", function(accounts) {
   it('should return true for valid hashes', async function() {

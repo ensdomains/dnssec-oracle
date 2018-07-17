@@ -1,5 +1,5 @@
 var base32hex = require('rfc4648').base32hex;
-var sha1 = artifacts.require("./SHA1NSEC3Digest.sol");
+var sha1 = artifacts.require("./nsec3digests/SHA1NSEC3Digest.sol");
 
 function fromBase32(s) {
     return "0x" + Buffer.from(base32hex.parse(s.toUpperCase())).toString('hex') + "000000000000000000000000";
