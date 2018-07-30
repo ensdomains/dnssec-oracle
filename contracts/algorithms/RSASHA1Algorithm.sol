@@ -3,7 +3,7 @@ pragma solidity ^0.4.23;
 import "./Algorithm.sol";
 import "../BytesUtils.sol";
 import "./RSAVerify.sol";
-import "../sha1/contracts/SHA1.sol";
+import "@ensdomains/solsha1/contracts/SHA1.sol";
 
 /**
 * @dev Implements the DNSSEC RSASHA1 algorithm.
