@@ -3,6 +3,7 @@ pragma solidity ^0.4.23;
 import "./Owned.sol";
 import "./BytesUtils.sol";
 import "./RRUtils.sol";
+import "./DNSSECInterface.sol";
 import "./algorithms/Algorithm.sol";
 import "./digests/Digest.sol";
 import "./nsec3digests/NSEC3Digest.sol";
@@ -14,7 +15,7 @@ import "@ensdomains/buffer/contracts/Buffer.sol";
  * TODO: Support for NSEC3 records
  * TODO: Use 'serial number math' for inception/expiration
  */
-contract DNSSEC is Owned {
+contract DNSSEC is DNSSECInterface, Owned {
     using Buffer for Buffer.buffer;
     using BytesUtils for bytes;
     using RRUtils for *;
