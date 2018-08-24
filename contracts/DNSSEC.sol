@@ -74,11 +74,6 @@ contract DNSSEC is DNSSECInterface, Owned {
     mapping (uint8 => Digest) public digests;
     mapping (uint8 => NSEC3Digest) public nsec3Digests;
 
-    event AlgorithmUpdated(uint8 id, address addr);
-    event DigestUpdated(uint8 id, address addr);
-    event NSEC3DigestUpdated(uint8 id, address addr);
-    event RRSetUpdated(bytes name, bytes rrset);
-
     /**
      * @dev Constructor.
      * @param _anchors The binary format RR entries for the root DS records.
