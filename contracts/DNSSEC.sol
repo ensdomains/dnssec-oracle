@@ -282,7 +282,6 @@ contract DNSSEC is DNSSECInterface, Owned {
             if(nextNameHash > nsecNameHash) {
                 // deleteName must come also come before nextName
                 require(deleteNameHash < nextNameHash);
-            } else {
             }
         }
     }
