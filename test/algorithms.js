@@ -1,5 +1,6 @@
 var rsasha1 = artifacts.require("./algorithms/RSASHA1Algorithm.sol");
 var rsasha256 = artifacts.require("./algorithms/RSASHA256Algorithm.sol");
+var utils = require('./utils/util');
 
 contract("RSASHA256Algorithm", function(accounts) {
   // This test vector generated from the example in RFC5702 using the following Python script:
@@ -71,6 +72,8 @@ contract("RSASHA1Algorithm", function(accounts) {
   ];
 
   it('should return true for valid signatures', async function() {
+    await utils.setTime('1524182400000');
+
     var instance = await rsasha1.deployed();
 
     assert.equal(await instance.verify(vector[0], vector[1], vector[2]), true);
