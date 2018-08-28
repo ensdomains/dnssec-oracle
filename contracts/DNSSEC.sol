@@ -173,7 +173,7 @@ contract DNSSEC is Owned {
         RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
             // To replace an existing rrset, the signature must be at least as new
-            require(inception >= set.inception);
+            require(inception >= set.inception, "Trying to replace rrset with an older one");
         }
         if (set.hash == keccak256(rrs)) {
             // Already inserted!
@@ -204,7 +204,7 @@ contract DNSSEC is Owned {
         (nsecName, rrs) = validateSignedSet(nsec, sig, proof);
 
         // Don't let someone use an old proof to delete a new name
-        require(rrsets[keccak256(deleteName)][deleteType].inception <= nsec.readUint32(RRSIG_INCEPTION));
+        require(rrsets[keccak256(deleteName)][deleteType].inception <= nsec.readUint32(RRSIG_INCEPTION), "Trying to delete an RRSet with an obsolete proof");
 
         for (RRUtils.RRIterator memory iter = rrs.iterateRRs(0); !iter.done(); iter.next()) {
             // We're dealing with three names here:
@@ -241,20 +241,20 @@ contract DNSSEC is Owned {
         uint rDataLength = iter.nextOffset - iter.rdataOffset;
 
         // We assume that there is always typed bitmap after the next domain name
-        require(rDataLength > nextNameLength);
+        assert(rDataLength > nextNameLength);
 
         int compareResult = deleteName.compareNames(nsecName);
         if(compareResult == 0) {
             // Name to delete is on the same label as the NSEC record
-            require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deleteType));
+            require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deleteType), "RRType in NSEC bitmap");
         } else {
             // First check if the NSEC next name comes after the NSEC name.
             bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);
             // deleteName must come after nsecName
-            require(compareResult > 0);
+            require(compareResult > 0, "Name to delete comes before NSEC record");
             if(nsecName.compareNames(nextName) < 0) {
                 // deleteName must also come before nextName
-                require(deleteName.compareNames(nextName) < 0);
+                require(deleteName.compareNames(nextName) < 0, "Name to delete comes after NSEC next");
             }
         }
     }
@@ -266,21 +266,21 @@ contract DNSSEC is Owned {
         bytes32 deleteNameHash = nsec3Digests[iter.data.readUint8(iter.rdataOffset)].hash(salt, deleteName, iterations);
 
         uint8 nextLength = iter.data.readUint8(iter.rdataOffset + NSEC3_SALT + saltLength);
-        require(nextLength <= 32);
+        assert(nextLength <= 32);
         bytes32 nextNameHash = iter.data.readBytesN(iter.rdataOffset + NSEC3_SALT + saltLength + 1, nextLength);
 
         bytes32 nsecNameHash = nsecName.base32HexDecodeWord(1, uint(nsecName.readUint8(0)));
 
         if(deleteNameHash == nsecNameHash) {
             // Name to delete is on the same label as the NSEC record
-            require(!iter.data.checkTypeBitmap(iter.rdataOffset + NSEC3_SALT + saltLength + 1 + nextLength, deleteType));
+            require(!iter.data.checkTypeBitmap(iter.rdataOffset + NSEC3_SALT + saltLength + 1 + nextLength, deleteType), "Cannot delete RRSet: RRType in NSEC3 bitmap");
         } else {
             // deleteName must come after nsecName
-            require(deleteNameHash > nsecNameHash);
+            require(deleteNameHash > nsecNameHash, "Name to delete comes before NSEC3 record");
             // Check if the NSEC next name comes after the NSEC name.
             if(nextNameHash > nsecNameHash) {
                 // deleteName must come also come before nextName
-                require(deleteNameHash < nextNameHash);
+                require(deleteNameHash < nextNameHash, "Name to delete comes after NSEC3 record");
             } else {
             }
         }
@@ -315,7 +315,7 @@ contract DNSSEC is Owned {
      *        have been submitted and proved previously.
      */
     function validateSignedSet(bytes memory input, bytes memory sig, bytes memory proof) internal view returns(bytes memory name, bytes memory rrs) {
-        require(validProof(input.readName(RRSIG_SIGNER_NAME), proof));
+        require(validProof(input.readName(RRSIG_SIGNER_NAME), proof), "Supplied proof not found in datastore");
 
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
         uint32 expiration = input.readUint32(RRSIG_EXPIRATION);
@@ -328,17 +328,17 @@ contract DNSSEC is Owned {
 
         // Do some basic checks on the RRs and extract the name
         name = validateRRs(rrs, typecovered);
-        require(name.labelCount(0) == labels);
+        require(name.labelCount(0) == labels, "Wildcard names not supported");
 
         // TODO: Check inception and expiration using mod2^32 math
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
-        require(expiration > now);
+        require(expiration > now, "Signature has expired");
 
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
-        require(inception < now);
+        require(inception < now, "Signature not yet valid");
 
         // Validate the signature
         verifySignature(name, input, sig, proof);
@@ -360,18 +360,18 @@ contract DNSSEC is Owned {
         // Iterate over all the RRs
         for (RRUtils.RRIterator memory iter = data.iterateRRs(0); !iter.done(); iter.next()) {
             // We only support class IN (Internet)
-            require(iter.class == DNSCLASS_IN);
+            require(iter.class == DNSCLASS_IN, "Only class IN is supported");
 
             if(name.length == 0) {
                 name = iter.name();
             } else {
                 // Name must be the same on all RRs
-                require(name.length == data.nameLength(iter.offset));
-                require(name.equals(0, data, iter.offset, name.length));
+                require(name.length == data.nameLength(iter.offset), "Names inside RRSet must match");
+                require(name.equals(0, data, iter.offset, name.length), "Name must match RRSig name");
             }
 
             // o  The RRSIG RR's Type Covered field MUST equal the RRset's type.
-            require(iter.dnstype == typecovered);
+            require(iter.dnstype == typecovered, "RRSet type must match RRSig type covered");
         }
     }
 
@@ -389,8 +389,8 @@ contract DNSSEC is Owned {
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
         //    that contains the RRset.
-        require(signerNameLength <= name.length);
-        require(data.equals(RRSIG_SIGNER_NAME, name, name.length - signerNameLength, signerNameLength));
+        require(signerNameLength <= name.length, "Signer name must be a parent of RRSet");
+        require(data.equals(RRSIG_SIGNER_NAME, name, name.length - signerNameLength, signerNameLength), "Signer name must be a parent of RRSet");
 
         // Set the return offset to point at the first RR
         uint offset = 18 + signerNameLength;
@@ -398,9 +398,9 @@ contract DNSSEC is Owned {
         // Check the proof
         uint16 dnstype = proof.readUint16(proof.nameLength(0));
         if (dnstype == DNSTYPE_DS) {
-            require(verifyWithDS(data, sig, offset, proof));
+            require(verifyWithDS(data, sig, offset, proof), "DS validation failed");
         } else if (dnstype == DNSTYPE_DNSKEY) {
-            require(verifyWithKnownKey(data, sig, proof));
+            require(verifyWithKnownKey(data, sig, proof), "RRSIG validation failed");
         } else {
             revert("Unsupported proof record type");
         }
@@ -421,8 +421,8 @@ contract DNSSEC is Owned {
 
         for (RRUtils.RRIterator memory iter = proof.iterateRRs(0); !iter.done(); iter.next()) {
             // Check the DNSKEY's owner name matches the signer name on the RRSIG
-            require(proof.nameLength(0) == signerNameLength);
-            require(proof.equals(0, data, RRSIG_SIGNER_NAME, signerNameLength));
+            require(proof.nameLength(0) == signerNameLength, "DNSKEY owner must match RRSIG signer name");
+            require(proof.equals(0, data, RRSIG_SIGNER_NAME, signerNameLength), "DNSKEY owner must match RRSIG signer name");
             if (verifySignatureWithKey(iter.rdata(), algorithm, keytag, data, sig)) {
                 return true;
             }
