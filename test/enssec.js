@@ -1,6 +1,6 @@
 var base32hex = require('rfc4648').base32hex;
 var dns = require("../lib/dns.js");
-var dnssec = artifacts.require("./DNSSEC.sol");
+var dnssec = artifacts.require("./DNSSECImpl");
 
 const test_rrsets = [
     // .	125194	IN	RRSIG	DNSKEY 8 0 172800 20180910000000 20180820000000 19036 . R5LO5NN4JIYfd2dUeqGoVSuJVhYgkaPpmZCdOP5c9fyhD8mSjVFt38GW8HuY4slXE0uXCYdix5KfPIdS4np+pAYjNcrbO4zm73XdKBAKhwP0L5OyRn5t9ceuk9E7OxjgEv45AhLJ0pMYQQ4UVyUNfBf+RYMEGV6jK9HJqfmGkRQKIp+RiH9Ql2vLmOYehmAxQ3y0HMQfDyu++MBRNQN8ES/BFTRi+UcKiAep9fQ1qkmrPa1FCgVej6WT0yHCW1hCsl1mOHQNQ2kGDAq3+SIWl5Moec+l88f4Cargio/PiIsVPaK3yet1sXiLG++5T572C2NYY8sQlEQozzqcrHJdZA==
