@@ -1,11 +1,11 @@
-var rsasha1 = artifacts.require("./algorithms/RSASHA1Algorithm.sol");
-var rsasha256 = artifacts.require("./algorithms/RSASHA256Algorithm.sol");
-var sha1 = artifacts.require("./digests/SHA1Digest.sol");
-var sha256 = artifacts.require("./digests/SHA256Digest.sol");
-var nsec3sha1 = artifacts.require("./nsec3digests/SHA1NSEC3Digest.sol");
-var dnssec = artifacts.require("./DNSSEC.sol");
-var dummyalgorithm = artifacts.require("./algorithms/DummyAlgorithm.sol");
-var dummydigest = artifacts.require("./digests/DummyDigest.sol");
+var rsasha1 = artifacts.require("./algorithms/RSASHA1Algorithm");
+var rsasha256 = artifacts.require("./algorithms/RSASHA256Algorithm");
+var sha1 = artifacts.require("./digests/SHA1Digest");
+var sha256 = artifacts.require("./digests/SHA256Digest");
+var nsec3sha1 = artifacts.require("./nsec3digests/SHA1NSEC3Digest");
+var dnssec = artifacts.require("./DNSSECImpl");
+var dummyalgorithm = artifacts.require("./algorithms/DummyAlgorithm");
+var dummydigest = artifacts.require("./digests/DummyDigest");
 
 var dns = require("../lib/dns.js");
 
