@@ -1,6 +1,6 @@
 {
   "name": "@ensdomains/dnssec-oracle",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
