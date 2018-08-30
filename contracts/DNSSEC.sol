@@ -10,6 +10,6 @@ interface DNSSEC {
     function submitRRSets(bytes memory data, bytes memory proof) public returns (bytes);
     function submitRRSet(bytes memory input, bytes memory sig, bytes memory proof) public returns(bytes memory rrs);
     function deleteRRSet(uint16 deleteType, bytes deleteName, bytes memory nsec, bytes memory sig, bytes memory proof) public;
-    function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes);
+    function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20);
 
 }
