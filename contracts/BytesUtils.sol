@@ -198,7 +198,7 @@ library BytesUtils {
     * @param len The number of bytes.
     * @return The specified 32 bytes of the string.
     */
-    function readBytesN(bytes memory self, uint idx, uint len) internal pure returns (bytes20 ret) {
+    function readBytesN(bytes memory self, uint idx, uint len) internal pure returns (bytes ret) {
         require(idx + len <= self.length);
         assembly {
             let mask := not(sub(exp(256, sub(32, len)), 1))
