@@ -263,7 +263,10 @@ contract DNSSECImpl is DNSSEC, Owned {
 
         uint8 nextLength = iter.data.readUint8(iter.rdataOffset + NSEC3_SALT + saltLength);
         require(nextLength <= 32);
-        bytes nextNameHash = iter.data.readBytesN(iter.rdataOffset + NSEC3_SALT + saltLength + 1, nextLength);
+        bytes32 nextNameHash = bytesToBytes32(
+            iter.data.readBytesN(iter.rdataOffset + NSEC3_SALT + saltLength + 1, nextLength),
+            0
+        );
 
         bytes32 nsecNameHash = nsecName.base32HexDecodeWord(1, uint(nsecName.readUint8(0)));
 
@@ -550,5 +553,16 @@ contract DNSSECImpl is DNSSEC, Owned {
         }
         ac += (ac >> 16) & 0xFFFF;
         return uint16(ac & 0xFFFF);
+    }
+
+    function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
+        bytes32 out;
+
+        uint len = b.length >= 32 ? 32 : b.length;
+
+        for (uint i = 0; i < 32; i++) {
+            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
+        }
+        return out;
     }
 }
