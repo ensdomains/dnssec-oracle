@@ -1,40 +1,57 @@
-var rsasha1 = artifacts.require("./algorithms/RSASHA1Algorithm");
-var rsasha256 = artifacts.require("./algorithms/RSASHA256Algorithm");
-var sha1 = artifacts.require("./digests/SHA1Digest");
-var sha256 = artifacts.require("./digests/SHA256Digest");
-var nsec3sha1 = artifacts.require("./nsec3digests/SHA1NSEC3Digest");
-var dnssec = artifacts.require("./DNSSECImpl");
-var dummyalgorithm = artifacts.require("./algorithms/DummyAlgorithm");
-var dummydigest = artifacts.require("./digests/DummyDigest");
+const RSASHA1Algorithm = artifacts.require("./algorithms/RSASHA1Algorithm");
+const RSASHA256Algorithm = artifacts.require("./algorithms/RSASHA256Algorithm");
+const SHA1Digest = artifacts.require("./digests/SHA1Digest");
+const SHA256Digest = artifacts.require("./digests/SHA256Digest");
+const SHA1NSEC3Digest = artifacts.require("./nsec3digests/SHA1NSEC3Digest");
+const DNSSEC = artifacts.require("./DNSSECImpl");
+const DummyAlgorithm = artifacts.require("./algorithms/DummyAlgorithm");
+const DummyDigest = artifacts.require("./digests/DummyDigest");
 
-var dns = require("../lib/dns.js");
+const dns = require("../lib/dns.js");
 
 module.exports = function(deployer, network) {
-  var dev = (network == "test" || network == "local");
-  // From http://data.iana.org/root-anchors/root-anchors.xml
-  var anchors = dns.anchors;
+    return deployer.then(async () => {
+        let dev = (network == "test" || network == "local");
+        // From http://data.iana.org/root-anchors/root-anchors.xml
+        let anchors = dns.anchors;
 
-  if(dev) {
-    anchors.push(dns.dummyAnchor);
-  }
-  return deployer.deploy(dnssec, dns.encodeAnchors(anchors))
-    .then(() => deployer.deploy([[rsasha256], [rsasha1], [sha256], [sha1], [nsec3sha1]]))
-    .then(() => dev?deployer.deploy([[dummyalgorithm], [dummydigest]]):null)
-    .then(() => dnssec.deployed().then(function(instance) {
-      tasks = [];
-      tasks.push(rsasha1.deployed().then(async function(algorithm) {
-        await instance.setAlgorithm(5, algorithm.address);
-        await instance.setAlgorithm(7, algorithm.address);
-      }));
-      tasks.push(rsasha256.deployed().then((algorithm) => instance.setAlgorithm(8, algorithm.address)));
-      tasks.push(sha1.deployed().then((digest) => instance.setDigest(1, digest.address)));
-      tasks.push(sha256.deployed().then((digest) => instance.setDigest(2, digest.address)));
-      tasks.push(nsec3sha1.deployed().then((digest) => instance.setNSEC3Digest(1, digest.address)));
-      if(dev) {
-        tasks.push(dummyalgorithm.deployed().then((algorithm) => instance.setAlgorithm(253, algorithm.address)));
-        tasks.push(dummyalgorithm.deployed().then((algorithm) => instance.setAlgorithm(254, algorithm.address)));
-        tasks.push(dummydigest.deployed().then((digest) => instance.setDigest(253, digest.address)));
-      }
-      return Promise.all(tasks);
-    }));
+        if (dev) {
+            anchors.push(dns.dummyAnchor);
+        }
+
+        await deployer.deploy(DNSSEC, dns.encodeAnchors(anchors));
+
+        await deployer.deploy([[RSASHA256Algorithm], [RSASHA1Algorithm], [SHA256Digest], [SHA1Digest], [SHA1NSEC3Digest]]);
+
+        if (dev) {
+            await deployer.deploy([[DummyAlgorithm], [DummyDigest]])
+        }
+
+        const dnssec = await DNSSEC.deployed();
+
+        const rsasha1 = await RSASHA1Algorithm.deployed();
+        await dnssec.setAlgorithm(5, rsasha1.address);
+        await dnssec.setAlgorithm(7, rsasha1.address);
+
+        const rsasha256 = await RSASHA256Algorithm.deployed();
+        await dnssec.setAlgorithm(8, rsasha256.address);
+
+        const sha1 = await SHA1Digest.deployed();
+        await dnssec.setDigest(1, sha1.address);
+
+        const sha256 = await SHA256Digest.deployed();
+        await dnssec.setDigest(2, sha256.address);
+
+        const nsec3sha1 = await SHA1NSEC3Digest.deployed();
+        await dnssec.setNSEC3Digest(1, nsec3sha1.address);
+
+        if (dev) {
+            const dummyalgorithm = await DummyAlgorithm.deployed();
+            await dnssec.setAlgorithm(253, dummyalgorithm.address);
+            await dnssec.setAlgorithm(254, dummyalgorithm.address);
+
+            const dummydigest = await DummyDigest.deployed();
+            await dnssec.setDigest(253, dummydigest.address);
+        }
+    });
 };
