@@ -27,31 +27,35 @@ module.exports = function(deployer, network) {
             await deployer.deploy([[DummyAlgorithm], [DummyDigest]])
         }
 
+        let tasks = [];
+
         const dnssec = await DNSSEC.deployed();
 
         const rsasha1 = await RSASHA1Algorithm.deployed();
-        await dnssec.setAlgorithm(5, rsasha1.address);
-        await dnssec.setAlgorithm(7, rsasha1.address);
+        tasks.push(dnssec.setAlgorithm(5, rsasha1.address));
+        tasks.push(dnssec.setAlgorithm(7, rsasha1.address));
 
         const rsasha256 = await RSASHA256Algorithm.deployed();
-        await dnssec.setAlgorithm(8, rsasha256.address);
+        tasks.push(dnssec.setAlgorithm(8, rsasha256.address));
 
         const sha1 = await SHA1Digest.deployed();
-        await dnssec.setDigest(1, sha1.address);
+        tasks.push(dnssec.setDigest(1, sha1.address));
 
         const sha256 = await SHA256Digest.deployed();
-        await dnssec.setDigest(2, sha256.address);
+        tasks.push(dnssec.setDigest(2, sha256.address));
 
         const nsec3sha1 = await SHA1NSEC3Digest.deployed();
-        await dnssec.setNSEC3Digest(1, nsec3sha1.address);
+        tasks.push(dnssec.setNSEC3Digest(1, nsec3sha1.address));
 
         if (dev) {
             const dummyalgorithm = await DummyAlgorithm.deployed();
-            await dnssec.setAlgorithm(253, dummyalgorithm.address);
-            await dnssec.setAlgorithm(254, dummyalgorithm.address);
+            tasks.push(dnssec.setAlgorithm(253, dummyalgorithm.address));
+            tasks.push(dnssec.setAlgorithm(254, dummyalgorithm.address));
 
             const dummydigest = await DummyDigest.deployed();
-            await dnssec.setDigest(253, dummydigest.address);
+            tasks.push(dnssec.setDigest(253, dummydigest.address));
         }
+
+        await Promise.all(tasks)
     });
 };
