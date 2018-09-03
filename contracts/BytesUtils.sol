@@ -166,6 +166,19 @@ library BytesUtils {
     }
 
     /*
+    * @dev Returns the 256-bit number at the specified index of self.
+    * @param self The byte string.
+    * @param idx The index into the bytes
+    * @return The specified 256 bits of the string, interpreted as an integer.
+    */
+    function readUint256(bytes memory self, uint idx) internal pure returns (uint32 ret) {
+        require(idx + 32 <= self.length);
+        assembly {
+            ret := and(mload(add(add(self, 32), idx)), 0xFFFFFFFF)
+        }
+    }
+
+    /*
     * @dev Returns the 32 byte value at the specified index of self.
     * @param self The byte string.
     * @param idx The index into the bytes
