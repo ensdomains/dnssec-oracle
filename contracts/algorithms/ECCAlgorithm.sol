@@ -1,8 +1,8 @@
 pragma solidity ^0.4.23;
 
 import "./Algorithm.sol";
-import "./CurveInterface.sol";
 import "../BytesUtils.sol";
+import "@ensdomains/curvearithmetics/contracts/CurveInterface.sol";
 
 //   o  DNSKEY and RRSIG RRs signifying ECDSA with the P-256 curve and
 //      SHA-256 use the algorithm number 13.

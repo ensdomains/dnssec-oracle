@@ -9,7 +9,8 @@
     "solium": "^1.0.4",
     "truffle": "^4.1.12",
     "@ensdomains/buffer": "^0.0.5",
-    "@ensdomains/solsha1": "^0.0.1"
+    "@ensdomains/solsha1": "^0.0.1",
+    "@ensdomains/curvearithmetics": "^1.0.0"
   },
   "scripts": {
     "pretest": "truffle compile",
