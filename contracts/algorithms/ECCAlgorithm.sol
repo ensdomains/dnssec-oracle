@@ -17,7 +17,7 @@ contract ECCAlgorithm is Algorithm {
     }
 
     function verify(bytes key, bytes data, bytes signature) external view returns (bool) {
-        return curve.validateSignature(keccak256(data), parse(signature), parse(key));
+        return curve.validateSignature(sha256(data), parse(signature), parse(key));
     }
 
     function parse(bytes data) internal view returns (uint256[2]) {
