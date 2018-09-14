@@ -105,14 +105,14 @@ contract('ECCAlgorithm', function (accounts) {
     // example.net. 3600 IN DNSKEY 257 3 13 (
     //         GojIhhXUN/u4v54ZQqGSnyhWJwaubCvTmeexv7bR6edb
     //         krSqQpF64cYbcB7wNcP+e+MAnLr+Wi9xMWyQLc8NAA== )
-    '0x0101030d1a88c88615d437fbb8bf9e1942a1929f28562706ae6c2bd399e7b1bfb6d1e9e75b92b4aa42917ae1c61b701ef035c3fe7be3009cbafe5a2f71316c902dcf0d00',
+    '0xe31dbd00c1f8d928493266e1cb8376ed9d2bfeb494b9183869fa9392badb6932fc3a88131d6f311e92c9d67f0ca1e8a68b7ab62f891178c7fb43c639d5dd598e',
     // www.example.net. 3600 IN A 192.0.2.1
-    '0x00010d0300000e104c88b1374c63c737d960076578616d706c65036e65740003777777076578616d706c65036e6574000001000100000e100004c0000201',
+    '0x09ca7e4eaa6e8ae9c7d261167129184883644d07dfba7cbfbc4c8a2e08360d5b',
     // www.example.net. 3600 IN RRSIG A 13 3 3600 (
     //        20100909100439 20100812100439 55648 example.net.
     //        qx6wLYqmh+l9oCKTN6qIc+bw6ya+KJ8oMz0YP107epXA
     //        yGmt+3SNruPFKG7tZoLBLlUzGGus7ZwmwWep666VCw== )
-    '0xab1eb02d8aa687e97da0229337aa8873e6f0eb26be289f28333d183f5d3b7a95c0c869adfb748daee3c5286eed6682c12e5533186baced9c26c167a9ebae950b'
+    '0xf2f2ef803b2aa52f3950cd5c16b3e96f56cbe2d3919a3d15fb8dcbd753e8b25563ed976ed34fe3c26f984a05a02b300baa9ea61d4b2d2f4ddb6f7901d5a91344'
   ];
 
   it.only('should return true for valid signatures', async function() {
