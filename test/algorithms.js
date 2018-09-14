@@ -115,8 +115,12 @@ contract('ECCAlgorithm', function (accounts) {
     '0xab1eb02d8aa687e97da0229337aa8873e6f0eb26be289f28333d183f5d3b7a95c0c869adfb748daee3c5286eed6682c12e5533186baced9c26c167a9ebae950b'
   ];
 
-  it('should return true for valid signatures', async function() {
+  it.only('should return true for valid signatures', async function() {
     var instance = await ecc.deployed();
+
+    // let foo =  await instance.verify(vector[0], vector[1], vector[2])
+
+      // console.log(foo["logs"]);
 
     assert.equal(await instance.verify(vector[0], vector[1], vector[2]), true);
   });
