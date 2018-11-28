@@ -18,5 +18,7 @@
     "lint": "solium --dir ./contracts",
     "prepublishOnly": "truffle compile && truffle networks --clean"
   },
-  "dependencies": {}
+  "dependencies": {
+    "dns-packet": "^5.0.4"
+  }
 }

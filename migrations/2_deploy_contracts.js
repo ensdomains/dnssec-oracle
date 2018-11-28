@@ -6,20 +6,18 @@ const SHA1NSEC3Digest = artifacts.require("./nsec3digests/SHA1NSEC3Digest");
 const DNSSEC = artifacts.require("./DNSSECImpl");
 const DummyAlgorithm = artifacts.require("./algorithms/DummyAlgorithm");
 const DummyDigest = artifacts.require("./digests/DummyDigest");
-
-const dns = require("../lib/dns.js");
+const dnsAnchors = require("../lib/anchors.js");
 
 module.exports = function(deployer, network) {
     return deployer.then(async () => {
         let dev = (network == "test" || network == "local");
         // From http://data.iana.org/root-anchors/root-anchors.xml
-        let anchors = dns.anchors;
+        let anchors = dnsAnchors.realEntries;
 
         if (dev) {
-            anchors.push(dns.dummyAnchor);
+            anchors.push(dnsAnchors.dummyEntry);
         }
-
-        await deployer.deploy(DNSSEC, dns.encodeAnchors(anchors));
+        await deployer.deploy(DNSSEC, dnsAnchors.encode(anchors));
 
         await deployer.deploy([[RSASHA256Algorithm], [RSASHA1Algorithm], [SHA256Digest], [SHA1Digest], [SHA1NSEC3Digest]]);
 
