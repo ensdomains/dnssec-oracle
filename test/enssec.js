@@ -1,6 +1,8 @@
 var base32hex = require('rfc4648').base32hex;
 var dns = require("../lib/dns.js");
+const anchors = require("../lib/anchors.js");
 var dnssec = artifacts.require("./DNSSECImpl");
+const Result = require('@ensdomains/dnsprovejs/dist/dns/result')
 
 const test_rrsets = [
     // .	125194	IN	RRSIG	DNSKEY 8 0 172800 20180910000000 20180820000000 19036 . R5LO5NN4JIYfd2dUeqGoVSuJVhYgkaPpmZCdOP5c9fyhD8mSjVFt38GW8HuY4slXE0uXCYdix5KfPIdS4np+pAYjNcrbO4zm73XdKBAKhwP0L5OyRn5t9ceuk9E7OxjgEv45AhLJ0pMYQQ4UVyUNfBf+RYMEGV6jK9HJqfmGkRQKIp+RiH9Ql2vLmOYehmAxQ3y0HMQfDyu++MBRNQN8ES/BFTRi+UcKiAep9fQ1qkmrPa1FCgVej6WT0yHCW1hCsl1mOHQNQ2kGDAq3+SIWl5Moec+l88f4Cargio/PiIsVPaK3yet1sXiLG++5T572C2NYY8sQlEQozzqcrHJdZA==
@@ -34,6 +36,10 @@ const test_rrsets = [
     // _ens.ethlab.xyz.	21599	IN	TXT	"a=0xfdb33f8ac7ce72d7d4795dd8610e323b4c122fbb"
     ["_ens.ethlab.xyz.", "0010080300015180771a70585afc2448a7f7066574686c61620378797a00045f656e73066574686c61620378797a000010000100015180002d2c613d307866646233336638616337636537326437643437393564643836313065333233623463313232666262", "70f03458c1c1c0a4bd914b41456f1288797efcce4ffefb013ce94270918e44468b86cbdae9de5f84d2dc1441b6ea3ea05cac6171605bea620fcdf3c079e928d5"]
 ];
+
+function hexEncodeSignedSet(keys){
+  return (new Result([keys])).proofs[0].toSubmit();
+}
 
 async function verifySubmission(instance, data, sig, proof) {
   if(proof === undefined) {
@@ -73,56 +79,100 @@ contract('DNSSEC', function(accounts) {
     assert.notEqual(await instance.digests(253), "0x0000000000000000000000000000000000000000");
   });
 
+  // function rootKeys() {
+  //   return {
+  //     typeCovered: dns.TYPE_DNSKEY,
+  //     algorithm: 253,
+  //     labels: 0,
+  //     originalTTL: 3600,
+  //     expiration: 0xFFFFFFFF,
+  //     inception: 0,
+  //     keytag: 5647,
+  //     signerName: ".",
+  //     rrs: [
+  //       {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1111", "HEX")},
+  //       {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 4, algorithm: 253, pubkey: Buffer.from("1111", "HEX")},
+  //       {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 3, algorithm: 253, pubkey: Buffer.from("1112", "HEX")}
+  //     ],
+  //   };
+  // };
+
   function rootKeys() {
-    return {
-      typeCovered: dns.TYPE_DNSKEY,
-      algorithm: 253,
-      labels: 0,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1111", "HEX")},
-        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 4, algorithm: 253, pubkey: Buffer.from("1111", "HEX")},
-        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 3, algorithm: 253, pubkey: Buffer.from("1112", "HEX")}
-      ],
-    };
-  };
+    var name = '.';
+    var sig = {
+      name: '.',
+      type: 'RRSIG',
+      ttl: 0,
+      class: 'IN',
+      flush: false,
+      data:
+      {
+        typeCovered: 'DNSKEY',
+        algorithm: 253,
+        labels: 0,
+        originalTTL: 3600,
+        expiration: 0xFFFFFFFF,
+        inception: 0,
+        keyTag: 5647,
+        signersName: ".",
+        signature: new Buffer([])
+      }
+    }
+
+    var rrs = [
+      {
+        name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+        data:{flags: 0x0101, algorithm: 253, key: Buffer.from("1111", "HEX")}
+      },
+      {
+        name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+        data:{flags: 0, algorithm: 253, key: Buffer.from("1111", "HEX")}
+      },
+      {
+        name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+        data:{flags: 0, algorithm: 253, key: Buffer.from("1112", "HEX")}
+      }
+    ]
+    return { name, sig, rrs }
+  }
 
   it("should reject signatures with non-matching algorithms", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.rrs = [
-      {name: "foo.bar.", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 254, pubkey: Buffer.from("1111", "HEX")}
-    ];
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.rrs = [{
+      name: "foo.bar.", type: 'DNSKEY', class: 'IN', ttl: 3600,
+      data:{flags: 0x0101, protocol: 3, algorithm: 254, key: Buffer.from("1111", "HEX")}
+    }];
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject signatures with non-matching keytags", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.rrs = [
-      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1112", "HEX")}
-    ];
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.rrs = [{
+      name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+      data:{flags: 0x0101, protocol: 3, algorithm: 253, key: Buffer.from("1112", "HEX")}
+    }];
+
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject signatures by keys without the ZK bit set", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.rrs = [
-      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0001, protocol: 3, algorithm: 253, pubkey: Buffer.from("1211", "HEX")}
-    ];
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.rrs = [{
+      name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+      data:{flags: 0x0001, protocol: 3, algorithm: 253, key: Buffer.from("1211", "HEX")}
+    }];
+
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   var rootKeyProof = undefined;
   it('should accept a root DNSKEY', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    var tx = await verifySubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    var tx = await verifySubmission(instance, ...hexEncodeSignedSet(keys));
     rootKeyProof = tx.logs[0].args.rrset;
   });
 
@@ -136,20 +186,28 @@ contract('DNSSEC', function(accounts) {
 
   it('should accept a signed RRSET', async function() {
     var instance = await dnssec.deployed();
-    var proof = dns.hexEncodeRRs(rootKeys().rrs);
-    await verifySubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 1,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "test.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["test"]}
-      ],
-    }), "0x", proof);
+    await verifySubmission(instance, hexEncodeSignedSet({
+      name:'test',
+      sig:{
+        name: 'test',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "test", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('test', 'ascii')}],
+    })[0], "0x", rootKeyProof);
   });
 
   it('should reject signatures with non-matching classes', async function() {
@@ -255,30 +313,31 @@ contract('DNSSEC', function(accounts) {
   it("should reject entries with expirations in the past", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 1;
-    keys.expiration = 123;
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 1;
+    keys.sig.data.expiration = 123;
+    console.log('****** keys', keys)
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject entries with inceptions in the future", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 0xFFFFFFFF;
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 0xFFFFFFFF;
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should accept updates with newer signatures", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 1;
-    await verifySubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 1;
+    await verifySubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject entries that are older", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 0;
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 0;
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it('should reject invalid RSA signatures', async function() {
