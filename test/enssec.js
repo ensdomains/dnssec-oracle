@@ -1,5 +1,4 @@
 var base32hex = require('rfc4648').base32hex;
-var dns = require("../lib/dns.js");
 const anchors = require("../lib/anchors.js");
 const packet = require('dns-packet');
 const types = require('dns-packet/types');
@@ -592,23 +591,23 @@ contract('DNSSEC', function(accounts) {
       assert.equal((await checkPresence(instance, 'TXT', '_abc.matoken.xyz')), true);
   })
 
-  // // Test against real record
-  // it('should accept real DNSSEC records', async function() {
-  //   var instance = await dnssec.deployed();
-  //   var proof = await instance.anchors();
-  //   var inputs = [];
-  //   for(var rrset of test_rrsets) {
-  //       var buf = Buffer.alloc(rrset[1].length / 2 + rrset[2].length / 2 + 4);
-  //       buf.writeUInt16BE(rrset[1].length / 2, 0);
-  //       buf.write(rrset[1], 2, rrset[1].length / 2, "hex");
-  //       buf.writeUInt16BE(rrset[2].length / 2, rrset[1].length / 2 + 2);
-  //       buf.write(rrset[2], rrset[1].length / 2 + 4, rrset[2].length / 2, "hex");
-  //       inputs.push(buf);
-  //   }
-  //   var buf = Buffer.concat(inputs);
+  // Test against real record
+  it('should accept real DNSSEC records', async function() {
+    var instance = await dnssec.deployed();
+    var proof = await instance.anchors();
+    var inputs = [];
+    for(var rrset of test_rrsets) {
+        var buf = Buffer.alloc(rrset[1].length / 2 + rrset[2].length / 2 + 4);
+        buf.writeUInt16BE(rrset[1].length / 2, 0);
+        buf.write(rrset[1], 2, rrset[1].length / 2, "hex");
+        buf.writeUInt16BE(rrset[2].length / 2, rrset[1].length / 2 + 2);
+        buf.write(rrset[2], rrset[1].length / 2 + 4, rrset[2].length / 2, "hex");
+        inputs.push(buf);
+    }
+    var buf = Buffer.concat(inputs);
 
-  //   var tx = await instance.submitRRSets("0x" + buf.toString("hex"), proof);
-  //   assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
-  //   assert.equal(tx.logs.length, test_rrsets.length);
-  // });
+    var tx = await instance.submitRRSets("0x" + buf.toString("hex"), proof);
+    assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
+    assert.equal(tx.logs.length, test_rrsets.length);
+  });
 });
