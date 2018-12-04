@@ -303,34 +303,50 @@ contract('DNSSEC', function(accounts) {
 
   it('should reject signatures with invalid signer names', async function() {
     var instance = await dnssec.deployed();
-
-    await verifySubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_DNSKEY,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "net.", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1111", "HEX")}
-      ]
-    }), "0x");
-
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: "net.",
-      rrs: [
-        {name: "com.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-      ],
-    }), "0x");
+    await verifySubmission(instance, hexEncodeSignedSet({
+      name:'test',
+      sig:{
+        name: 'test',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "test", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('test', 'ascii')}],
+    })[0], "0x", rootKeyProof);
+    await verifyFailedSubmission(instance, hexEncodeSignedSet({
+      name:'test',
+      sig:{
+        name: 'test',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: "com",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "test", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('test', 'ascii')}],
+    })[0], "0x", rootKeyProof);
   });
 
   it("should reject entries with expirations in the past", async function() {
@@ -394,8 +410,9 @@ contract('DNSSEC', function(accounts) {
           signature: new Buffer([])
         }        
       }
+
       if(sigOption !== undefined) {
-          Object.assign(sig.data, sigOption);
+        Object.assign(sig.data, sigOption);
       }
       var keys = {name, rrs, sig}
       return keys;
@@ -515,56 +532,65 @@ contract('DNSSEC', function(accounts) {
     assert.equal((await checkPresence(instance, 'TXT', 'y')), true);
   })
 
-  // it('deletes record on the same name using NSEC3', async function() {
-  //   var instance = await dnssec.deployed();
+  it('deletes record on the same name using NSEC3', async function() {
+    var instance = await dnssec.deployed();
   
-  //   await submitEntry(instance, 'TXT', 'matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof);
-  //   var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['DNSKEY']});
+    await submitEntry(instance, 'TXT', 'matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec3 = buildEntry(
+      'NSEC3',
+      'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz',
+      {
+        algorithm: 1,
+        flags: 0,
+        iterations: 1,
+        salt: Buffer.from("5BA6AD4385844262", "hex"),
+        nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')),
+        rrtypes:['DNSKEY']
+      }
+    );
+    assert.equal((await deleteEntry(instance, 'TXT', 'matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'matoken.xyz')), false);
+  })
 
-  //   assert.equal((await deleteEntry(instance, 'TXT', 'matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
-  //   assert.equal((await checkPresence(instance, 'TXT', 'matoken.xyz')), false);
-  // })
+  it('deletes records in a zone using NSEC3', async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, 'TXT', 'quux.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['TXT']});
+    assert.equal((await deleteEntry(instance, 'TXT', 'quux.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'quux.matoken.xyz')), false);
+  })
 
-  // it('deletes records in a zone using NSEC3', async function() {
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT, 'quux.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-  //   var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'quux.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'quux.matoken.xyz.')), false);
-  // })
+  it('deletes records at the end of a zone using NSEC3', async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(instance, 'TXT', 'foo.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+    var nsec3 = buildEntry('NSEC3', 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:['TXT']});
+    assert.equal((await deleteEntry(instance, 'TXT', 'foo.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'foo.matoken.xyz')), false);
+  })
 
+  it("doesn't delete records before the range using NSEC3", async function() {
+      var instance = await dnssec.deployed();
+      await submitEntry(instance, 'TXT', '_abc.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+      var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['TXT']});
+      assert.equal((await deleteEntry(instance, 'TXT', '_abc.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+      assert.equal((await checkPresence(instance, 'TXT', '_abc.matoken.xyz')), true);
+  })
 
-  // it('deletes records at the end of a zone using NSEC3', async function() {
-  //   var instance = await dnssec.deployed();
-  //   await submitEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-  //   var nsec3 = buildEntry(dns.TYPE_NSEC3, 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:[dns.TYPE_TXT]});
-  //   assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
-  //   assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'foo.matoken.xyz.')), false);
-  // })
+  it("doesn't delete records after the range using NSEC3", async function() {
+      var instance = await dnssec.deployed();
+      await submitEntry(instance, 'TXT', 'foo.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+      var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['TXT']});
+      assert.equal((await deleteEntry(instance, 'TXT', 'foo.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+      assert.equal((await checkPresence(instance, 'TXT', 'foo.matoken.xyz')), true);
+  })
 
-  // it("doesn't delete records before the range using NSEC3", async function() {
-  //     var instance = await dnssec.deployed();
-  //     await submitEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-  //     var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
-  //     assert.equal((await deleteEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), false);
-  //     assert.equal((await checkPresence(instance, dns.TYPE_TXT, '_abc.matoken.xyz.')), true);
-  // })
-
-  // it("doesn't delete records after the range using NSEC3", async function() {
-  //     var instance = await dnssec.deployed();
-  //     await submitEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-  //     var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
-  //     assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), false);
-  //     assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'foo.matoken.xyz.')), true);
-  // })
-
-  // it("doesn't delete records that aren't at the end of a zone using NSEC3", async function() {
-  //     var instance = await dnssec.deployed();
-  //     await submitEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-  //     var nsec3 = buildEntry(dns.TYPE_NSEC3, 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:[dns.TYPE_TXT]});
-  //     assert.equal((await deleteEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), false);
-  //     assert.equal((await checkPresence(instance, dns.TYPE_TXT, '_abc.matoken.xyz.')), true);
-  // })
+  it("doesn't delete records that aren't at the end of a zone using NSEC3", async function() {
+      var instance = await dnssec.deployed();
+      await submitEntry(instance, 'TXT', '_abc.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+      var nsec3 = buildEntry('NSEC3', 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:['TXT']});
+      assert.equal((await deleteEntry(instance, 'TXT', '_abc.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+      assert.equal((await checkPresence(instance, 'TXT', '_abc.matoken.xyz')), true);
+  })
 
   // // Test against real record
   // it('should accept real DNSSEC records', async function() {
