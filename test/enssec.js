@@ -496,7 +496,7 @@ contract('DNSSEC', function(accounts) {
     var instance = await dnssec.deployed();
     await submitEntry(instance, 'TXT',  'a', Buffer.from('foo', 'ascii'), rootKeyProof);
     var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0] + '0000', rootKeyProof)), true);
+    assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0] + '00', rootKeyProof)), false);
     assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
   })
 
