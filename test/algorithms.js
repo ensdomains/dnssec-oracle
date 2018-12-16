@@ -72,7 +72,6 @@ contract("RSASHA1Algorithm", function(accounts) {
   ];
 
   it('should return true for valid signatures', async function() {
-    await utils.setTime('1524182400000');
 
     var instance = await rsasha1.deployed();
 
