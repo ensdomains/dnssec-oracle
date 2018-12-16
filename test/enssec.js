@@ -1,29 +1,33 @@
 var base32hex = require('rfc4648').base32hex;
-var dns = require("../lib/dns.js");
+const anchors = require("../lib/anchors.js");
+const packet = require('dns-packet');
+const types = require('dns-packet/types');
+
 var dnssec = artifacts.require("./DNSSECImpl");
+const Result = require('@ensdomains/dnsprovejs/dist/dns/result')
 
 const test_rrsets = [
-    // .	125194	IN	RRSIG	DNSKEY 8 0 172800 20180910000000 20180820000000 19036 . R5LO5NN4JIYfd2dUeqGoVSuJVhYgkaPpmZCdOP5c9fyhD8mSjVFt38GW8HuY4slXE0uXCYdix5KfPIdS4np+pAYjNcrbO4zm73XdKBAKhwP0L5OyRn5t9ceuk9E7OxjgEv45AhLJ0pMYQQ4UVyUNfBf+RYMEGV6jK9HJqfmGkRQKIp+RiH9Ql2vLmOYehmAxQ3y0HMQfDyu++MBRNQN8ES/BFTRi+UcKiAep9fQ1qkmrPa1FCgVej6WT0yHCW1hCsl1mOHQNQ2kGDAq3+SIWl5Moec+l88f4Cargio/PiIsVPaK3yet1sXiLG++5T572C2NYY8sQlEQozzqcrHJdZA==
-    // .	125194	IN	DNSKEY	256 3 8 AwEAAfaifSqh+9ItxYRCwuiY0FY2NkaEwd/zmyVvakixDgTOkgG/PUzlEauAiKzlxGwezjqbKFPSwrY3qHmbbsSTY6G8hZtna8k26eCwy59Chh573cu8qtBkmUIXMYG3fSdlUReP+uhBWBfKI2aGwhRmQYR0zSmg7PGOde34c/rOItK1ebJhjTAJ6TmnON7qMfk/lKvH4qOvYtzstLhr7Pn9ZOVLx/WUKQpU/nEyFyTduRbz1nZqkp6yMuHwWVsABK8lUYXSaUrDAsuMSldhafmR/A15BxNhv9M7mzJj7UH2RVME9JbYinBEzWwW9GpnY+ZmBWgZiRVTaDuemCTJ5ZJWLRs=
-    // .	125194	IN	DNSKEY	257 3 8 AwEAAagAIKlVZrpC6Ia7gEzahOR+9W29euxhJhVVLOyQbSEW0O8gcCjFFVQUTf6v58fLjwBd0YI0EzrAcQqBGCzh/RStIoO8g0NfnfL2MTJRkxoXbfDaUeVPQuYEhg37NZWAJQ9VnMVDxP/VHL496M/QZxkjf5/Efucp2gaDX6RS6CXpoY68LsvPVjR0ZSwzz1apAzvN9dlzEheX7ICJBBtuA6G3LQpzW5hOA2hzCTMjJPJ8LbqF6dsV6DoBQzgul0sGIcGOYl7OyQdXfZ57relSQageu+ipAdTTJ25AsRTAoub8ONGcLmqrAmRLKBP1dfwhYB4N7knNnulqQxA+Uk1ihz0=
-    // .	125194	IN	DNSKEY	257 3 8 AwEAAaz/tAm8yTn4Mfeh5eyI96WSVexTBAvkMgJzkKTOiW1vkIbzxeF3+/4RgWOq7HrxRixHlFlExOLAJr5emLvN7SWXgnLh4+B5xQlNVz8Og8kvArMtNROxVQuCaSnIDdD5LKyWbRd2n9WGe2R8PzgCmr3EgVLrjyBxWezF0jLHwVN8efS3rCj/EWgvIWgb9tarpVUDK/b58Da+sqqls3eNbuv7pr+eoZG+SrDK6nWeL3c6H5Apxz7LjVc1uTIdsIXxuOLYA4/ilBmSVIzuDWfdRUfhHdY6+cn8HFRm+2hM8AnXGXws9555KrUB5qihylGa8subX2Nn6UwNR1AkUTV74bU=
-    [".", "003008000002a3005b95b4005b7a04804a5c0000003000010002a30001080100030803010001f6a27d2aa1fbd22dc58442c2e898d05636364684c1dff39b256f6a48b10e04ce9201bf3d4ce511ab8088ace5c46c1ece3a9b2853d2c2b637a8799b6ec49363a1bc859b676bc936e9e0b0cb9f42861e7bddcbbcaad0649942173181b77d276551178ffae8415817ca236686c21466418474cd29a0ecf18e75edf873face22d2b579b2618d3009e939a738deea31f93f94abc7e2a3af62dcecb4b86becf9fd64e54bc7f594290a54fe71321724ddb916f3d6766a929eb232e1f0595b0004af255185d2694ac302cb8c4a576169f991fc0d79071361bfd33b9b3263ed41f6455304f496d88a7044cd6c16f46a6763e666056819891553683b9e9824c9e592562d1b00003000010002a30001080101030803010001a80020a95566ba42e886bb804cda84e47ef56dbd7aec612615552cec906d2116d0ef207028c51554144dfeafe7c7cb8f005dd18234133ac0710a81182ce1fd14ad2283bc83435f9df2f6313251931a176df0da51e54f42e604860dfb359580250f559cc543c4ffd51cbe3de8cfd06719237f9fc47ee729da06835fa452e825e9a18ebc2ecbcf563474652c33cf56a9033bcdf5d973121797ec8089041b6e03a1b72d0a735b984e03687309332324f27c2dba85e9db15e83a0143382e974b0621c18e625ecec907577d9e7bade95241a81ebbe8a901d4d3276e40b114c0a2e6fc38d19c2e6aab02644b2813f575fc21601e0dee49cd9ee96a43103e524d62873d00003000010002a30001080101030803010001acffb409bcc939f831f7a1e5ec88f7a59255ec53040be432027390a4ce896d6f9086f3c5e177fbfe118163aaec7af1462c47945944c4e2c026be5e98bbcded25978272e1e3e079c5094d573f0e83c92f02b32d3513b1550b826929c80dd0f92cac966d17769fd5867b647c3f38029abdc48152eb8f207159ecc5d232c7c1537c79f4b7ac28ff11682f21681bf6d6aba555032bf6f9f036beb2aaa5b3778d6eebfba6bf9ea191be4ab0caea759e2f773a1f9029c73ecb8d5735b9321db085f1b8e2d8038fe2941992548cee0d67dd4547e11dd63af9c9fc1c5466fb684cf009d7197c2cf79e792ab501e6a8a1ca519af2cb9b5f6367e94c0d47502451357be1b5", "4792cee4d37824861f7767547aa1a8552b8956162091a3e999909d38fe5cf5fca10fc9928d516ddfc196f07b98e2c957134b97098762c7929f3c8752e27a7ea4062335cadb3b8ce6ef75dd28100a8703f42f93b2467e6df5c7ae93d13b3b18e012fe390212c9d29318410e1457250d7c17fe458304195ea32bd1c9a9f98691140a229f91887f50976bcb98e61e866031437cb41cc41f0f2bbef8c05135037c112fc1153462f9470a8807a9f5f435aa49ab3dad450a055e8fa593d321c25b5842b25d6638740d4369060c0ab7f9221697932879cfa5f3c7f809aae08a8fcf888b153da2b7c9eb75b1788b1befb94f9ef60b635863cb10944428cf3a9cac725d64"],
+    // .	92478	IN	RRSIG	DNSKEY 8 0 172800 20181221000000 20181130000000 20326 . NGhrAoMGpLEivdICl6xZoDQkxVHjlIndYueDrSr5CCvfSRvB5US/lDtZwxjm4rVSE4Gykc1iKgfx3Juv4/BSG9PlXUuCqqi7ia4kDbHD0KWIuThzcDPPmxm1Pk9Ug2qo1Tk6JU1/1s7IFwf11bQvf+YO8BYTE8bnULq5LZlpAuOjFbidarPoijGRUK9uYpkCxthxfd9wMvjnL+wF/UtIR0qRHcYNKsGaj0Tmt/9lCj1MtaVQBvqoBjdfCs6Ie2cziZQ3Jx8NcSW+4AZ3IYjDLde0iT1IgPm3u4b0t2qFKbfrPlYcx/O0ODKrBrXWH6nFGdXUJEEz799ZVb/ErjdnVg==
+    // .	92478	IN	DNSKEY	256 3 8 AwEAAdp440E6Mz7c+Vl4sPd0lTv2Qnc85dTW64j0RDD7sS/zwxWDJ3QRES2VKDO0OXLMqVJSs2YCCSDKuZXpDPuf++YfAu0j7lzYYdWTGwyNZhEaXtMQJIKYB96pW6cRkiG2Dn8S2vvo/PxW9PKQsyLbtd8PcwWglHgReBVp7kEv/Dd+3b3YMukt4jnWgDUddAySg558Zld+c9eGWkgWoOiuhg4rQRkFstMX1pRyOSHcZuH38o1WcsT4y3eT0U/SR6TOSLIB/8Ftirux/h297oS7tCcwSPt0wwry5OFNTlfMo8v7WGurogfk8hPipf7TTKHIi20LWen5RCsvYsQBkYGpF78=
+    // .	92478	IN	DNSKEY	257 3 8 AwEAAagAIKlVZrpC6Ia7gEzahOR+9W29euxhJhVVLOyQbSEW0O8gcCjFFVQUTf6v58fLjwBd0YI0EzrAcQqBGCzh/RStIoO8g0NfnfL2MTJRkxoXbfDaUeVPQuYEhg37NZWAJQ9VnMVDxP/VHL496M/QZxkjf5/Efucp2gaDX6RS6CXpoY68LsvPVjR0ZSwzz1apAzvN9dlzEheX7ICJBBtuA6G3LQpzW5hOA2hzCTMjJPJ8LbqF6dsV6DoBQzgul0sGIcGOYl7OyQdXfZ57relSQageu+ipAdTTJ25AsRTAoub8ONGcLmqrAmRLKBP1dfwhYB4N7knNnulqQxA+Uk1ihz0=
+    // .	92478	IN	DNSKEY	257 3 8 AwEAAaz/tAm8yTn4Mfeh5eyI96WSVexTBAvkMgJzkKTOiW1vkIbzxeF3+/4RgWOq7HrxRixHlFlExOLAJr5emLvN7SWXgnLh4+B5xQlNVz8Og8kvArMtNROxVQuCaSnIDdD5LKyWbRd2n9WGe2R8PzgCmr3EgVLrjyBxWezF0jLHwVN8efS3rCj/EWgvIWgb9tarpVUDK/b58Da+sqqls3eNbuv7pr+eoZG+SrDK6nWeL3c6H5Apxz7LjVc1uTIdsIXxuOLYA4/ilBmSVIzuDWfdRUfhHdY6+cn8HFRm+2hM8AnXGXws9555KrUB5qihylGa8subX2Nn6UwNR1AkUTV74bU=
+    [".", "003008000002a3005c1c2d005c007d804f660000003000010002a30001080100030803010001da78e3413a333edcf95978b0f774953bf642773ce5d4d6eb88f44430fbb12ff3c31583277411112d952833b43972cca95252b366020920cab995e90cfb9ffbe61f02ed23ee5cd861d5931b0c8d66111a5ed31024829807dea95ba7119221b60e7f12dafbe8fcfc56f4f290b322dbb5df0f7305a0947811781569ee412ffc377eddbdd832e92de239d680351d740c92839e7c66577e73d7865a4816a0e8ae860e2b411905b2d317d694723921dc66e1f7f28d5672c4f8cb7793d14fd247a4ce48b201ffc16d8abbb1fe1dbdee84bbb4273048fb74c30af2e4e14d4e57cca3cbfb586baba207e4f213e2a5fed34ca1c88b6d0b59e9f9442b2f62c4019181a917bf00003000010002a30001080101030803010001a80020a95566ba42e886bb804cda84e47ef56dbd7aec612615552cec906d2116d0ef207028c51554144dfeafe7c7cb8f005dd18234133ac0710a81182ce1fd14ad2283bc83435f9df2f6313251931a176df0da51e54f42e604860dfb359580250f559cc543c4ffd51cbe3de8cfd06719237f9fc47ee729da06835fa452e825e9a18ebc2ecbcf563474652c33cf56a9033bcdf5d973121797ec8089041b6e03a1b72d0a735b984e03687309332324f27c2dba85e9db15e83a0143382e974b0621c18e625ecec907577d9e7bade95241a81ebbe8a901d4d3276e40b114c0a2e6fc38d19c2e6aab02644b2813f575fc21601e0dee49cd9ee96a43103e524d62873d00003000010002a30001080101030803010001acffb409bcc939f831f7a1e5ec88f7a59255ec53040be432027390a4ce896d6f9086f3c5e177fbfe118163aaec7af1462c47945944c4e2c026be5e98bbcded25978272e1e3e079c5094d573f0e83c92f02b32d3513b1550b826929c80dd0f92cac966d17769fd5867b647c3f38029abdc48152eb8f207159ecc5d232c7c1537c79f4b7ac28ff11682f21681bf6d6aba555032bf6f9f036beb2aaa5b3778d6eebfba6bf9ea191be4ab0caea759e2f773a1f9029c73ecb8d5735b9321db085f1b8e2d8038fe2941992548cee0d67dd4547e11dd63af9c9fc1c5466fb684cf009d7197c2cf79e792ab501e6a8a1ca519af2cb9b5f6367e94c0d47502451357be1b5", "34686b028306a4b122bdd20297ac59a03424c551e39489dd62e783ad2af9082bdf491bc1e544bf943b59c318e6e2b5521381b291cd622a07f1dc9bafe3f0521bd3e55d4b82aaa8bb89ae240db1c3d0a588b938737033cf9b19b53e4f54836aa8d5393a254d7fd6cec81707f5d5b42f7fe60ef0161313c6e750bab92d996902e3a315b89d6ab3e88a319150af6e629902c6d8717ddf7032f8e72fec05fd4b48474a911dc60d2ac19a8f44e6b7ff650a3d4cb5a55006faa806375f0ace887b6733899437271f0d7125bee006772188c32dd7b4893d4880f9b7bb86f4b76a8529b7eb3e561cc7f3b43832ab06b5d61fa9c519d5d4244133efdf5955bfc4ae376756"],
 
-    // xyz.	84109	IN	RRSIG	DS 8 1 86400 20180906050000 20180824040000 41656 . SpxwxdhBLQhHVsjaOoLiJ+t9l62x5/18gHE/DrUk5Kf3DqdQBlqASb5MFsLiLQLkS8Nz2MM0NKcsRvE3H8V2zycQmKFWaZ5E7kP3f9JKBLhAiqf80JzbbZNiD0FUBpAMyIQwtZoxxX2rkaXBrHhI7GYn1n7FkX964obM7Rx2+IaZWYsFV70wpaLyqaZUSvzf2jaZQ+NmEqb207vxer1lASPuTU7s+4eRFkK1lLoWKFA1nD0VfcZ+ypwifl8907Ha3rdMn0WQYtBjNCB91057+mSSArw6JgvqBqnJn6ABpypiimAOmHjXqM4hQvi0BCkLxO7OGjedyHSRoagMFSjSjA==
-    // xyz.	84109	IN	DS	3599 8 1 3FA3B264F45DB5F38BEDEAF1A88B76AA318C2C7F
-    // xyz.	84109	IN	DS	3599 8 2 B9733869BC84C86BB59D102BA5DA6B27B2088552332A39DCD54BC4E8D66B0499
-    ["xyz.", "002b0801000151805b90b4505b7f82c0a2b8000378797a00002b00010001518000180e0f08013fa3b264f45db5f38bedeaf1a88b76aa318c2c7f0378797a00002b00010001518000240e0f0802b9733869bc84c86bb59d102ba5da6b27b2088552332a39dcd54bc4e8d66b0499", "4a9c70c5d8412d084756c8da3a82e227eb7d97adb1e7fd7c80713f0eb524e4a7f70ea750065a8049be4c16c2e22d02e44bc373d8c33434a72c46f1371fc576cf271098a156699e44ee43f77fd24a04b8408aa7fcd09cdb6d93620f415406900cc88430b59a31c57dab91a5c1ac7848ec6627d67ec5917f7ae286cced1c76f88699598b0557bd30a5a2f2a9a6544afcdfda369943e36612a6f6d3bbf17abd650123ee4d4eecfb87911642b594ba162850359c3d157dc67eca9c227e5f3dd3b1dadeb74c9f459062d06334207dd74e7bfa649202bc3a260bea06a9c99fa001a72a628a600e9878d7a8ce2142f8b404290bc4eece1a379dc87491a1a80c1528d28c"],
+    // xyz.	83249	IN	RRSIG	DS 8 1 86400 20181217050000 20181204040000 2134 . Ns7RoM1FSSmexCVS1weXqHtBtzpbDY7yW/WsjSkR2qr8pL1uRe3pQCz9Jpv2HMuXq99Mx0E+3FoFJXKoBV02GQziwUF6on1bkPb0OA2um1ROFlHRtdHC3Fl50xamdBhX7ssSURHyCVWqhtEnHukn87+igFdCNUqtQRjs4Rx6fI2svGeYSaycQENOaMA6MoB3kTMwcGr+dYJkhZ3/mZvrASM0atfpQ918YQDhbNOUgIsjLzIV06ISv+QU1AaFCajcvlcGTAJv9YWss9qkQLqzlFYsvHEm1C3Gy5ZyqA+h/FPxY2iEpllUSec07VmT5bixDQd9eGEPmzITMMynO7jcGQ==
+    // xyz.	83249	IN	DS	3599 8 1 3FA3B264F45DB5F38BEDEAF1A88B76AA318C2C7F
+    // xyz.	83249	IN	DS	3599 8 2 B9733869BC84C86BB59D102BA5DA6B27B2088552332A39DCD54BC4E8D66B0499
+    ["xyz.", "002b0801000151805c172d505c05fbc00856000378797a00002b00010001518000180e0f08013fa3b264f45db5f38bedeaf1a88b76aa318c2c7f0378797a00002b00010001518000240e0f0802b9733869bc84c86bb59d102ba5da6b27b2088552332a39dcd54bc4e8d66b0499", "36ced1a0cd4549299ec42552d70797a87b41b73a5b0d8ef25bf5ac8d2911daaafca4bd6e45ede9402cfd269bf61ccb97abdf4cc7413edc5a052572a8055d36190ce2c1417aa27d5b90f6f4380dae9b544e1651d1b5d1c2dc5979d316a6741857eecb125111f20955aa86d1271ee927f3bfa2805742354aad4118ece11c7a7c8dacbc679849ac9c40434e68c03a328077913330706afe758264859dff999beb0123346ad7e943dd7c6100e16cd394808b232f3215d3a212bfe414d4068509a8dcbe57064c026ff585acb3daa440bab394562cbc7126d42dc6cb9672a80fa1fc53f1636884a6595449e734ed5993e5b8b10d077d78610f9b321330cca73bb8dc19"],
 
-    // xyz.	3545	IN	RRSIG	DNSKEY 8 1 3600 20180912090853 20180812194519 3599 xyz. dpIwGsySlIOJmUqVt6yo5KmLDWgQztWrCoa4cc9ZJpMcNiddLRxYQjWVXHFl/4tv2FoClU34I1XNvpzNWADdCY1s7AUFBNA3BzC8qpQ847Prp1pAwvdH/SUf5AGonbV6JxuOJ7lvD4fGclSzDZdsE69sKscmo486iQ8ZZ8ohcybsqtGuiTNWxjUpa3gtmb5sbSBAj8Q4yPIYKQBwz6la9Wn4tPC+KV+nSuKD6GQHluHWcG39BQp2ka1HrvTUP2pDQEIGwAHnPuX8Vi1SJGSM1y7YomkYeW9ulh6pImAmZXyb17BwA3BTC5ZpWKNbh1jsYHkt6B2g6X2lcOc/s7yCyQ==
-    // xyz.	3545	IN	DNSKEY	257 3 8 AwEAAbYRTzkgLg4oxcFb/+oFQMvluEut45siTtLiNL7t5Fim/ZnYhkxal6TiCUywnfgiycJyneNmtC/3eoTcz5dlrlRB5dwDehcqiZoFiqjaXGHcykHGFBDynD0/sRcEAQL+bLMv2qA+o2L7pDPHbCGJVXlUq57oTWfS4esbGDIa+1Bs8gDVMGUZcbRmeeKkc/MH2Oq1ApE5EKjH0ZRvYWS6afsWyvlXD2NXDthS5LltVKqqjhi6dy2O02stOt41z1qwfRlU89b3HXfDghlJ/L33DE+OcTyK0yRJ+ay4WpBgQJL8GDFKz1hnR2lOjYXLttJD7aHfcYyVO6zYsx2aeHI0OYM=
-    // xyz.	3545	IN	DNSKEY	256 3 8 AwEAAaPjZXskXBdJP8Vc1dtptECSfbGI0uf8448cxCKTqWN1DVbbtcHWltCveGVM5WJEIHe34kar8bjdJTqxXratPGE2Bfze6CrODUBreX+NziT0taI+z0oT+/sXmkpDWj8Fch1+afaWxaA9MaCK0pSBf4eajIp1Xm3dqvPITEVJWS/f
-    // xyz.	3545	IN	DNSKEY	256 3 8 AwEAAegu7evMCIeBNauXbva/MmD9ClUXMqXh8h7Yd3W69xkqNkQ2twqHL85eBqYVUThxjB4nGA2n7Rd+jdXHciVBg8iyajuoAVDzMN7PxPhrweMgYzCWxhq8Hq1gokwvEDCkyk6Obeylyk5pjIyQLUUaKcuhcu93SZjXiV3tLq3HkUpb
-    ["xyz.", "0030080100000e105b98d7a55b708e4f0e0f0378797a000378797a000030000100000e1000880100030803010001a3e3657b245c17493fc55cd5db69b440927db188d2e7fce38f1cc42293a963750d56dbb5c1d696d0af78654ce562442077b7e246abf1b8dd253ab15eb6ad3c613605fcdee82ace0d406b797f8dce24f4b5a23ecf4a13fbfb179a4a435a3f05721d7e69f696c5a03d31a08ad294817f879a8c8a755e6dddaaf3c84c4549592fdf0378797a000030000100000e1000880100030803010001e82eedebcc08878135ab976ef6bf3260fd0a551732a5e1f21ed87775baf7192a364436b70a872fce5e06a6155138718c1e27180da7ed177e8dd5c772254183c8b26a3ba80150f330decfc4f86bc1e320633096c61abc1ead60a24c2f1030a4ca4e8e6deca5ca4e698c8c902d451a29cba172ef774998d7895ded2eadc7914a5b0378797a000030000100000e1001080101030803010001b6114f39202e0e28c5c15bffea0540cbe5b84bade39b224ed2e234beede458a6fd99d8864c5a97a4e2094cb09df822c9c2729de366b42ff77a84dccf9765ae5441e5dc037a172a899a058aa8da5c61dcca41c61410f29c3d3fb117040102fe6cb32fdaa03ea362fba433c76c2189557954ab9ee84d67d2e1eb1b18321afb506cf200d530651971b46679e2a473f307d8eab502913910a8c7d1946f6164ba69fb16caf9570f63570ed852e4b96d54aaaa8e18ba772d8ed36b2d3ade35cf5ab07d1954f3d6f71d77c3821949fcbdf70c4f8e713c8ad32449f9acb85a90604092fc18314acf586747694e8d85cbb6d243eda1df718c953bacd8b31d9a7872343983", "7692301acc92948389994a95b7aca8e4a98b0d6810ced5ab0a86b871cf5926931c36275d2d1c584235955c7165ff8b6fd85a02954df82355cdbe9ccd5800dd098d6cec050504d0370730bcaa943ce3b3eba75a40c2f747fd251fe401a89db57a271b8e27b96f0f87c67254b30d976c13af6c2ac726a38f3a890f1967ca217326ecaad1ae893356c635296b782d99be6c6d20408fc438c8f218290070cfa95af569f8b4f0be295fa74ae283e8640796e1d6706dfd050a7691ad47aef4d43f6a43404206c001e73ee5fc562d5224648cd72ed8a26918796f6e961ea9226026657c9bd7b0700370530b966958a35b8758ec60792de81da0e97da570e73fb3bc82c9"],
+    // xyz.	3599	IN	RRSIG	DNSKEY 8 1 3600 20181225142613 20181125095514 3599 xyz. jp3YrIpsk753l5z27ublBitTA428T3dxMzSxr+0ON/4H2gGyRJP9h7RIW0mg5mngHtm3hBbyXeLbu0P4oqEAvOQ2hOvTCKtMlbOcqWkMVSOXmvIFS5y3kkELjpbjVmDpZU/aaR8YhDzOPkKltCxC1dR1a7JaFGX9IIdMEmSnYXZLugfsebyrZT7G/byu6+5uF0wNaKKgzyxVUKLIJ8gXTV/Bfhk9meBqvkkHhtcOyHhhcnXEaUB78mlG5s12POcmbhpCv1U6FNzILo+2KT2YX/Oo8hd/BpJS+6KYkqJ/JXyM9dOZ1cZHMch2Mgjnv1vPB/PanI4Zxutd/zUhTZBD4Q==
+    // xyz.	3599	IN	DNSKEY	256 3 8 AwEAAZtrWHvfT23xrg5tdWj+CMzj4b/ERa/atL/TxokA7Hh9n0SDzoBX6zmRk/cKfW1oHhjKGB57pClqhF9qddD0qjkddjjLqHT9VfxrKtb5/STZQviCVPKWEWnnuqyn09HmIN+iCzZkuVJHb2JXDcdIuNsF6nuvIok3H2qZikel1vbZ
+    // xyz.	3599	IN	DNSKEY	256 3 8 AwEAAdjZhkaV7KzpysXw1hmEWyoqyis1SAAtMGCHGUIQmXZ6BlRzqDlKd5dyj7a1HWUFHmLPlnoSj45vJbXOoWqrPHZuK9YmIFqmRWh+lJ7eBK8j8uIfpiLrSU9A0WbX3qVox/N7Rcrl2NiHM2uAuL0i3UU6GWwP9e+kyuAZVJDyDci1
+    // xyz.	3599	IN	DNSKEY	257 3 8 AwEAAbYRTzkgLg4oxcFb/+oFQMvluEut45siTtLiNL7t5Fim/ZnYhkxal6TiCUywnfgiycJyneNmtC/3eoTcz5dlrlRB5dwDehcqiZoFiqjaXGHcykHGFBDynD0/sRcEAQL+bLMv2qA+o2L7pDPHbCGJVXlUq57oTWfS4esbGDIa+1Bs8gDVMGUZcbRmeeKkc/MH2Oq1ApE5EKjH0ZRvYWS6afsWyvlXD2NXDthS5LltVKqqjhi6dy2O02stOt41z1qwfRlU89b3HXfDghlJ/L33DE+OcTyK0yRJ+ay4WpBgQJL8GDFKz1hnR2lOjYXLttJD7aHfcYyVO6zYsx2aeHI0OYM=
+    ["xyz.", "0030080100000e105c223e055bfa71820e0f0378797a000378797a000030000100000e10008801000308030100019b6b587bdf4f6df1ae0e6d7568fe08cce3e1bfc445afdab4bfd3c68900ec787d9f4483ce8057eb399193f70a7d6d681e18ca181e7ba4296a845f6a75d0f4aa391d7638cba874fd55fc6b2ad6f9fd24d942f88254f2961169e7baaca7d3d1e620dfa20b3664b952476f62570dc748b8db05ea7baf2289371f6a998a47a5d6f6d90378797a000030000100000e1000880100030803010001d8d9864695ecace9cac5f0d619845b2a2aca2b3548002d30608719421099767a065473a8394a7797728fb6b51d65051e62cf967a128f8e6f25b5cea16aab3c766e2bd626205aa645687e949ede04af23f2e21fa622eb494f40d166d7dea568c7f37b45cae5d8d887336b80b8bd22dd453a196c0ff5efa4cae0195490f20dc8b50378797a000030000100000e1001080101030803010001b6114f39202e0e28c5c15bffea0540cbe5b84bade39b224ed2e234beede458a6fd99d8864c5a97a4e2094cb09df822c9c2729de366b42ff77a84dccf9765ae5441e5dc037a172a899a058aa8da5c61dcca41c61410f29c3d3fb117040102fe6cb32fdaa03ea362fba433c76c2189557954ab9ee84d67d2e1eb1b18321afb506cf200d530651971b46679e2a473f307d8eab502913910a8c7d1946f6164ba69fb16caf9570f63570ed852e4b96d54aaaa8e18ba772d8ed36b2d3ade35cf5ab07d1954f3d6f71d77c3821949fcbdf70c4f8e713c8ad32449f9acb85a90604092fc18314acf586747694e8d85cbb6d243eda1df718c953bacd8b31d9a7872343983", "8e9dd8ac8a6c93be77979cf6eee6e5062b53038dbc4f77713334b1afed0e37fe07da01b24493fd87b4485b49a0e669e01ed9b78416f25de2dbbb43f8a2a100bce43684ebd308ab4c95b39ca9690c5523979af2054b9cb792410b8e96e35660e9654fda691f18843cce3e42a5b42c42d5d4756bb25a1465fd20874c1264a761764bba07ec79bcab653ec6fdbcaeebee6e174c0d68a2a0cf2c5550a2c827c8174d5fc17e193d99e06abe490786d70ec878617275c469407bf26946e6cd763ce7266e1a42bf553a14dcc82e8fb6293d985ff3a8f2177f069252fba29892a27f257c8cf5d399d5c64731c8763208e7bf5bcf07f3da9c8e19c6eb5dff35214d9043e1"],
 
-    // ethlab.xyz.	3599	IN	RRSIG	DS 8 2 3600 20180918170733 20180819155629 20868 xyz. R8Oy4n86eyr2cWdaluWOwWCRsOeFfFMxCDA2tbBFYM5qYVEIAJC1ogCNzCZMGiE6S7UBCT3XH67s/aW+gAUjWvXbmU+6pPy0jOYTx8uz/z1b19Kv7TQeKUoiJ6wCuXocOdzd/koOaA96qqrPAvt2CKnR6jVmhoJZct2aazQE7N4=
+    // ethlab.xyz.	3599	IN	RRSIG	DS 8 2 3600 20181225141755 20181125095514 52053 xyz. zQilLKtDq6LnWAJ2/VbAiJG25KUQSyci4075VeAplCajY1rFwsk/cylFgn/Ok8C9gF36iua1YWxl2Sbc6L7WV1hsRgc67mA5MXzRvfZHW00YNEuq5NinvMbQ42XXnv0FBzkLMuzfj/m6bsZ96d23532T1q/XVo7P9GNKTDeKEEI=
     // ethlab.xyz.	3599	IN	DS	60820 8 2 D1CDCF8E905ED06FEC438A63C69A34D2F4871B1F4869BBB852859892E693CAED
     // ethlab.xyz.	3599	IN	DS	42999 8 2 954C021A38E5731EBAAA95323FB7C472A866CE4D86AE3AD8605843B722B62213
-    ["ethlab.xyz.", "002b080200000e105ba130d55b79932d51840378797a00066574686c61620378797a00002b000100000e100024a7f70802954c021a38e5731ebaaa95323fb7c472a866ce4d86ae3ad8605843b722b62213066574686c61620378797a00002b000100000e100024ed940802d1cdcf8e905ed06fec438a63c69a34d2f4871b1f4869bbb852859892e693caed", "47c3b2e27f3a7b2af671675a96e58ec16091b0e7857c5331083036b5b04560ce6a6151080090b5a2008dcc264c1a213a4bb501093dd71faeecfda5be8005235af5db994fbaa4fcb48ce613c7cbb3ff3d5bd7d2afed341e294a2227ac02b97a1c39dcddfe4a0e680f7aaaaacf02fb7608a9d1ea356686825972dd9a6b3404ecde"],
+    ["ethlab.xyz.", "002b080200000e105c223c135bfa7182cb550378797a00066574686c61620378797a00002b000100000e100024a7f70802954c021a38e5731ebaaa95323fb7c472a866ce4d86ae3ad8605843b722b62213066574686c61620378797a00002b000100000e100024ed940802d1cdcf8e905ed06fec438a63c69a34d2f4871b1f4869bbb852859892e693caed", "cd08a52cab43aba2e7580276fd56c08891b6e4a5104b2722e34ef955e0299426a3635ac5c2c93f732945827fce93c0bd805dfa8ae6b5616c65d926dce8bed657586c46073aee6039317cd1bdf6475b4d18344baae4d8a7bcc6d0e365d79efd0507390b32ecdf8ff9ba6ec67de9ddb7e77d93d6afd7568ecff4634a4c378a1042"],
 
     // ethlab.xyz.	3599	IN	RRSIG	DNSKEY 8 2 3600 20330427133000 20180516123000 42999 ethlab.xyz. OE5dzOx68Rsi1PKOAuzo2ALP972ZNI//loIzVKtyLY9gD5nXQTYeb8+uLFqLYmnUKOHQ9PzdJINnGz2urDsjig==
     // ethlab.xyz.	3599	IN	DNSKEY	257 3 8 AwEAAbjW5+pT9WirUzRujl+Haab7lw8NOa7N1FdRjpJ4ICzvOfc1vSYULj2eBIQJq5lys1Bhgs0NXHGsR0UDVok+uu7dic+UlEH8gIAa82yPefJOotD6yCZfqk1cuLX2+RGMHfpVgs4qwQa+PdajYfpw+sjzafGBuwiygycuZe40p4/Azm3E5/9lFsis4z3bXOd5vTdKYv5AWdEgKRdzZIRjIxurKz6G7nXPaxOn4zo4LM/kXxn4KjSLQQxQflr+xxHxda8zJZOY1Pj3iKcMzPtPHUsxbHbcjszmwNrn7sqNpSEPsoAw4+UQCG0FnhwsQxnAo5rE2YxJV1S+BRcAunyEsUE=
@@ -35,11 +39,18 @@ const test_rrsets = [
     ["_ens.ethlab.xyz.", "0010080300015180771a70585afc2448a7f7066574686c61620378797a00045f656e73066574686c61620378797a000010000100015180002d2c613d307866646233336638616337636537326437643437393564643836313065333233623463313232666262", "70f03458c1c1c0a4bd914b41456f1288797efcce4ffefb013ce94270918e44468b86cbdae9de5f84d2dc1441b6ea3ea05cac6171605bea620fcdf3c079e928d5"]
 ];
 
+function hexEncodeSignedSet(keys){
+  return (new Result([keys])).proofs[0].toSubmit();
+}
+
+function hexEncodeName(name){
+  return '0x' + packet.name.encode(name).toString('hex');
+}
+
 async function verifySubmission(instance, data, sig, proof) {
   if(proof === undefined) {
     proof = await instance.anchors();
   }
-
   var tx = await instance.submitRRSet(data, sig, proof);
   assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
   assert.equal(tx.logs.length, 1);
@@ -74,211 +85,296 @@ contract('DNSSEC', function(accounts) {
   });
 
   function rootKeys() {
-    return {
-      typeCovered: dns.TYPE_DNSKEY,
-      algorithm: 253,
-      labels: 0,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1111", "HEX")},
-        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 4, algorithm: 253, pubkey: Buffer.from("1111", "HEX")},
-        {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0, protocol: 3, algorithm: 253, pubkey: Buffer.from("1112", "HEX")}
-      ],
-    };
-  };
+    var name = '.';
+    var sig = {
+      name: '.',
+      type: 'RRSIG',
+      ttl: 0,
+      class: 'IN',
+      flush: false,
+      data:
+      {
+        typeCovered: 'DNSKEY',
+        algorithm: 253,
+        labels: 0,
+        originalTTL: 3600,
+        expiration: 0xFFFFFFFF,
+        inception: 0,
+        keyTag: 5647,
+        signersName: ".",
+        signature: new Buffer([])
+      }
+    }
+
+    var rrs = [
+      {
+        name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+        data:{flags: 0x0101, algorithm: 253, key: Buffer.from("1111", "HEX")}
+      },
+      {
+        name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+        data:{flags: 0, algorithm: 253, key: Buffer.from("1111", "HEX")}
+      },
+      {
+        name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+        data:{flags: 0, algorithm: 253, key: Buffer.from("1112", "HEX")}
+      }
+    ]
+    return { name, sig, rrs }
+  }
 
   it("should reject signatures with non-matching algorithms", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.rrs = [
-      {name: "foo.bar.", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 254, pubkey: Buffer.from("1111", "HEX")}
-    ];
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.rrs.forEach((r)=>{r.data.algorithm = 255})
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject signatures with non-matching keytags", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.rrs = [
-      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1112", "HEX")}
-    ];
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+
+    keys.rrs = [{
+      name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+      data:{flags: 0x0101, protocol: 3, algorithm: 253, key: Buffer.from("1112", "HEX")}
+    }];
+
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject signatures by keys without the ZK bit set", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.rrs = [
-      {name: ".", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0001, protocol: 3, algorithm: 253, pubkey: Buffer.from("1211", "HEX")}
-    ];
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.rrs = [{
+      name: ".", type: 'DNSKEY', class: 'IN', ttl: 3600,
+      data:{flags: 0x0001, protocol: 3, algorithm: 253, key: Buffer.from("1211", "HEX")}
+    }];
+
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   var rootKeyProof = undefined;
   it('should accept a root DNSKEY', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    var tx = await verifySubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    var tx = await verifySubmission(instance, ...hexEncodeSignedSet(keys));
     rootKeyProof = tx.logs[0].args.rrset;
   });
 
   it('should check if root DNSKEY exist', async function(){
     var instance = await dnssec.deployed();
-    var [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('nonexisting.'));
+    var [_, _, rrs] = await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('nonexisting.'));
     assert.equal(rrs, '0x0000000000000000000000000000000000000000');
-    [_, _, rrs] = await instance.rrdata.call(dns.TYPE_DNSKEY, dns.hexEncodeName('.'));
+    [_, _, rrs] = await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('.'));
     assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
   })
 
   it('should accept a signed RRSET', async function() {
     var instance = await dnssec.deployed();
-    var proof = dns.hexEncodeRRs(rootKeys().rrs);
-    await verifySubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 1,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "test.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["test"]}
-      ],
-    }), "0x", proof);
+    await verifySubmission(instance, hexEncodeSignedSet({
+      name:'test',
+      sig:{
+        name: 'test',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "test", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('test', 'ascii')}],
+    })[0], "0x", rootKeyProof);
   });
 
   it('should reject signatures with non-matching classes', async function() {
     var instance = await dnssec.deployed();
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "net.", type: dns.TYPE_TXT, klass: 2, ttl: 3600, text: ["foo"]}
-      ],
-    }), "0x");
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet({
+      name:'net',
+      sig:{
+        name: 'net',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 0,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "net", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('foo', 'ascii')}],
+    }));
   })
 
   it('should reject signatures with non-matching names', async function() {
     var instance = await dnssec.deployed();
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "foo.net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-      ],
-    }), "0x");
+    await verifyFailedSubmission(instance, 
+    ...hexEncodeSignedSet({
+      name:'foo.net',
+      sig:{
+        name: 'foo.net',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 0,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "foo.net", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('foo', 'ascii')}],
+    }));
   });
 
   it('should reject signatures with the wrong type covered', async function() {
     var instance = await dnssec.deployed();
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_DS,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-      ],
-    }), "0x");
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet({
+      name:'net',
+      sig:{
+        name: 'net',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'DS',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 0,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "net", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('foo', 'ascii')}],
+    }));
   });
 
   it('should reject signatures with too many labels', async function() {
     var instance = await dnssec.deployed();
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 2,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "net.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-      ],
-    }), "0x");
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet({
+      name:'net',
+      sig:{
+        name: 'net',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 2,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 0,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "net", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('foo', 'ascii')}],
+    }));
   });
 
   it('should reject signatures with invalid signer names', async function() {
     var instance = await dnssec.deployed();
-
-    await verifySubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_DNSKEY,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: ".",
-      rrs: [
-        {name: "net.", type: dns.TYPE_DNSKEY, klass: dns.CLASS_INET, ttl: 3600, flags: 0x0101, protocol: 3, algorithm: 253, pubkey: Buffer.from("1111", "HEX")}
-      ]
-    }), "0x");
-
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet({
-      typeCovered: dns.TYPE_TXT,
-      algorithm: 253,
-      labels: 1,
-      originalTTL: 3600,
-      expiration: 0xFFFFFFFF,
-      inception: 0,
-      keytag: 5647,
-      signerName: "net.",
-      rrs: [
-        {name: "com.", type: dns.TYPE_TXT, klass: 1, ttl: 3600, text: ["foo"]}
-      ],
-    }), "0x");
+    await verifySubmission(instance, hexEncodeSignedSet({
+      name:'test',
+      sig:{
+        name: 'test',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "test", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('test', 'ascii')}],
+    })[0], "0x", rootKeyProof);
+    await verifyFailedSubmission(instance, hexEncodeSignedSet({
+      name:'test',
+      sig:{
+        name: 'test',
+        type: 'RRSIG',
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: "com",
+          signature: new Buffer([])
+        }
+      },
+      rrs:[{name: "test", type: 'TXT', class: 'IN', ttl: 3600, data:Buffer.from('test', 'ascii')}],
+    })[0], "0x", rootKeyProof);
   });
 
   it("should reject entries with expirations in the past", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 1;
-    keys.expiration = 123;
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 1;
+    keys.sig.data.expiration = 123;
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject entries with inceptions in the future", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 0xFFFFFFFF;
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 0xFFFFFFFF;
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should accept updates with newer signatures", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 1;
-    await verifySubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 1;
+    await verifySubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it("should reject entries that are older", async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.inception = 0;
-    await verifyFailedSubmission(instance, dns.hexEncodeSignedSet(keys), "0x");
+    keys.sig.data.inception = 0;
+    await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it('should reject invalid RSA signatures', async function() {
@@ -289,46 +385,54 @@ contract('DNSSEC', function(accounts) {
 
   // Test delete RRSET
   async function checkPresence(instance, type, name){
-    var result = (await instance.rrdata.call(type, dns.hexEncodeName(name)))[2];
+    var result = (await instance.rrdata.call(types.toType(type), hexEncodeName(name)))[2];
     return result != '0x0000000000000000000000000000000000000000';
   }
 
-  function buildEntry(type, name, option, sig) {
-      var rrs = {name: name, type: type, klass: 1, ttl: 3600};
-      Object.assign(rrs, option);
-      var keys = {
-        typeCovered: type,
-        algorithm: 253,
-        labels: name.split(".").length  - 1,
-        originalTTL: 3600,
-        expiration: 0xFFFFFFFF,
-        inception: 1,
-        keytag: 5647,
-        signerName: ".",
-        rrs: [rrs],
-      };
-      if(sig !== undefined) {
-          Object.assign(keys, sig);
+  function buildEntry(type, name, rrsOption, sigOption) {
+      var rrs = [{name: name, type: type, class: 'IN', ttl: 3600, data:rrsOption}];
+      var sig = {
+        name: name,
+        type: type,
+        ttl: 0,
+        class: 'IN',
+        flush: false,
+        data:{
+          typeCovered: type,
+          algorithm: 253,
+          labels: name.split(".").length,
+          originalTTL: 3600,
+          expiration: 0xFFFFFFFF,
+          inception: 1,
+          keyTag: 5647,
+          signersName: ".",
+          signature: new Buffer([])
+        }        
       }
+
+      if(sigOption !== undefined) {
+        Object.assign(sig.data, sigOption);
+      }
+      var keys = {name, rrs, sig}
       return keys;
   }
 
   async function submitEntry(instance, type, name, option, proof, sig){
     var keys = buildEntry(type, name, option, sig);
-    var [inception, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
-    if(inception >= keys.inception) {
-        keys.inception = inception + 1;
+    var [inception, _, rrs] = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
+    if(inception >= keys.sig.data.inception) {
+        keys.sig.data.inception = inception + 1;
     }
-    tx = await verifySubmission(instance, dns.hexEncodeSignedSet(keys), "0x", proof);
-    [_, _, rrs] = await instance.rrdata.call(type, dns.hexEncodeName(name));
-    assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
+    tx = await verifySubmission(instance, hexEncodeSignedSet(keys)[0], "0x", proof);
+    var res = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
+    assert.notEqual(res[2], '0x0000000000000000000000000000000000000000');
     return tx;
   }
 
   async function deleteEntry(instance, deletetype, deletename, nsec, proof) {
     var tx, result;
     try{
-      tx = await instance.deleteRRSet(deletetype, dns.hexEncodeName(deletename), nsec, "0x", proof);
+      tx = await instance.deleteRRSet(types.toType(deletetype), hexEncodeName(deletename), nsec, "0x", proof);
     }
     catch(error){
       // Assert ganache revert exception
@@ -344,136 +448,147 @@ contract('DNSSEC', function(accounts) {
 
   it('rejects if a proof with the wrong type is supplied', async function(){
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
+    await submitEntry(instance, 'TXT',  'b', Buffer.from('foo', 'ascii'), rootKeyProof);
     // Submit with a proof for an irrelevant record.
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', dns.hexEncodeSignedSet(rootKeys()), rootKeyProof)), false);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), true);
+    assert.equal((await deleteEntry(instance, 'TXT', 'b', hexEncodeSignedSet(rootKeys())[0], rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, 'TXT', 'b')), true);
   })
 
   it('rejects if next record does not come before the deleting name', async function(){
     var instance = await dnssec.deployed();
     // text z. comes after next d.
-    await submitEntry(instance, dns.TYPE_TXT, 'z.', {text: ["foo"]}, rootKeyProof);
-    var nsec = buildEntry(dns.TYPE_NSEC, 'a.', {next: 'd.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'z.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), false);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'z.')), true);
+    await submitEntry(instance, 'TXT',  'z', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'z', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, 'TXT', 'z')), true);
+
   })
 
   it('rejects if nsec record starts after the deleting name', async function(){
     var instance = await dnssec.deployed();
     // text a. comes after nsec b.
-    await submitEntry(instance, dns.TYPE_TXT, 'a.', {text: ["foo"]}, rootKeyProof);
-    var nsec = buildEntry(dns.TYPE_NSEC, 'b.', {next:'d.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), false);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+    await submitEntry(instance, 'TXT',  'a', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'b', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
   })
 
   it('rejects RRset if trying to delete rrset that is in the type bitmap', async function(){
     var instance = await dnssec.deployed();
     // text a. has same nsec a. with type bitmap
-    await submitEntry(instance, dns.TYPE_TXT, 'a.', { text:['foo']}, rootKeyProof);
-    var nsec = buildEntry(dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), false);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+    await submitEntry(instance, 'TXT',  'a', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
   })
 
   it('deletes RRset if nsec name and delete name are the same but with different rrtypes', async function(){
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
+    await submitEntry(instance, 'TXT',  'a', Buffer.from('foo', 'ascii'), rootKeyProof);
     // This test fails if rrtypes is empty ([]), but would that case every happen?
-    var nsec = buildEntry(dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), false);
+    var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'a')), false);
   })
 
   it('rejects if the proof hash does not match', async function(){
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT,  'a.', { text: ["foo"] }, rootKeyProof);
-    // This test fails if rrtypes is empty ([]), but would that case every happen?
-    var nsec = buildEntry(dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_NSEC]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'a.', dns.hexEncodeSignedSet(nsec) + '00', rootKeyProof)), false);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'a.')), true);
+    await submitEntry(instance, 'TXT',  'a', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0] + '00', rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
   })
 
   it('deletes RRset if NSEC next comes after delete name', async function(){
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'b.', {text: ["foo"]}, rootKeyProof);
-    var nsec = buildEntry(dns.TYPE_NSEC, 'a.', { next:'d.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.')), false);
+    await submitEntry(instance, 'TXT', 'b', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'b', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'b')), false);
   })
 
   it('deletes RRset if NSEC is on apex domain', async function() {
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'b.test.', {text: ["foo"]}, rootKeyProof);
-    var nsec = buildEntry(dns.TYPE_NSEC, 'test.', { next:'d.test.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.test.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.test.')), false);
+    await submitEntry(instance, 'TXT', 'b.test', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'test', { nextDomain:'d.test', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'b.test', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'b.test')), false);
   })
 
   it('deletes RRset if NSEC next name is on apex domain', async function() {
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'b.test.', {text: ["foo"]}, rootKeyProof);
-    var nsec = buildEntry(dns.TYPE_NSEC, 'a.test.', { next:'test.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'b.test.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'b.test.')), false);
+    await submitEntry(instance, 'TXT', 'b.test', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec = buildEntry('NSEC', 'a.test', { nextDomain:'test', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'b.test', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'b.test')), false);
   })
 
   it('will not delete a record if it is more recent than the NSEC record', async function() {
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'y.', {text: ["foo"]}, rootKeyProof, {inception: 2000});
-    var nsec = buildEntry(dns.TYPE_NSEC, 'x.', { next:'z.', rrtypes:[dns.TYPE_TXT]}, {inception: 1000});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'y.', dns.hexEncodeSignedSet(nsec), rootKeyProof)), false);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'y.')), true);
+    await submitEntry(instance, 'TXT', 'y', Buffer.from('foo', 'ascii'), rootKeyProof, {inception: 2000});
+    var nsec = buildEntry('NSEC', 'x', { nextDomain:'z', rrtypes:['TXT']}, {inception: 1000});
+    assert.equal((await deleteEntry(instance, 'TXT', 'y', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
+    assert.equal((await checkPresence(instance, 'TXT', 'y')), true);
   })
 
   it('deletes record on the same name using NSEC3', async function() {
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-    var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_DNSKEY]});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'matoken.xyz.')), false);
+  
+    await submitEntry(instance, 'TXT', 'matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec3 = buildEntry(
+      'NSEC3',
+      'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz',
+      {
+        algorithm: 1,
+        flags: 0,
+        iterations: 1,
+        salt: Buffer.from("5BA6AD4385844262", "hex"),
+        nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')),
+        rrtypes:['DNSKEY']
+      }
+    );
+    assert.equal((await deleteEntry(instance, 'TXT', 'matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'matoken.xyz')), false);
   })
 
   it('deletes records in a zone using NSEC3', async function() {
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'quux.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-    var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'quux.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'quux.matoken.xyz.')), false);
+    await submitEntry(instance, 'TXT', 'quux.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof);
+    var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['TXT']});
+    assert.equal((await deleteEntry(instance, 'TXT', 'quux.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'quux.matoken.xyz')), false);
   })
-
 
   it('deletes records at the end of a zone using NSEC3', async function() {
     var instance = await dnssec.deployed();
-    await submitEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-    var nsec3 = buildEntry(dns.TYPE_NSEC3, 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:[dns.TYPE_TXT]});
-    assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), true);
-    assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'foo.matoken.xyz.')), false);
+    await submitEntry(instance, 'TXT', 'foo.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+    var nsec3 = buildEntry('NSEC3', 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:['TXT']});
+    assert.equal((await deleteEntry(instance, 'TXT', 'foo.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), true);
+    assert.equal((await checkPresence(instance, 'TXT', 'foo.matoken.xyz')), false);
   })
 
   it("doesn't delete records before the range using NSEC3", async function() {
       var instance = await dnssec.deployed();
-      await submitEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-      var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
-      assert.equal((await deleteEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), false);
-      assert.equal((await checkPresence(instance, dns.TYPE_TXT, '_abc.matoken.xyz.')), true);
+      await submitEntry(instance, 'TXT', '_abc.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+      var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['TXT']});
+      assert.equal((await deleteEntry(instance, 'TXT', '_abc.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+      assert.equal((await checkPresence(instance, 'TXT', '_abc.matoken.xyz')), true);
   })
 
   it("doesn't delete records after the range using NSEC3", async function() {
       var instance = await dnssec.deployed();
-      await submitEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-      var nsec3 = buildEntry(dns.TYPE_NSEC3, 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:[dns.TYPE_TXT]});
-      assert.equal((await deleteEntry(instance, dns.TYPE_TXT, 'foo.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), false);
-      assert.equal((await checkPresence(instance, dns.TYPE_TXT, 'foo.matoken.xyz.')), true);
+      await submitEntry(instance, 'TXT', 'foo.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+      var nsec3 = buildEntry('NSEC3', 'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')), rrtypes:['TXT']});
+      assert.equal((await deleteEntry(instance, 'TXT', 'foo.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+      assert.equal((await checkPresence(instance, 'TXT', 'foo.matoken.xyz')), true);
   })
 
   it("doesn't delete records that aren't at the end of a zone using NSEC3", async function() {
       var instance = await dnssec.deployed();
-      await submitEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', {text: ["foo"]}, rootKeyProof)
-      var nsec3 = buildEntry(dns.TYPE_NSEC3, 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz.', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:[dns.TYPE_TXT]});
-      assert.equal((await deleteEntry(instance, dns.TYPE_TXT, '_abc.matoken.xyz.', dns.hexEncodeSignedSet(nsec3), rootKeyProof)), false);
-      assert.equal((await checkPresence(instance, dns.TYPE_TXT, '_abc.matoken.xyz.')), true);
+      await submitEntry(instance, 'TXT', '_abc.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+      var nsec3 = buildEntry('NSEC3', 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:['TXT']});
+      assert.equal((await deleteEntry(instance, 'TXT', '_abc.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+      assert.equal((await checkPresence(instance, 'TXT', '_abc.matoken.xyz')), true);
   })
 
   // Test against real record
