@@ -1,6 +1,3 @@
-var rsasha1 = artifacts.require("./algorithms/RSASHA1Algorithm.sol");
-var rsasha256 = artifacts.require("./algorithms/RSASHA256Algorithm.sol");
-
 const algorithms = require("./data/algorithms");
 
 algorithms.forEach(function ([algo, vector]) {
