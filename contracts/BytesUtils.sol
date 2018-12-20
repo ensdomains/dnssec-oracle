@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity >0.4.23;
 
 library BytesUtils {
     /*
@@ -232,7 +232,7 @@ library BytesUtils {
     * @param offset The offset to start copying at.
     * @param len The number of bytes to copy.
     */
-    function substring(bytes memory self, uint offset, uint len) internal pure returns(bytes) {
+    function substring(bytes memory self, uint offset, uint len) internal pure returns(bytes memory) {
         require(offset + len <= self.length);
 
         bytes memory ret = new bytes(len);
@@ -263,10 +263,11 @@ library BytesUtils {
         require(len <= 52);
 
         uint ret = 0;
+        uint8 decoded;
         for(uint i = 0; i < len; i++) {
             byte char = self[off + i];
             require(char >= 0x30 && char <= 0x7A);
-            uint8 decoded = uint8(base32HexTable[uint(char) - 0x30]);
+            decoded = uint8(base32HexTable[uint(char) - 0x30]);
             require(decoded <= 0x20);
             if(i == len - 1) {
                 break;

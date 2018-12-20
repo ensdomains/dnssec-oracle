@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity >0.4.23;
 
 import "./Digest.sol";
 
@@ -6,5 +6,5 @@ import "./Digest.sol";
 * @dev Implements a dummy DNSSEC digest that approves all hashes, for testing.
 */
 contract DummyDigest is Digest {
-    function verify(bytes, bytes) external pure returns (bool) { return true; }
+    function verify(bytes calldata, bytes calldata) external pure returns (bool) { return true; }
 }

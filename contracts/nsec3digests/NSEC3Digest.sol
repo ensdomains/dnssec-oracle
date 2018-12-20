@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity >0.4.23;
 
 /**
  * @dev Interface for contracts that implement NSEC3 digest algorithms.
@@ -11,5 +11,5 @@ interface NSEC3Digest {
      * @param iterations The number of iterations to perform.
      * @return The result of the iterated hash operation.
      */
-     function hash(bytes salt, bytes data, uint iterations) external pure returns (bytes32);
+     function hash(bytes calldata salt, bytes calldata data, uint iterations) external pure returns (bytes32);
 }

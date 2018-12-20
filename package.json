@@ -10,7 +10,7 @@
     "eth-gas-reporter": "^0.1.2",
     "rfc4648": "^1.1.0",
     "solium": "^1.0.4",
-    "truffle": "^4.1.12"
+    "truffle": "^5.0.0"
   },
   "scripts": {
     "pretest": "truffle compile",

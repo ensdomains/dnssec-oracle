@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity >0.4.23;
 
 import "./Owned.sol";
 import "./BytesUtils.sol";
@@ -78,7 +78,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @dev Constructor.
      * @param _anchors The binary format RR entries for the root DS records.
      */
-    constructor(bytes _anchors) public {
+    constructor(bytes memory _anchors) public {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
         anchors = _anchors;
@@ -130,7 +130,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the first signature against.
      * @return The last RRSET submitted.
      */
-    function submitRRSets(bytes memory data, bytes memory proof) public returns (bytes) {
+    function submitRRSets(bytes memory data, bytes memory proof) public returns (bytes memory) {
         uint offset = 0;
         while(offset < data.length) {
             bytes memory input = data.substring(offset + 2, data.readUint16(offset));
@@ -194,7 +194,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      *        data, followed by a series of canonicalised RR records that the signature
      *        applies to.
      */
-    function deleteRRSet(uint16 deleteType, bytes deleteName, bytes memory nsec, bytes memory sig, bytes memory proof) public {
+    function deleteRRSet(uint16 deleteType, bytes memory deleteName, bytes memory nsec, bytes memory sig, bytes memory proof) public {
         bytes memory nsecName;
         bytes memory rrs;
         (nsecName, rrs) = validateSignedSet(nsec, sig, proof);
@@ -341,7 +341,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         return (name, rrs);
     }
 
-    function validProof(bytes name, bytes memory proof) internal view returns(bool) {
+    function validProof(bytes memory name, bytes memory proof) internal view returns(bool) {
         uint16 dnstype = proof.readUint16(proof.nameLength(0));
         return rrsets[keccak256(name)][dnstype].hash == bytes20(keccak256(proof));
     }
@@ -379,7 +379,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param data The original data to verify.
      * @param sig The signature data.
      */
-    function verifySignature(bytes name, bytes memory data, bytes memory sig, bytes memory proof) internal view {
+    function verifySignature(bytes memory name, bytes memory data, bytes memory sig, bytes memory proof) internal view {
         uint signerNameLength = data.nameLength(RRSIG_SIGNER_NAME);
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
@@ -463,7 +463,11 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param sig The signature to use.
      * @return True iff the key verifies the signature.
      */
-    function verifySignatureWithKey(bytes memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns (bool) {
+    function verifySignatureWithKey(bytes memory keyrdata, uint8 algorithm, uint16 keytag, bytes memory data, bytes memory sig)
+        internal
+        view
+        returns (bool)
+    {
         if (algorithms[algorithm] == address(0)) {
             return false;
         }
@@ -531,7 +535,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param digest The digest data to check against.
      * @return True iff the digest matches.
      */
-    function verifyDSHash(uint8 digesttype, bytes data, bytes digest) internal view returns (bool) {
+    function verifyDSHash(uint8 digesttype, bytes memory data, bytes memory digest) internal view returns (bool) {
         if (digests[digesttype] == address(0)) {
             return false;
         }

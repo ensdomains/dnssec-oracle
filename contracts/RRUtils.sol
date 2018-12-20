@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity >0.4.23;
 
 import "./BytesUtils.sol";
 import "@ensdomains/buffer/contracts/Buffer.sol";

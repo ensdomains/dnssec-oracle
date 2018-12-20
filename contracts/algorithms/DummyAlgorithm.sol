@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity >0.4.23;
 
 import "./Algorithm.sol";
 
@@ -7,5 +7,5 @@ import "./Algorithm.sol";
 *      signatures, for testing.
 */
 contract DummyAlgorithm is Algorithm {
-    function verify(bytes, bytes, bytes) external view returns (bool) { return true; }
+    function verify(bytes calldata, bytes calldata, bytes calldata) external view returns (bool) { return true; }
 }
