@@ -157,8 +157,8 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function submitRRSet(bytes calldata input, bytes calldata sig, bytes calldata proof)
-        external
+    function submitRRSet(bytes memory input, bytes memory sig, bytes memory proof)
+        public
         returns (bytes memory)
     {
         bytes memory name;
