@@ -1,5 +1,5 @@
 setTime = async function (timestamp) {
-    web3.currentProvider.send({
+    return web3.currentProvider.send({
         jsonrpc: "2.0",
         method: "evm_setTime",
         params: [timestamp],
@@ -7,6 +7,16 @@ setTime = async function (timestamp) {
     })
 };
 
+mine = async function () {
+    return web3.currentProvider.send({
+        jsonrpc: "2.0",
+        method: "evm_mine",
+        params: [],
+        id: new Date().getTime()
+    });
+};
+
 module.exports = {
-    setTime: setTime
+    setTime: setTime,
+    mine: mine
 };

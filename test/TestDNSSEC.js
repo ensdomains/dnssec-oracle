@@ -593,8 +593,15 @@ contract('DNSSEC', function(accounts) {
     })
 
     // Test against real record
-    it('should accept real DNSSEC records', async function() {
-        await utils.setTime(new Date(1544832000000));
+    it.only('should accept real DNSSEC records', async function() {
+        console.log(await utils.setTime(new Date(1544832000000)));
+
+        console.log(await utils.mine());
+
+        web3.eth.getBlock('latest', function(err, block){
+             if(err) return done(err)
+             console.log(block.timestamp);
+        });
 
         var instance = await dnssec.deployed();
         var proof = await instance.anchors();
