@@ -98,7 +98,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      */
     function setAlgorithm(uint8 id, Algorithm algo) public owner_only {
         algorithms[id] = algo;
-        emit AlgorithmUpdated(id, algo);
+        emit AlgorithmUpdated(id, address(algo));
     }
 
     /**
@@ -109,7 +109,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      */
     function setDigest(uint8 id, Digest digest) public owner_only {
         digests[id] = digest;
-        emit DigestUpdated(id, digest);
+        emit DigestUpdated(id, address(digest));
     }
 
     /**
@@ -120,7 +120,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      */
     function setNSEC3Digest(uint8 id, NSEC3Digest digest) public owner_only {
         nsec3Digests[id] = digest;
-        emit NSEC3DigestUpdated(id, digest);
+        emit NSEC3DigestUpdated(id, address(digest));
     }
 
     /**
@@ -158,9 +158,11 @@ contract DNSSECImpl is DNSSEC, Owned {
      *        have been submitted and proved previously.
      */
     function submitRRSet(bytes memory input, bytes memory sig, bytes memory proof)
-        public returns(bytes memory rrs)
+        public
+        returns (bytes memory)
     {
         bytes memory name;
+        bytes memory rrs;
         (name, rrs) = validateSignedSet(input, sig, proof);
 
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
@@ -173,7 +175,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         }
         if (set.hash == keccak256(rrs)) {
             // Already inserted!
-            return;
+            return rrs;
         }
 
         rrsets[keccak256(name)][typecovered] = RRSet({
@@ -181,7 +183,10 @@ contract DNSSECImpl is DNSSEC, Owned {
             inserted: uint64(now),
             hash: bytes20(keccak256(rrs))
         });
+
         emit RRSetUpdated(name, rrs);
+
+        return rrs;
     }
 
     /**
@@ -468,7 +473,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         view
         returns (bool)
     {
-        if (algorithms[algorithm] == address(0)) {
+        if (address(algorithms[algorithm]) == address(0)) {
             return false;
         }
         // TODO: Check key isn't expired, unless updating key itself
@@ -536,7 +541,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @return True iff the digest matches.
      */
     function verifyDSHash(uint8 digesttype, bytes memory data, bytes memory digest) internal view returns (bool) {
-        if (digests[digesttype] == address(0)) {
+        if (address(digests[digesttype]) == address(0)) {
             return false;
         }
         return digests[digesttype].verify(data, digest.substring(4, digest.length - 4));
