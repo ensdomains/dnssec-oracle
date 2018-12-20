@@ -130,7 +130,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the first signature against.
      * @return The last RRSET submitted.
      */
-    function submitRRSets(bytes memory data, bytes memory proof) public returns (bytes memory) {
+    function submitRRSets(bytes calldata data, bytes calldata proof) external returns (bytes memory) {
         uint offset = 0;
         while(offset < data.length) {
             bytes memory input = data.substring(offset + 2, data.readUint16(offset));
@@ -157,8 +157,8 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function submitRRSet(bytes memory input, bytes memory sig, bytes memory proof)
-        public
+    function submitRRSet(bytes calldata input, bytes calldata sig, bytes calldata proof)
+        external
         returns (bytes memory)
     {
         bytes memory name;
@@ -199,7 +199,9 @@ contract DNSSECImpl is DNSSEC, Owned {
      *        data, followed by a series of canonicalised RR records that the signature
      *        applies to.
      */
-    function deleteRRSet(uint16 deleteType, bytes memory deleteName, bytes memory nsec, bytes memory sig, bytes memory proof) public {
+    function deleteRRSet(uint16 deleteType, bytes calldata deleteName, bytes calldata nsec, bytes calldata sig, bytes calldata proof)
+        external
+    {
         bytes memory nsecName;
         bytes memory rrs;
         (nsecName, rrs) = validateSignedSet(nsec, sig, proof);
@@ -294,7 +296,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return hash The hash of the RRset that was inserted.
      */
-    function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20) {
+    function rrdata(uint16 dnstype, bytes calldata name) external view returns (uint32, uint64, bytes20) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
         return (result.inception, result.inserted, result.hash);
     }
