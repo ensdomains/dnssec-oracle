@@ -78,10 +78,6 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
 
 contract('DNSSEC', function(accounts) {
 
-    beforeEach(async function() {
-        await utils.setTime("1545004800")
-    })
-
     it('should have a default algorithm and digest set', async function() {
         var instance = await dnssec.deployed();
         assert.notEqual(await instance.algorithms(8), "0x0000000000000000000000000000000000000000");
@@ -598,6 +594,8 @@ contract('DNSSEC', function(accounts) {
 
     // Test against real record
     it('should accept real DNSSEC records', async function() {
+        await utils.setTime(new Date(1544832000000));
+
         var instance = await dnssec.deployed();
         var proof = await instance.anchors();
         var inputs = [];
