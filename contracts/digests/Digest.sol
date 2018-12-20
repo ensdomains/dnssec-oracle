@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.5.0;
 
 /**
 * @dev An interface for contracts implementing a DNSSEC digest.
@@ -10,5 +10,5 @@ interface Digest {
     * @param hash The hash to compare to.
     * @return True iff the hashed data matches the provided hash value.
     */
-    function verify(bytes data, bytes hash) external pure returns (bool);
+    function verify(bytes calldata data, bytes calldata hash) external pure returns (bool);
 }

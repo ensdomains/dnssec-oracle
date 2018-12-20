@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.5.0;
 
 import "./Digest.sol";
 import "../BytesUtils.sol";
@@ -9,7 +9,7 @@ import "../BytesUtils.sol";
 contract SHA256Digest is Digest {
     using BytesUtils for *;
 
-    function verify(bytes data, bytes hash) external pure returns (bool) {
+    function verify(bytes calldata data, bytes calldata hash) external pure returns (bool) {
         return sha256(data) == hash.readBytes32(0);
     }
 }

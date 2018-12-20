@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.5.0;
 
 /**
 * @dev An interface for contracts implementing a DNSSEC (signing) algorithm.
@@ -11,5 +11,5 @@ interface Algorithm {
     * @param signature The signature to verify.
     * @return True iff the signature is valid.
     */
-    function verify(bytes key, bytes data, bytes signature) external view returns (bool);
+    function verify(bytes calldata key, bytes calldata data, bytes calldata signature) external view returns (bool);
 }
