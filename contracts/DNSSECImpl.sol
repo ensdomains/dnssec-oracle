@@ -127,7 +127,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @dev Submits multiple RRSets
      * @param data The data to submit, as a series of chunks. Each chunk is
      *        in the format <uint16 length><bytes input><uint16 length><bytes sig>
-     * @param proof The DNSKEY or DS to validate the first signature against.
+     * @param _proof The DNSKEY or DS to validate the first signature against.
      * @return The last RRSET submitted.
      */
     function submitRRSets(bytes calldata data, bytes calldata _proof) external returns (bytes memory) {
