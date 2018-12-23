@@ -11,7 +11,7 @@ library BytesUtils {
     function keccak(bytes memory self, uint offset, uint len) internal pure returns (bytes32 ret) {
         require(offset + len <= self.length);
         assembly {
-            ret := sha3(add(add(self, 32), offset), len)
+            ret := keccak256(add(add(self, 32), offset), len)
         }
     }
 
