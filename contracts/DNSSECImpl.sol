@@ -130,8 +130,11 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the first signature against.
      * @return The last RRSET submitted.
      */
-    function submitRRSets(bytes calldata data, bytes calldata proof) external returns (bytes memory) {
+    function submitRRSets(bytes calldata data, bytes calldata _proof) external returns (bytes memory) {
         uint offset = 0;
+
+        bytes memory proof = _proof;
+
         while(offset < data.length) {
             bytes memory input = data.substring(offset + 2, data.readUint16(offset));
             offset += input.length + 2;
