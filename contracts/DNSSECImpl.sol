@@ -138,7 +138,7 @@ contract DNSSECImpl is DNSSEC, Owned {
             offset += input.length + 2;
             bytes memory sig = data.substring(offset + 2, data.readUint16(offset));
             offset += sig.length + 2;
-            proof = submitRRSet(input, sig, proof);
+            proof = _submitRRSet(input, sig, proof);
         }
         return proof;
     }
@@ -158,36 +158,11 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function submitRRSet(bytes memory input, bytes memory sig, bytes memory proof)
-        public
+    function submitRRSet(bytes calldata input, bytes calldata sig, bytes calldata proof)
+        external
         returns (bytes memory)
     {
-        bytes memory name;
-        bytes memory rrs;
-        (name, rrs) = validateSignedSet(input, sig, proof);
-
-        uint32 inception = input.readUint32(RRSIG_INCEPTION);
-        uint16 typecovered = input.readUint16(RRSIG_TYPE);
-
-        RRSet storage set = rrsets[keccak256(name)][typecovered];
-        if (set.inserted > 0) {
-            // To replace an existing rrset, the signature must be at least as new
-            require(inception >= set.inception);
-        }
-        if (set.hash == keccak256(rrs)) {
-            // Already inserted!
-            return rrs;
-        }
-
-        rrsets[keccak256(name)][typecovered] = RRSet({
-            inception: inception,
-            inserted: uint64(now),
-            hash: bytes20(keccak256(rrs))
-        });
-
-        emit RRSetUpdated(name, rrs);
-
-        return rrs;
+        return _submitRRSet(input, sig, proof);
     }
 
     /**
@@ -300,6 +275,35 @@ contract DNSSECImpl is DNSSEC, Owned {
     function rrdata(uint16 dnstype, bytes calldata name) external view returns (uint32, uint64, bytes20) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
         return (result.inception, result.inserted, result.hash);
+    }
+
+    function _submitRRSet(bytes memory input, bytes memory sig, bytes memory proof) internal returns (bytes memory) {
+        bytes memory name;
+        bytes memory rrs;
+        (name, rrs) = validateSignedSet(input, sig, proof);
+
+        uint32 inception = input.readUint32(RRSIG_INCEPTION);
+        uint16 typecovered = input.readUint16(RRSIG_TYPE);
+
+        RRSet storage set = rrsets[keccak256(name)][typecovered];
+        if (set.inserted > 0) {
+        // To replace an existing rrset, the signature must be at least as new
+            require(inception >= set.inception);
+        }
+        if (set.hash == keccak256(rrs)) {
+        // Already inserted!
+            return rrs;
+        }
+
+        rrsets[keccak256(name)][typecovered] = RRSet({
+            inception: inception,
+            inserted: uint64(now),
+            hash: bytes20(keccak256(rrs))
+        });
+
+        emit RRSetUpdated(name, rrs);
+
+        return rrs;
     }
 
     /**
