@@ -61,7 +61,7 @@ contract TestBytesUtils {
   }
 
   function testReadBytes20() public {
-    Assert.equal(bytes32("abcdefghijklmnopqrstuv".readBytes20(1)), bytes32(bytes20(0x0062636465666768696A6B6C6D6E6F707172737475)), "readBytes20");
+    Assert.equal(bytes32("abcdefghijklmnopqrstuv".readBytes20(1)), bytes32(0x62636465666768696a6b6c6d6e6f707172737475000000000000000000000000), "readBytes20");
   }
 
   function testReadBytes32() public {
