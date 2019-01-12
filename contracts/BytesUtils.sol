@@ -267,7 +267,7 @@ library BytesUtils {
         for(uint i = 0; i < len; i++) {
             bytes1 char = self[off + i];
             require(char >= 0x30 && char <= 0x7A);
-            decoded = uint8(base32HexTable[byteToUint(char) - 0x30]);
+            decoded = uint8(base32HexTable[uint(uint8(char)) - 0x30]);
             require(decoded <= 0x20);
             if(i == len - 1) {
                 break;
@@ -300,11 +300,5 @@ library BytesUtils {
         }
 
         return bytes32(ret << (256 - bitlen));
-    }
-
-    function byteToUint(bytes1 char) internal pure returns (uint) {
-        uint256 v;
-        assembly {v := char}
-        return v >> 31 * 8;
     }
 }
