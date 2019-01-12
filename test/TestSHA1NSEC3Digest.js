@@ -5,8 +5,9 @@ function fromBase32(s) {
     return "0x" + Buffer.from(base32hex.parse(s.toUpperCase())).toString('hex') + "000000000000000000000000";
 }
 
+// @todo fix byte encoding of these vectors
 vectors = [
-    ["", "", 0, "0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000"],
+    ["0x", "0x", 0, "0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000"],
     ["nacl", "test", 0, "0x68b36a28941caebfc2af818c99a8e34478d77fec000000000000000000000000"],
     ["nacl", "test", 1, "0x16574cbb9312cf064794482fdd1148289027db73000000000000000000000000"],
     ["nacl", "test", 10, "0x455370ef51d39be8efa646b807a818c7649a505e000000000000000000000000"],
