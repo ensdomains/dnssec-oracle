@@ -66,9 +66,11 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
         var tx = await instance.submitRRSet(data, sig, proof);
     }
     catch(error){
+        // @TODO use: https://github.com/ensdomains/root/blob/master/test/helpers/Utils.js#L8
         // Assert ganache revert exception
-        assert.equal(error.message, 'VM Exception while processing transaction: revert');
+        assert.equal(error.message, 'Returned error: VM Exception while processing transaction: revert');
     }
+
     // Assert geth failed transaction
     if(tx !== undefined) {
         assert.equal(parseInt(tx.receipt.status), parseInt('0x0'));
@@ -436,7 +438,7 @@ contract('DNSSEC', function(accounts) {
         }
         catch(error){
             // Assert ganache revert exception
-            assert.equal(error.message, 'VM Exception while processing transaction: revert');
+            assert.equal(error.message, 'Returned error: VM Exception while processing transaction: revert');
             result = false;
         }
         // Assert geth failed transaction
@@ -448,7 +450,7 @@ contract('DNSSEC', function(accounts) {
 
     it('rejects if a proof with the wrong type is supplied', async function(){
         var instance = await dnssec.deployed();
-        await submitEntry(instance, 'TXT',    'b', Buffer.from('foo', 'ascii'), rootKeyProof);
+        await submitEntry(instance, 'TXT', 'b', Buffer.from('foo', 'ascii'), rootKeyProof);
         // Submit with a proof for an irrelevant record.
         assert.equal((await deleteEntry(instance, 'TXT', 'b', hexEncodeSignedSet(rootKeys())[0], rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'b')), true);
