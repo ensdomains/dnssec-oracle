@@ -51,7 +51,9 @@ async function verifySubmission(instance, data, sig, proof) {
     if(proof === undefined) {
         proof = await instance.anchors();
     }
-    var tx = await instance.submitRRSet(data, sig, proof);
+
+    var tx = await instance.submitRRSet(data, sig, proof); // @todo we revert here for some fucking reason
+
     assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
     assert.equal(tx.logs.length, 1);
     return tx;
@@ -421,13 +423,16 @@ contract('DNSSEC', function(accounts) {
 
     async function submitEntry(instance, type, name, option, proof, sig){
         var keys = buildEntry(type, name, option, sig);
-        var [inception, _, rrs] = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
+        let result = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
+        var inception = result['0'];
+        var rrs = result['2'];
+
         if(inception >= keys.sig.data.inception) {
             keys.sig.data.inception = inception + 1;
         }
         tx = await verifySubmission(instance, hexEncodeSignedSet(keys)[0], "0x", proof);
         var res = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
-        assert.notEqual(res[2], '0x0000000000000000000000000000000000000000');
+        assert.notEqual(res['2'], '0x0000000000000000000000000000000000000000');
         return tx;
     }
 
