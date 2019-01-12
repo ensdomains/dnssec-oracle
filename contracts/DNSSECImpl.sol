@@ -287,11 +287,12 @@ contract DNSSECImpl is DNSSEC, Owned {
 
         RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
-        // To replace an existing rrset, the signature must be at least as new
+            // To replace an existing rrset, the signature must be at least as new
             require(inception >= set.inception);
         }
+
         if (set.hash == keccak256(rrs)) {
-        // Already inserted!
+            // Already inserted!
             return rrs;
         }
 
