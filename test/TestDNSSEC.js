@@ -52,7 +52,7 @@ async function verifySubmission(instance, data, sig, proof) {
         proof = await instance.anchors();
     }
 
-    var tx = await instance.submitRRSet(data, sig, proof); // @todo we revert here for some fucking reason
+    var tx = await instance.submitRRSet(data, sig, proof);
 
     assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
     assert.equal(tx.logs.length, 1);
