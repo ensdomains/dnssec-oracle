@@ -54,7 +54,7 @@ async function verifySubmission(instance, data, sig, proof) {
 
     var tx = await instance.submitRRSet(data, sig, proof);
 
-    assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
+    assert.equal(tx.receipt.status, true);
     assert.equal(tx.logs.length, 1);
     return tx;
 }
@@ -75,7 +75,7 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
 
     // Assert geth failed transaction
     if(tx !== undefined) {
-        assert.equal(parseInt(tx.receipt.status), parseInt('0x0'));
+        assert.equal(tx.receipt.status, false);
     }
 }
 
@@ -167,9 +167,11 @@ contract('DNSSEC', function(accounts) {
 
     it('should check if root DNSKEY exist', async function(){
         var instance = await dnssec.deployed();
-        var [_, _, rrs] = await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('nonexisting.'));
+        var result = await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('nonexisting.'));
+        var rrs = result['2']
         assert.equal(rrs, '0x0000000000000000000000000000000000000000');
-        [_, _, rrs] = await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('.'));
+        result = await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('.'));
+        rrs = result['2']
         assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
     })
 
@@ -448,7 +450,7 @@ contract('DNSSEC', function(accounts) {
         }
         // Assert geth failed transaction
         if(tx !== undefined) {
-            result = (parseInt(tx.receipt.status) == parseInt('0x1'));
+            result = tx.receipt.status;
         }
         return result;
     }
@@ -613,7 +615,7 @@ contract('DNSSEC', function(accounts) {
         var buf = Buffer.concat(inputs);
 
         var tx = await instance.submitRRSets("0x" + buf.toString("hex"), proof);
-        assert.equal(parseInt(tx.receipt.status), parseInt('0x1'));
+        assert.equal(tx.receipt.status, true);
         assert.equal(tx.logs.length, test_rrsets.length);
     });
 });

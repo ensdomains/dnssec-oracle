@@ -74,6 +74,9 @@ contract DNSSECImpl is DNSSEC, Owned {
     mapping (uint8 => Digest) public digests;
     mapping (uint8 => NSEC3Digest) public nsec3Digests;
 
+    event Test(uint t);
+    event Marker();
+
     /**
      * @dev Constructor.
      * @param _anchors The binary format RR entries for the root DS records.
@@ -322,7 +325,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function validateSignedSet(bytes memory input, bytes memory sig, bytes memory proof) internal view returns(bytes memory name, bytes memory rrs) {
+    function validateSignedSet(bytes memory input, bytes memory sig, bytes memory proof) internal returns(bytes memory name, bytes memory rrs) {
         require(validProof(input.readName(RRSIG_SIGNER_NAME), proof));
 
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
