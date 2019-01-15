@@ -8,12 +8,12 @@ function fromBase32(s) {
 // @todo fix byte encoding of these vectors
 vectors = [
     ["0x", "0x", 0, "0xda39a3ee5e6b4b0d3255bfef95601890afd80709000000000000000000000000"],
-    ["nacl", "test", 0, "0x68b36a28941caebfc2af818c99a8e34478d77fec000000000000000000000000"],
-    ["nacl", "test", 1, "0x16574cbb9312cf064794482fdd1148289027db73000000000000000000000000"],
-    ["nacl", "test", 10, "0x455370ef51d39be8efa646b807a818c7649a505e000000000000000000000000"],
-    ["0xaabbccdd", "\x07example\x00", 12, fromBase32("0p9mhaveqvm6t7vbl5lop2u3t2rp3tom")],
-    ["0xaabbccdd", "\x01a\x07example\x00", 12, fromBase32("35mthgpgcu1qg68fab165klnsnk3dpvl")],
-    ["0x5BA6AD4385844262", "\x07matoken\x03xyz\x00", 1, fromBase32("bst4hlje7r0o8c8p4o8q582lm0ejmiqt")]
+    [web3.utils.toHex("nacl"), web3.utils.toHex("test"), 0, "0x68b36a28941caebfc2af818c99a8e34478d77fec000000000000000000000000"],
+    [web3.utils.toHex("nacl"), web3.utils.toHex("test"), 1, "0x16574cbb9312cf064794482fdd1148289027db73000000000000000000000000"],
+    [web3.utils.toHex("nacl"), web3.utils.toHex("test"), 10, "0x455370ef51d39be8efa646b807a818c7649a505e000000000000000000000000"],
+    ["0xaabbccdd", web3.utils.asciiToHex("\x07example\x00"), 12, fromBase32("0p9mhaveqvm6t7vbl5lop2u3t2rp3tom")],
+    ["0xaabbccdd", web3.utils.asciiToHex("\x01a\x07example\x00"), 12, fromBase32("35mthgpgcu1qg68fab165klnsnk3dpvl")],
+    ["0x5BA6AD4385844262", web3.utils.asciiToHex("\x07matoken\x03xyz\x00"), 1, fromBase32("bst4hlje7r0o8c8p4o8q582lm0ejmiqt")]
 ];
 
 contract("SHA1NSEC3Digest", function(accounts) {
