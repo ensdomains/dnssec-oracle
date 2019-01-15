@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity >0.4.23;
 
 import "./NSEC3Digest.sol";
 import "@ensdomains/solsha1/contracts/SHA1.sol";
