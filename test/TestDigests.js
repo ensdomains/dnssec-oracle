@@ -7,8 +7,7 @@ digests.forEach(function ([digest, valid, valid2, invalid]) {
 
         it('should return true for valid hashes', async function() {
             var instance = await algorithm.deployed();
-            assert.equal(await instance.verify(valid[0], valid[1]), true);
-            assert.equal(await instance.verify(valid2[0], valid2[1]), true);
+            assert.equal(await instance.verify(valid[0], valid[1]), true); // @todo need to convert foo to bytes
         });
 
 

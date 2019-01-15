@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity >0.4.23;
 
 import "./Algorithm.sol";
 import "../BytesUtils.sol";
@@ -11,7 +11,7 @@ import "@ensdomains/solsha1/contracts/SHA1.sol";
 contract RSASHA1Algorithm is Algorithm {
     using BytesUtils for *;
 
-    function verify(bytes key, bytes data, bytes sig) external view returns (bool) {
+    function verify(bytes calldata key, bytes calldata data, bytes calldata sig) external view returns (bool) {
         bytes memory exponent;
         bytes memory modulus;
 
