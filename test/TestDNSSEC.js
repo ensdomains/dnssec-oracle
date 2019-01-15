@@ -604,7 +604,7 @@ contract('DNSSEC', function(accounts) {
 
     // Test against real record
     it.only('should accept real DNSSEC records', async function() {
-        console.log(await utils.setTime(new Date(1547582411)));
+        console.log(await utils.setTime(new Date(15448320000)));
 
         console.log(await utils.mine());
 
