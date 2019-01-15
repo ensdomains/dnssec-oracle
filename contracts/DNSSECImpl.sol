@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.5.0;
 
 import "./Owned.sol";
 import "./BytesUtils.sol";
@@ -74,11 +74,14 @@ contract DNSSECImpl is DNSSEC, Owned {
     mapping (uint8 => Digest) public digests;
     mapping (uint8 => NSEC3Digest) public nsec3Digests;
 
+    event Test(uint t);
+    event Marker();
+
     /**
      * @dev Constructor.
      * @param _anchors The binary format RR entries for the root DS records.
      */
-    constructor(bytes _anchors) public {
+    constructor(bytes memory _anchors) public {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
         anchors = _anchors;
@@ -98,7 +101,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      */
     function setAlgorithm(uint8 id, Algorithm algo) public owner_only {
         algorithms[id] = algo;
-        emit AlgorithmUpdated(id, algo);
+        emit AlgorithmUpdated(id, address(algo));
     }
 
     /**
@@ -109,7 +112,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      */
     function setDigest(uint8 id, Digest digest) public owner_only {
         digests[id] = digest;
-        emit DigestUpdated(id, digest);
+        emit DigestUpdated(id, address(digest));
     }
 
     /**
@@ -120,24 +123,25 @@ contract DNSSECImpl is DNSSEC, Owned {
      */
     function setNSEC3Digest(uint8 id, NSEC3Digest digest) public owner_only {
         nsec3Digests[id] = digest;
-        emit NSEC3DigestUpdated(id, digest);
+        emit NSEC3DigestUpdated(id, address(digest));
     }
 
     /**
      * @dev Submits multiple RRSets
      * @param data The data to submit, as a series of chunks. Each chunk is
      *        in the format <uint16 length><bytes input><uint16 length><bytes sig>
-     * @param proof The DNSKEY or DS to validate the first signature against.
+     * @param _proof The DNSKEY or DS to validate the first signature against.
      * @return The last RRSET submitted.
      */
-    function submitRRSets(bytes memory data, bytes memory proof) public returns (bytes) {
+    function submitRRSets(bytes calldata data, bytes calldata _proof) external returns (bytes memory) {
         uint offset = 0;
+        bytes memory proof = _proof;
         while(offset < data.length) {
             bytes memory input = data.substring(offset + 2, data.readUint16(offset));
             offset += input.length + 2;
             bytes memory sig = data.substring(offset + 2, data.readUint16(offset));
             offset += sig.length + 2;
-            proof = submitRRSet(input, sig, proof);
+            proof = _submitRRSet(input, sig, proof);
         }
         return proof;
     }
@@ -157,31 +161,11 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function submitRRSet(bytes memory input, bytes memory sig, bytes memory proof)
-        public returns(bytes memory rrs)
+    function submitRRSet(bytes calldata input, bytes calldata sig, bytes calldata proof)
+        external
+        returns (bytes memory)
     {
-        bytes memory name;
-        (name, rrs) = validateSignedSet(input, sig, proof);
-
-        uint32 inception = input.readUint32(RRSIG_INCEPTION);
-        uint16 typecovered = input.readUint16(RRSIG_TYPE);
-
-        RRSet storage set = rrsets[keccak256(name)][typecovered];
-        if (set.inserted > 0) {
-            // To replace an existing rrset, the signature must be at least as new
-            require(inception >= set.inception);
-        }
-        if (set.hash == keccak256(rrs)) {
-            // Already inserted!
-            return;
-        }
-
-        rrsets[keccak256(name)][typecovered] = RRSet({
-            inception: inception,
-            inserted: uint64(now),
-            hash: bytes20(keccak256(rrs))
-        });
-        emit RRSetUpdated(name, rrs);
+        return _submitRRSet(input, sig, proof);
     }
 
     /**
@@ -194,7 +178,9 @@ contract DNSSECImpl is DNSSEC, Owned {
      *        data, followed by a series of canonicalised RR records that the signature
      *        applies to.
      */
-    function deleteRRSet(uint16 deleteType, bytes deleteName, bytes memory nsec, bytes memory sig, bytes memory proof) public {
+    function deleteRRSet(uint16 deleteType, bytes calldata deleteName, bytes calldata nsec, bytes calldata sig, bytes calldata proof)
+        external
+    {
         bytes memory nsecName;
         bytes memory rrs;
         (nsecName, rrs) = validateSignedSet(nsec, sig, proof);
@@ -289,9 +275,39 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return hash The hash of the RRset that was inserted.
      */
-    function rrdata(uint16 dnstype, bytes memory name) public view returns (uint32, uint64, bytes20) {
+    function rrdata(uint16 dnstype, bytes calldata name) external view returns (uint32, uint64, bytes20) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
         return (result.inception, result.inserted, result.hash);
+    }
+
+    function _submitRRSet(bytes memory input, bytes memory sig, bytes memory proof) internal returns (bytes memory) {
+        bytes memory name;
+        bytes memory rrs;
+        (name, rrs) = validateSignedSet(input, sig, proof);
+
+        uint32 inception = input.readUint32(RRSIG_INCEPTION);
+        uint16 typecovered = input.readUint16(RRSIG_TYPE);
+
+        RRSet storage set = rrsets[keccak256(name)][typecovered];
+        if (set.inserted > 0) {
+            // To replace an existing rrset, the signature must be at least as new
+            require(inception >= set.inception);
+        }
+
+        if (set.hash == keccak256(rrs)) {
+            // Already inserted!
+            return rrs;
+        }
+
+        rrsets[keccak256(name)][typecovered] = RRSet({
+            inception: inception,
+            inserted: uint64(now),
+            hash: bytes20(keccak256(rrs))
+        });
+
+        emit RRSetUpdated(name, rrs);
+
+        return rrs;
     }
 
     /**
@@ -309,7 +325,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function validateSignedSet(bytes memory input, bytes memory sig, bytes memory proof) internal view returns(bytes memory name, bytes memory rrs) {
+    function validateSignedSet(bytes memory input, bytes memory sig, bytes memory proof) internal returns(bytes memory name, bytes memory rrs) {
         require(validProof(input.readName(RRSIG_SIGNER_NAME), proof));
 
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
@@ -341,7 +357,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         return (name, rrs);
     }
 
-    function validProof(bytes name, bytes memory proof) internal view returns(bool) {
+    function validProof(bytes memory name, bytes memory proof) internal view returns(bool) {
         uint16 dnstype = proof.readUint16(proof.nameLength(0));
         return rrsets[keccak256(name)][dnstype].hash == bytes20(keccak256(proof));
     }
@@ -379,7 +395,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param data The original data to verify.
      * @param sig The signature data.
      */
-    function verifySignature(bytes name, bytes memory data, bytes memory sig, bytes memory proof) internal view {
+    function verifySignature(bytes memory name, bytes memory data, bytes memory sig, bytes memory proof) internal view {
         uint signerNameLength = data.nameLength(RRSIG_SIGNER_NAME);
 
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
@@ -463,8 +479,12 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param sig The signature to use.
      * @return True iff the key verifies the signature.
      */
-    function verifySignatureWithKey(bytes memory keyrdata, uint8 algorithm, uint16 keytag, bytes data, bytes sig) internal view returns (bool) {
-        if (algorithms[algorithm] == address(0)) {
+    function verifySignatureWithKey(bytes memory keyrdata, uint8 algorithm, uint16 keytag, bytes memory data, bytes memory sig)
+        internal
+        view
+        returns (bool)
+    {
+        if (address(algorithms[algorithm]) == address(0)) {
             return false;
         }
         // TODO: Check key isn't expired, unless updating key itself
@@ -531,8 +551,8 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param digest The digest data to check against.
      * @return True iff the digest matches.
      */
-    function verifyDSHash(uint8 digesttype, bytes data, bytes digest) internal view returns (bool) {
-        if (digests[digesttype] == address(0)) {
+    function verifyDSHash(uint8 digesttype, bytes memory data, bytes memory digest) internal view returns (bool) {
+        if (address(digests[digesttype]) == address(0)) {
             return false;
         }
         return digests[digesttype].verify(data, digest.substring(4, digest.length - 4));

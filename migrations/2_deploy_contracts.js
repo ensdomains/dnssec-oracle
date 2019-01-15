@@ -19,10 +19,15 @@ module.exports = function(deployer, network) {
         }
         await deployer.deploy(DNSSEC, dnsAnchors.encode(anchors));
 
-        await deployer.deploy([[RSASHA256Algorithm], [RSASHA1Algorithm], [SHA256Digest], [SHA1Digest], [SHA1NSEC3Digest]]);
+        await deployer.deploy(RSASHA256Algorithm);
+        await deployer.deploy(RSASHA1Algorithm);
+        await deployer.deploy(SHA256Digest);
+        await deployer.deploy(SHA1Digest);
+        await deployer.deploy(SHA1NSEC3Digest);
 
         if (dev) {
-            await deployer.deploy([[DummyAlgorithm], [DummyDigest]])
+            await deployer.deploy(DummyAlgorithm)
+            await deployer.deploy(DummyDigest)
         }
 
         let tasks = [];

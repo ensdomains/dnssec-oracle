@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity >0.4.23;
 
 /**
 * @dev Contract mixin for 'owned' contracts.
