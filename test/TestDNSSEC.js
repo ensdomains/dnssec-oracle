@@ -5,6 +5,7 @@ const types = require('dns-packet/types');
 
 var dnssec = artifacts.require("./DNSSECImpl");
 const Result = require('@ensdomains/dnsprovejs/dist/dns/result')
+const { exception } = require('@ensdomains/test-utils')
 
 // When the real test start failing due to ttl expiration, you can generate the new test dataset at https://dnssec.ens.domains/?domain=ethlab.xyz&mode=advanced
 const test_rrsets = [  
@@ -66,18 +67,12 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
     }
 
     try{
-        var tx = await instance.submitRRSet(data, sig, proof);
-    }
-    catch(error){
-        // @TODO use: https://github.com/ensdomains/root/blob/master/test/helpers/Utils.js#L8
-        // Assert ganache revert exception
-        assert.equal(error.message, 'Returned error: VM Exception while processing transaction: revert');
+        await instance.submitRRSet(data, sig, proof);
+    } catch(error){
+        return exception.ensureException(error)
     }
 
-    // Assert geth failed transaction
-    if(tx !== undefined) {
-        assert.equal(tx.receipt.status, false);
-    }
+    assert.fail("no exception thrown")
 }
 
 contract('DNSSEC', function(accounts) {
