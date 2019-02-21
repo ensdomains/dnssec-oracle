@@ -7,9 +7,9 @@
     "@ensdomains/buffer": "^0.0.6",
     "@ensdomains/solsha1": "^0.0.2",
     "dnsprovejs": "0.0.9",
-    "eth-gas-reporter": "^0.1.2",
+    "eth-gas-reporter": "^0.1.12",
     "rfc4648": "^1.1.0",
-    "solium": "^1.0.4",
+    "solium": "^1.2.3",
     "truffle": "^5.0.0"
   },
   "scripts": {
