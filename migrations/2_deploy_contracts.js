@@ -6,6 +6,9 @@ const SHA1NSEC3Digest = artifacts.require("./nsec3digests/SHA1NSEC3Digest");
 const DNSSEC = artifacts.require("./DNSSECImpl");
 const DummyAlgorithm = artifacts.require("./algorithms/DummyAlgorithm");
 const DummyDigest = artifacts.require("./digests/DummyDigest");
+const EllipticCurveAlgorithm = artifacts.require("EllipticCurveAlgorithm.sol");
+const EllipticCurve = artifacts.require("EllipticCurve.sol");
+
 const dnsAnchors = require("../lib/anchors.js");
 
 module.exports = function(deployer, network) {
@@ -24,6 +27,10 @@ module.exports = function(deployer, network) {
         await deployer.deploy(SHA256Digest);
         await deployer.deploy(SHA1Digest);
         await deployer.deploy(SHA1NSEC3Digest);
+
+        await deployer.deploy(EllipticCurve);
+        await deployer.deploy(EllipticCurveAlgorithm, (await EllipticCurve.deployed()).address)
+
 
         if (dev) {
             await deployer.deploy(DummyAlgorithm)
@@ -49,6 +56,9 @@ module.exports = function(deployer, network) {
 
         const nsec3sha1 = await SHA1NSEC3Digest.deployed();
         tasks.push(dnssec.setNSEC3Digest(1, nsec3sha1.address));
+
+        const ellipticCurve = await EllipticCurve.deployed();
+        tasks.push(dnssec.setAlgorithm(13, ellipticCurve.address));
 
         if (dev) {
             const dummyalgorithm = await DummyAlgorithm.deployed();

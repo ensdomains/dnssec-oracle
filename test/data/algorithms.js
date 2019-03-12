@@ -56,5 +56,36 @@ module.exports = [
             //               cFYK/lPtPiVYP4bwg==);{id = 9033}
             "0x91108e1fabbb974406cbdaa90bd975b0b9dc25c38a14b27b1a18943a26eee2d798a79544f519dcae24a164dcfce66c2532034469c1582bf94fb4f89560fe1bc2"
         ]
-    ]
+    ],
+    [
+        "EllipticCurveAlgorithm",
+        // This test vector generated from the example in RFC5702 using the following Python script:
+        // import dns.rrset
+        //
+        // dnskey = dns.rrset.from_text("example.net.", 3600, "IN", "DNSKEY", "256 3 8 AwEAAcFcGsaxxdgiuuGmCkVImy4h99CqT7jwY3pexPGcnUFtR2Fh36BponcwtkZ4cAgtvd4Qs8PkxUdp6p/DlUmObdk=")
+        //
+        // a = dns.rrset.from_text("www.example.net.", 3600, "IN", "A", "192.0.2.91")
+        // buf = StringIO()
+        // a.to_wire(buf)
+        //
+        // rrsig = dns.rrset.from_text("www.example.net.", 3600, "IN", "RRSIG", "A 8 3 3600 20300101000000 20000101000000 9033 example.net. kRCOH6u7l0QGy9qpC9l1sLncJcOKFLJ7GhiUOibu4teYp5VE9RncriShZNz85mwlMgNEacFYK/lPtPiVYP4bwg==")
+        // signature = rrsig[0].signature
+        // rrsig[0].signature = ''
+        // signdata = rrsig[0].to_digestable() + buf.getvalue()
+        //
+        // print ('0x' + dnskey[0].to_digestable().encode('hex'), '0x' + signdata.encode('hex'), signature.encode('hex'))
+        [
+            // example.net.     3600  IN  DNSKEY  (256 3 8 AwEAAcFcGsaxxdgiuuGmCkVI
+            //                  my4h99CqT7jwY3pexPGcnUFtR2Fh36BponcwtkZ4cAgtvd4Qs8P
+            //                  kxUdp6p/DlUmObdk= );{id = 9033 (zsk), size = 512b}
+            "0x0101030d1a88c88615d437fbb8bf9e1942a1929f28562706ae6c2bd399e7b1bfb6d1e9e75b92b4aa42917ae1c61b701ef035c3fe7be3009cbafe5a2f71316c902dcf0d00",
+            // www.example.net. 3600  IN  A  192.0.2.91
+            "0x00010d0300000e104c88b1374c63c737d960076578616d706c65036e65740003777777076578616d706c65036e6574000001000100000e100004c0000201",
+            // www.example.net. 3600  IN  RRSIG  (A 8 3 3600 20300101000000
+            //               20000101000000 9033 example.net. kRCOH6u7l0QGy9qpC9
+            //               l1sLncJcOKFLJ7GhiUOibu4teYp5VE9RncriShZNz85mwlMgNEa
+            //               cFYK/lPtPiVYP4bwg==);{id = 9033}
+            "0xab1eb02d8aa687e97da0229337aa8873e6f0eb26be289f28333d183f5d3b7a95c0c869adfb748daee3c5286eed6682c12e5533186baced9c26c167a9ebae950b"
+        ]
+    ],
 ];
