@@ -133,10 +133,7 @@ library BytesUtils {
     * @return The specified 8 bits of the string, interpreted as an integer.
     */
     function readUint8(bytes memory self, uint idx) internal pure returns (uint8 ret) {
-        require(idx + 1 <= self.length);
-        assembly {
-            ret := and(mload(add(add(self, 1), idx)), 0xFF)
-        }
+        return uint8(self[idx]);
     }
 
     /*
