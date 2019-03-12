@@ -4,7 +4,7 @@ import "./Algorithm.sol";
 import "../BytesUtils.sol";
 import "elliptic-solidity/contracts/curves/EllipticCurve.sol";
 
-contract EllipticCurveAlgorithm is Algorithm {
+contract P256Algorithm is Algorithm {
 
     using BytesUtils for *;
 
