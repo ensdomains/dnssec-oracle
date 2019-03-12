@@ -29,7 +29,9 @@ module.exports = function(deployer, network) {
         await deployer.deploy(SHA1NSEC3Digest);
 
         await deployer.deploy(EllipticCurve);
-        await deployer.deploy(EllipticCurveAlgorithm, (await EllipticCurve.deployed()).address)
+
+        let curve = await EllipticCurve.deployed()
+        await deployer.deploy(EllipticCurveAlgorithm, curve.address)
 
 
         if (dev) {
@@ -57,8 +59,8 @@ module.exports = function(deployer, network) {
         const nsec3sha1 = await SHA1NSEC3Digest.deployed();
         tasks.push(dnssec.setNSEC3Digest(1, nsec3sha1.address));
 
-        const ellipticCurve = await EllipticCurve.deployed();
-        tasks.push(dnssec.setAlgorithm(13, ellipticCurve.address));
+        const ellipticCurveAlgorithm = await EllipticCurveAlgorithm.deployed();
+        tasks.push(dnssec.setAlgorithm(13, ellipticCurveAlgorithm.address));
 
         if (dev) {
             const dummyalgorithm = await DummyAlgorithm.deployed();
