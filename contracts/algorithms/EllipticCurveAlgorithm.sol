@@ -26,10 +26,10 @@ contract EllipticCurveAlgorithm is Algorithm {
     }
 
     function parseSignature(bytes memory data) internal view returns (uint256[2] memory) {
-        return [data.readUint256(0), data.readUint256(32)];
+        return [uint256(data.readBytes32(0)), uint256(data.readBytes32(32))];
     }
 
     function parseKey(bytes memory data) internal view returns (uint256[2] memory) {
-        return [data.readUint256(4), data.readUint256(36)];
+        return [uint256(data.readBytes32(4)), uint256(data.readBytes32(36))];
     }
 }
