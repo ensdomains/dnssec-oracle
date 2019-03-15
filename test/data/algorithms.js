@@ -56,5 +56,37 @@ module.exports = [
             //               cFYK/lPtPiVYP4bwg==);{id = 9033}
             "0x91108e1fabbb974406cbdaa90bd975b0b9dc25c38a14b27b1a18943a26eee2d798a79544f519dcae24a164dcfce66c2532034469c1582bf94fb4f89560fe1bc2"
         ]
-    ]
+    ],
+    [
+        "SHA256P256Algorithm",
+        // This test vector generated from the example in RFC6605 using the following Python script:
+        // from StringIO import StringIO
+        // import dns.rrset
+        //
+        // dnskey = dns.rrset.from_text("example.net.", 3600, "IN", "DNSKEY", "257 3 13 GojIhhXUN/u4v54ZQqGSnyhWJwaubCvTmeexv7bR6edbkrSqQpF64cYbcB7wNcP+e+MAnLr+Wi9xMWyQLc8NAA==")
+        //
+        // a = dns.rrset.from_text("www.example.net.", 3600, "IN", "A", "192.0.2.1")
+        // buf = StringIO()
+        // a.to_wire(buf)
+        //
+        // rrsig = dns.rrset.from_text("www.example.net.", 3600, "IN", "RRSIG", "A 13 3 3600 20100909100439 20100812100439 55648 example.net. qx6wLYqmh+l9oCKTN6qIc+bw6ya+KJ8oMz0YP107epXAyGmt+3SNruPFKG7tZoLBLlUzGGus7ZwmwWep666VCw==")
+        // signature = rrsig[0].signature
+        // rrsig[0].signature = ''
+        // signdata = rrsig[0].to_digestable() + buf.getvalue()
+        //
+        // print ('0x' + dnskey[0].to_digestable().encode('hex'), '0x' + signdata.encode('hex'), signature.encode('hex'))
+        [
+            // example.net. 3600 IN DNSKEY 257 3 13 (
+            //         GojIhhXUN/u4v54ZQqGSnyhWJwaubCvTmeexv7bR6edb
+            //         krSqQpF64cYbcB7wNcP+e+MAnLr+Wi9xMWyQLc8NAA== )
+            "0x0101030d1a88c88615d437fbb8bf9e1942a1929f28562706ae6c2bd399e7b1bfb6d1e9e75b92b4aa42917ae1c61b701ef035c3fe7be3009cbafe5a2f71316c902dcf0d00",
+            // www.example.net. 3600 IN A 192.0.2.1
+            "0x00010d0300000e104c88b1374c63c737d960076578616d706c65036e65740003777777076578616d706c65036e6574000001000100000e100004c0000201",
+            //  www.example.net. 3600 IN RRSIG A 13 3 3600 (
+            //               20100909100439 20100812100439 55648 example.net.
+            //               qx6wLYqmh+l9oCKTN6qIc+bw6ya+KJ8oMz0YP107epXA
+            //               yGmt+3SNruPFKG7tZoLBLlUzGGus7ZwmwWep666VCw== )
+            "0xab1eb02d8aa687e97da0229337aa8873e6f0eb26be289f28333d183f5d3b7a95c0c869adfb748daee3c5286eed6682c12e5533186baced9c26c167a9ebae950b"
+        ]
+    ],
 ];
