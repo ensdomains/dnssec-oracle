@@ -1,10 +1,10 @@
 {
   "name": "@ensdomains/dnssec-oracle",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
-    "@ensdomains/buffer": "^0.0.6",
+    "@ensdomains/buffer": "^0.0.8",
     "@ensdomains/solsha1": "^0.0.2",
     "dnsprovejs": "0.0.9",
     "elliptic-solidity": "1.0.0",
