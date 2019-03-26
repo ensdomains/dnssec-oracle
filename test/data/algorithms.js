@@ -58,7 +58,7 @@ module.exports = [
         ]
     ],
     [
-        "SHA256P256Algorithm",
+        "P256SHA256Algorithm",
         // This test vector generated from the example in RFC6605 using the following Python script:
         // from StringIO import StringIO
         // import dns.rrset
