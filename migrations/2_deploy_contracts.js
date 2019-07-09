@@ -6,7 +6,7 @@ const SHA1NSEC3Digest = artifacts.require("./nsec3digests/SHA1NSEC3Digest");
 const DNSSEC = artifacts.require("./DNSSECImpl");
 const DummyAlgorithm = artifacts.require("./algorithms/DummyAlgorithm");
 const DummyDigest = artifacts.require("./digests/DummyDigest");
-const P256SHA256Algorithm = artifacts.require("SHA256P256Algorithm.sol");
+const P256SHA256Algorithm = artifacts.require("P256SHA256Algorithm.sol");
 const EllipticCurve = artifacts.require("EllipticCurve.sol");
 
 const dnsAnchors = require("../lib/anchors.js");
@@ -31,7 +31,7 @@ module.exports = function(deployer, network) {
         await deployer.deploy(EllipticCurve);
 
         let curve = await EllipticCurve.deployed()
-        await deployer.deploy(SHA256P256Algorithm, curve.address)
+        await deployer.deploy(P256SHA256Algorithm, curve.address)
 
 
         if (dev) {
