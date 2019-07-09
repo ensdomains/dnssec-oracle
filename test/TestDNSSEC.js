@@ -6,6 +6,9 @@ const types = require('dns-packet/types');
 var dnssec = artifacts.require("./DNSSECImpl");
 const Result = require('@ensdomains/dnsprovejs/dist/dns/result')
 
+const util = require('util');
+web3.currentProvider.send = util.promisify(web3.currentProvider.send);
+
 // When the real test start failing due to ttl expiration, you can generate the new test dataset at https://dnssec.ens.domains/?domain=ethlab.xyz&mode=advanced
 const test_rrsets = [
   // .	55430	IN	RRSIG	DNSKEY 8 0 172800 20190402000000 20190312000000 20326 . A76nZ8WVsD+pLAKJh9ujKxxRDWfJf8SxayOkq3Gq9TX4BStpQM1e/KuX8am4FrVRCGQvLlhiYFNqm+PtevGGJAO0lTFLSiIuavknlkSiI3HMkrMDqSV+YlIQPk1C720khNpWy70WjjNvkq4sBU1GTkVPeFkM3gQI53pCHW+VobCPXZz70J+PnSOq7SmjrwXgU8E9iSXkI3yfhGIup2c54Sf9w0Bw10opvxXMT+1ALgWY1TnV1/gRixIUZp1K86iR8VeX9K/4UTqEa5bYux+aeIcQ2/4Qqyo3Ocb2RrbUvDNzU2lB4b1r/oHqsd6C0SiGmdo0A8R44djKMHVaD/JmLg==
@@ -103,7 +106,7 @@ contract('DNSSEC', function(accounts) {
                 algorithm: 253,
                 labels: 0,
                 originalTTL: 3600,
-                expiration: 0xFFFFFFFF,
+                expiration: 2419200,
                 inception: 0,
                 keyTag: 5647,
                 signersName: ".",
@@ -162,6 +165,10 @@ contract('DNSSEC', function(accounts) {
     it('should accept a root DNSKEY', async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
+        await web3.currentProvider.send({
+          method: 'evm_increaseTime',
+          params: (-(await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
+        });
         var tx = await verifySubmission(instance, ...hexEncodeSignedSet(keys));
         rootKeyProof = tx.logs[0].args.rrset;
     });
@@ -191,7 +198,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 1,
                     keyTag: 5647,
                     signersName: ".",
@@ -217,7 +224,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 0,
                     keyTag: 5647,
                     signersName: ".",
@@ -244,7 +251,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 0,
                     keyTag: 5647,
                     signersName: ".",
@@ -270,7 +277,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 0,
                     keyTag: 5647,
                     signersName: ".",
@@ -296,7 +303,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 2,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 0,
                     keyTag: 5647,
                     signersName: ".",
@@ -322,7 +329,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 1,
                     keyTag: 5647,
                     signersName: ".",
@@ -344,7 +351,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 1,
                     keyTag: 5647,
                     signersName: "com",
@@ -360,6 +367,10 @@ contract('DNSSEC', function(accounts) {
         var keys = rootKeys();
         keys.sig.data.inception = 1;
         keys.sig.data.expiration = 123;
+        await web3.currentProvider.send({
+          method: 'evm_increaseTime',
+          params: (123 + 1 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
+        });
         await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
     });
 
@@ -409,7 +420,7 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: name.split(".").length,
                     originalTTL: 3600,
-                    expiration: 0xFFFFFFFF,
+                    expiration: 2419200,
                     inception: 1,
                     keyTag: 5647,
                     signersName: ".",
@@ -496,6 +507,10 @@ contract('DNSSEC', function(accounts) {
         await submitEntry(instance, 'TXT',    'a', Buffer.from('foo', 'ascii'), rootKeyProof);
         // This test fails if rrtypes is empty ([]), but would that case every happen?
         var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']}, {inception: 1000});
+        await web3.currentProvider.send({
+          method: 'evm_increaseTime',
+          params: (1000 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
+        });
         assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
         assert.equal((await checkPresence(instance, 'TXT', 'a')), false);
     })
@@ -534,6 +549,10 @@ contract('DNSSEC', function(accounts) {
 
     it('will not delete a record if it is more recent than the NSEC record', async function() {
         var instance = await dnssec.deployed();
+        await web3.currentProvider.send({
+          method: 'evm_increaseTime',
+          params: (2000 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
+        });
         await submitEntry(instance, 'TXT', 'y', Buffer.from('foo', 'ascii'), rootKeyProof, {inception: 2000});
         var nsec = buildEntry('NSEC', 'x', { nextDomain:'z', rrtypes:['TXT']}, {inception: 1000});
         assert.equal((await deleteEntry(instance, 'TXT', 'y', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
