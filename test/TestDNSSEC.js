@@ -623,6 +623,12 @@ contract('DNSSEC', function(accounts) {
     it('should accept real DNSSEC records', async function() {
         var instance = await dnssec.deployed();
         var proof = await instance.anchors();
+        // They were all valid at Fri Mar 15 14:06:45 2019 +1300 and
+        // will be again every 2^32 seconds or 136 years
+        await web3.currentProvider.send({
+          method: 'evm_increaseTime',
+          params: (1552612005 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
+        });
         for (let i = 0; i < test_rrsets.length; i++) {
             var rrset = test_rrsets[i];
             var tx = await instance.submitRRSet(rrset[1], rrset[2], proof);
