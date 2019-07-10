@@ -13,7 +13,6 @@ import "@ensdomains/buffer/contracts/Buffer.sol";
  * @dev An oracle contract that verifies and stores DNSSEC-validated DNS records.
  *
  * TODO: Support for NSEC3 records
- * TODO: Use 'serial number math' for inception/expiration
  */
 contract DNSSECImpl is DNSSEC, Owned {
     using Buffer for Buffer.buffer;
@@ -186,7 +185,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         (nsecName, rrs) = validateSignedSet(nsec, sig, proof);
 
         // Don't let someone use an old proof to delete a new name
-        require(rrsets[keccak256(deleteName)][deleteType].inception <= nsec.readUint32(RRSIG_INCEPTION));
+        require(uint32(nsec.readUint32(RRSIG_INCEPTION) - rrsets[keccak256(deleteName)][deleteType].inception) < 0x80000000);
 
         for (RRUtils.RRIterator memory iter = rrs.iterateRRs(0); !iter.done(); iter.next()) {
             // We're dealing with three names here:
@@ -291,7 +290,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
             // To replace an existing rrset, the signature must be at least as new
-            require(inception >= set.inception);
+            require(uint32(inception - set.inception) < 0x80000000);
         }
 
         if (set.hash == keccak256(rrs)) {
@@ -341,15 +340,17 @@ contract DNSSECImpl is DNSSEC, Owned {
         name = validateRRs(rrs, typecovered);
         require(name.labelCount(0) == labels);
 
-        // TODO: Check inception and expiration using mod2^32 math
+        // All comparisons involving the Signature Expiration and
+        // Inception fields MUST use "serial number arithmetic", as
+        // defined in RFC 1982
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
-        require(expiration > now);
+        require(uint32(expiration - now) < 0x80000000);
 
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
-        require(inception < now);
+        require(uint32(now - inception) < 0x80000000);
 
         // Validate the signature
         verifySignature(name, input, sig, proof);
