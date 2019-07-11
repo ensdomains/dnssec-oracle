@@ -559,6 +559,13 @@ contract('DNSSEC', function(accounts) {
         assert.equal((await checkPresence(instance, 'TXT', 'y')), true);
     })
 
+    //                       088vbc61o9hm3qfu7vhd3ajtilp4bc5l
+    // H(matoken.xyz)      = bst4hlje7r0o8c8p4o8q582lm0ejmiqt
+    // H(quux.matoken.xyz) = gjjkn49ondfjc1thska8ai4csj8pd7af
+    //                       l54nruaka4b4f3mfm5scv7aocqls84gm
+    // H(foo.matoken.xyz)  = nvlh0ajql16jp0bigvm9jcmm50c3f8gj
+    // H(_abc.matoken.xyz) = q116ronfpgiloujs07ueb829e1rjg0pa
+
     it('deletes record on the same name using NSEC3', async function() {
         var instance = await dnssec.deployed();
 
@@ -613,10 +620,10 @@ contract('DNSSEC', function(accounts) {
 
     it("doesn't delete records that aren't at the end of a zone using NSEC3", async function() {
         var instance = await dnssec.deployed();
-        await submitEntry(instance, 'TXT', '_abc.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
+        await submitEntry(instance, 'TXT', 'quux.matoken.xyz', Buffer.from('foo', 'ascii'), rootKeyProof)
         var nsec3 = buildEntry('NSEC3', 'l54nruaka4b4f3mfm5scv7aocqls84gm.matoken.xyz', {algorithm: 1, flags: 0, iterations: 1, salt: Buffer.from("5BA6AD4385844262", "hex"), nextDomain: Buffer.from(base32hex.parse('088VBC61O9HM3QFU7VHD3AJTILP4BC5L')), rrtypes:['TXT']});
-        assert.equal((await deleteEntry(instance, 'TXT', '_abc.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
-        assert.equal((await checkPresence(instance, 'TXT', '_abc.matoken.xyz')), true);
+        assert.equal((await deleteEntry(instance, 'TXT', 'quux.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
+        assert.equal((await checkPresence(instance, 'TXT', 'quux.matoken.xyz')), true);
     })
 
     // Test against real record
