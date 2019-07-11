@@ -106,8 +106,8 @@ contract('DNSSEC', function(accounts) {
                 algorithm: 253,
                 labels: 0,
                 originalTTL: 3600,
-                expiration: 2419200,
-                inception: 0,
+                expiration: Date.now() / 1000 + 2419200,
+                inception: Date.now() / 1000,
                 keyTag: 5647,
                 signersName: ".",
                 signature: new Buffer([])
@@ -165,10 +165,6 @@ contract('DNSSEC', function(accounts) {
     it('should accept a root DNSKEY', async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
-        await web3.currentProvider.send({
-          method: 'evm_increaseTime',
-          params: (-(await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
-        });
         var tx = await verifySubmission(instance, ...hexEncodeSignedSet(keys));
         rootKeyProof = tx.logs[0].args.rrset;
     });
@@ -198,8 +194,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 1,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -224,8 +220,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 0,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -251,8 +247,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 0,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -277,8 +273,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 0,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -303,8 +299,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 2,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 0,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -329,8 +325,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 1,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -351,8 +347,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: 1,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 1,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: "com",
                     signature: new Buffer([])
@@ -365,33 +361,28 @@ contract('DNSSEC', function(accounts) {
     it("should reject entries with expirations in the past", async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
-        keys.sig.data.inception = 1;
-        keys.sig.data.expiration = 123;
-        await web3.currentProvider.send({
-          method: 'evm_increaseTime',
-          params: (123 + 1 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
-        });
+        keys.sig.data.expiration = Date.now() / 1000 - 1;
         await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
     });
 
     it("should reject entries with inceptions in the future", async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
-        keys.sig.data.inception = 0xFFFFFFFF;
+        keys.sig.data.inception = Date.now() / 1000 + 1;
         await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
     });
 
     it("should accept updates with newer signatures", async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
-        keys.sig.data.inception = 1;
+        keys.sig.data.inception = Date.now() / 1000;
         await verifySubmission(instance, ...hexEncodeSignedSet(keys));
     });
 
     it("should reject entries that are older", async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
-        keys.sig.data.inception = 0;
+        keys.sig.data.inception = Date.now() / 1000 - 2419200;
         await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
     });
 
@@ -420,8 +411,8 @@ contract('DNSSEC', function(accounts) {
                     algorithm: 253,
                     labels: name.split(".").length,
                     originalTTL: 3600,
-                    expiration: 2419200,
-                    inception: 1,
+                    expiration: Date.now() / 1000 + 2419200,
+                    inception: Date.now() / 1000,
                     keyTag: 5647,
                     signersName: ".",
                     signature: new Buffer([])
@@ -437,13 +428,6 @@ contract('DNSSEC', function(accounts) {
 
     async function submitEntry(instance, type, name, option, proof, sig){
         var keys = buildEntry(type, name, option, sig);
-        let result = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
-        var inception = result['0'];
-        var rrs = result['2'];
-
-        if(inception >= keys.sig.data.inception) {
-            keys.sig.data.inception = inception + 1;
-        }
         tx = await verifySubmission(instance, hexEncodeSignedSet(keys)[0], "0x", proof);
         var res = await instance.rrdata.call(types.toType(type), hexEncodeName(name));
         assert.notEqual(res['2'], '0x0000000000000000000000000000000000000000');
@@ -456,8 +440,6 @@ contract('DNSSEC', function(accounts) {
             tx = await instance.deleteRRSet(types.toType(deletetype), hexEncodeName(deletename), nsec, "0x", proof);
         }
         catch(error){
-            // Assert ganache revert exception
-            assert.equal(error.message, 'Returned error: VM Exception while processing transaction: revert');
             result = false;
         }
         // Assert geth failed transaction
@@ -479,7 +461,7 @@ contract('DNSSEC', function(accounts) {
         var instance = await dnssec.deployed();
         // text z. comes after next d.
         await submitEntry(instance, 'TXT',    'z', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']});
         assert.equal((await deleteEntry(instance, 'TXT', 'z', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'z')), true);
     })
@@ -488,7 +470,7 @@ contract('DNSSEC', function(accounts) {
         var instance = await dnssec.deployed();
         // text a. comes after nsec b.
         await submitEntry(instance, 'TXT',    'a', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'b', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'b', { nextDomain:'d', rrtypes:['TXT']});
         assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
     })
@@ -497,7 +479,7 @@ contract('DNSSEC', function(accounts) {
         var instance = await dnssec.deployed();
         // text a. has same nsec a. with type bitmap
         await submitEntry(instance, 'TXT',    'a', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']});
         assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
     })
@@ -506,11 +488,7 @@ contract('DNSSEC', function(accounts) {
         var instance = await dnssec.deployed();
         await submitEntry(instance, 'TXT',    'a', Buffer.from('foo', 'ascii'), rootKeyProof);
         // This test fails if rrtypes is empty ([]), but would that case every happen?
-        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']}, {inception: 1000});
-        await web3.currentProvider.send({
-          method: 'evm_increaseTime',
-          params: (1000 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
-        });
+        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']});
         assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
         assert.equal((await checkPresence(instance, 'TXT', 'a')), false);
     })
@@ -518,7 +496,7 @@ contract('DNSSEC', function(accounts) {
     it('rejects if the proof hash does not match', async function(){
         var instance = await dnssec.deployed();
         await submitEntry(instance, 'TXT',    'a', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['NSEC']});
         assert.equal((await deleteEntry(instance, 'TXT', 'a', hexEncodeSignedSet(nsec)[0] + '00', rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'a')), true);
     })
@@ -526,7 +504,7 @@ contract('DNSSEC', function(accounts) {
     it('deletes RRset if NSEC next comes after delete name', async function(){
         var instance = await dnssec.deployed();
         await submitEntry(instance, 'TXT', 'b', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'a', { nextDomain:'d', rrtypes:['TXT']});
         assert.equal((await deleteEntry(instance, 'TXT', 'b', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
         assert.equal((await checkPresence(instance, 'TXT', 'b')), false);
     })
@@ -534,7 +512,7 @@ contract('DNSSEC', function(accounts) {
     it('deletes RRset if NSEC is on apex domain', async function() {
         var instance = await dnssec.deployed();
         await submitEntry(instance, 'TXT', 'b.test', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'test', { nextDomain:'d.test', rrtypes:['TXT']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'test', { nextDomain:'d.test', rrtypes:['TXT']});
         assert.equal((await deleteEntry(instance, 'TXT', 'b.test', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
         assert.equal((await checkPresence(instance, 'TXT', 'b.test')), false);
     })
@@ -542,19 +520,15 @@ contract('DNSSEC', function(accounts) {
     it('deletes RRset if NSEC next name is on apex domain', async function() {
         var instance = await dnssec.deployed();
         await submitEntry(instance, 'TXT', 'b.test', Buffer.from('foo', 'ascii'), rootKeyProof);
-        var nsec = buildEntry('NSEC', 'a.test', { nextDomain:'test', rrtypes:['TXT']}, {inception: 1000});
+        var nsec = buildEntry('NSEC', 'a.test', { nextDomain:'test', rrtypes:['TXT']});
         assert.equal((await deleteEntry(instance, 'TXT', 'b.test', hexEncodeSignedSet(nsec)[0], rootKeyProof)), true);
         assert.equal((await checkPresence(instance, 'TXT', 'b.test')), false);
     })
 
     it('will not delete a record if it is more recent than the NSEC record', async function() {
         var instance = await dnssec.deployed();
-        await web3.currentProvider.send({
-          method: 'evm_increaseTime',
-          params: (2000 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
-        });
-        await submitEntry(instance, 'TXT', 'y', Buffer.from('foo', 'ascii'), rootKeyProof, {inception: 2000});
-        var nsec = buildEntry('NSEC', 'x', { nextDomain:'z', rrtypes:['TXT']}, {inception: 1000});
+        await submitEntry(instance, 'TXT', 'y', Buffer.from('foo', 'ascii'), rootKeyProof);
+        var nsec = buildEntry('NSEC', 'x', { nextDomain:'z', rrtypes:['TXT']}, {inception: Date.now() / 1000 - 2419200});
         assert.equal((await deleteEntry(instance, 'TXT', 'y', hexEncodeSignedSet(nsec)[0], rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'y')), true);
     })
@@ -625,8 +599,10 @@ contract('DNSSEC', function(accounts) {
         assert.equal((await deleteEntry(instance, 'TXT', 'quux.matoken.xyz', hexEncodeSignedSet(nsec3)[0], rootKeyProof)), false);
         assert.equal((await checkPresence(instance, 'TXT', 'quux.matoken.xyz')), true);
     })
+});
 
     // Test against real record
+contract('DNSSEC', accounts => {
     it('should accept real DNSSEC records', async function() {
         var instance = await dnssec.deployed();
         var proof = await instance.anchors();
@@ -634,7 +610,7 @@ contract('DNSSEC', function(accounts) {
         // will be again every 2^32 seconds or 136 years
         await web3.currentProvider.send({
           method: 'evm_increaseTime',
-          params: (1552612005 - (await web3.eth.getBlock('latest')).timestamp & 0xffffffff) >>> 0
+          params: 1552612005 - Date.now() / 1000 >>> 0
         });
         for (let i = 0; i < test_rrsets.length; i++) {
             var rrset = test_rrsets[i];
