@@ -368,7 +368,7 @@ contract('DNSSEC', function(accounts) {
     it("should reject entries with inceptions in the future", async function() {
         var instance = await dnssec.deployed();
         var keys = rootKeys();
-        keys.sig.data.inception = Date.now() / 1000 + 1;
+        keys.sig.data.inception = Date.now() / 1000 + 2419200;
         await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
     });
 

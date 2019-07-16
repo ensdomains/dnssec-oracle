@@ -185,7 +185,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         (nsecName, rrs) = validateSignedSet(nsec, sig, proof);
 
         // Don't let someone use an old proof to delete a new name
-        require(uint32(nsec.readUint32(RRSIG_INCEPTION) - rrsets[keccak256(deleteName)][deleteType].inception) < 0x80000000);
+        require(int32(nsec.readUint32(RRSIG_INCEPTION) - rrsets[keccak256(deleteName)][deleteType].inception) >= 0);
 
         for (RRUtils.RRIterator memory iter = rrs.iterateRRs(0); !iter.done(); iter.next()) {
             // We're dealing with three names here:
@@ -290,7 +290,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
             // To replace an existing rrset, the signature must be at least as new
-            require(uint32(inception - set.inception) < 0x80000000);
+            require(int32(inception - set.inception) >= 0);
         }
 
         if (set.hash == keccak256(rrs)) {
@@ -346,11 +346,11 @@ contract DNSSECImpl is DNSSEC, Owned {
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
-        require(uint32(expiration - now) < 0x80000000);
+        require(int32(expiration - now) >= 0);
 
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
-        require(uint32(now - inception) < 0x80000000);
+        require(int32(now - inception) >= 0);
 
         // Validate the signature
         verifySignature(name, input, sig, proof);
