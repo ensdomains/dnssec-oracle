@@ -565,11 +565,10 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @return The computed key tag.
      */
     function computeKeytag(bytes memory data) internal pure returns (uint16) {
-        uint ac;
-        for (uint i = 0; i < data.length; i += 2) {
-            ac += data.readUint16(i);
+        uint32 ac;
+        for (uint i = 0; i < data.length; i++) {
+            ac += i & 1 == 0 ? uint16(data.readUint8(i)) << 8 : data.readUint8(i);
         }
-        ac += (ac >> 16) & 0xFFFF;
-        return uint16(ac & 0xFFFF);
+        return uint16(ac + (ac >> 16));
     }
 }

@@ -145,7 +145,7 @@ contract('DNSSEC', function(accounts) {
         originalTTL: 3600,
         expiration: Date.now() / 1000 + 2419200,
         inception: Date.now() / 1000,
-        keyTag: 5647,
+        keyTag: 1278,
         signersName: '.',
         signature: new Buffer([])
       }
@@ -157,14 +157,14 @@ contract('DNSSEC', function(accounts) {
         type: 'DNSKEY',
         class: 'IN',
         ttl: 3600,
-        data: { flags: 0x0101, algorithm: 253, key: Buffer.from('1111', 'HEX') }
+        data: { flags: 0x0101, algorithm: 253, key: Buffer.from('0000', 'HEX') }
       },
       {
         name: '.',
         type: 'DNSKEY',
         class: 'IN',
         ttl: 3600,
-        data: { flags: 0, algorithm: 253, key: Buffer.from('1111', 'HEX') }
+        data: { flags: 0, algorithm: 253, key: Buffer.from('0000', 'HEX') }
       },
       {
         name: '.',
@@ -206,6 +206,24 @@ contract('DNSSEC', function(accounts) {
     ];
 
     await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
+  });
+
+  it('should accept odd-length public keys', async () => {
+    const instance = await dnssec.deployed();
+    const keys = rootKeys();
+    keys.rrs = [
+      {
+        name: '.',
+        type: 'DNSKEY',
+        data: {
+          flags: 257,
+          algorithm: 253,
+          key: Buffer.from('00', 'hex')
+        }
+      }
+    ];
+    const [signedData] = hexEncodeSignedSet(keys);
+    await verifySubmission(instance, signedData, Buffer.alloc(0));
   });
 
   it('should reject signatures by keys without the ZK bit set', async function() {
@@ -272,7 +290,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
           }
@@ -311,7 +329,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
           }
@@ -348,7 +366,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
           }
@@ -385,7 +403,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
           }
@@ -422,7 +440,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
           }
@@ -459,7 +477,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
           }
@@ -494,7 +512,7 @@ contract('DNSSEC', function(accounts) {
             originalTTL: 3600,
             expiration: Date.now() / 1000 + 2419200,
             inception: Date.now() / 1000,
-            keyTag: 5647,
+            keyTag: 1278,
             signersName: 'com',
             signature: new Buffer([])
           }
@@ -578,7 +596,7 @@ contract('DNSSEC', function(accounts) {
         originalTTL: 3600,
         expiration: Date.now() / 1000 + 2419200,
         inception: Date.now() / 1000,
-        keyTag: 5647,
+        keyTag: 1278,
         signersName: '.',
         signature: new Buffer([])
       }
