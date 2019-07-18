@@ -291,11 +291,6 @@ contract DNSSECImpl is DNSSEC, Owned {
             require(int32(inception - set.inception) >= 0);
         }
 
-        if (set.hash == keccak256(rrs)) {
-            // Already inserted!
-            return rrs;
-        }
-
         rrsets[keccak256(name)][typecovered] = RRSet({
             inception: inception,
             inserted: uint64(now),
@@ -563,7 +558,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @return The computed key tag.
      */
     function computeKeytag(bytes memory data) internal pure returns (uint16) {
-        uint32 ac;
+        uint ac;
         for (uint i = 0; i < data.length; i++) {
             ac += i & 1 == 0 ? uint16(data.readUint8(i)) << 8 : data.readUint8(i);
         }
