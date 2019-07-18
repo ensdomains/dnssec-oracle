@@ -337,6 +337,41 @@ contract('DNSSEC', function(accounts) {
     );
   });
 
+  it('rejects expired proofs', async () => {
+    const instance = await dnssec.deployed();
+    await web3.currentProvider.send({
+      method: 'evm_increaseTime',
+      params: validityPeriod + 1
+    });
+    const [signedData] = hexEncodeSignedSet({
+      sig: {
+        data: {
+          typeCovered: 'TXT',
+          algorithm: 253,
+          labels: 1,
+          expiration: expiration + validityPeriod + 1,
+          inception: inception + validityPeriod + 1,
+          keyTag: 1278,
+          signersName: '.',
+          signature: Buffer.alloc(0)
+        }
+      },
+      rrs: [
+        {
+          name: 'test',
+          type: 'TXT',
+          data: 'test'
+        }
+      ]
+    });
+    await verifyFailedSubmission(
+      instance,
+      signedData,
+      Buffer.alloc(0),
+      rootKeyProof
+    );
+  });
+
   it('should reject signatures with non-matching classes', async function() {
     var instance = await dnssec.deployed();
     await verifyFailedSubmission(

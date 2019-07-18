@@ -59,6 +59,7 @@ contract DNSSECImpl is DNSSEC, Owned {
     uint8 constant DIGEST_ALGORITHM_SHA256 = 2;
 
     struct RRSet {
+        uint32 expiration;
         uint32 inception;
         uint64 inserted;
         bytes20 hash;
@@ -83,7 +84,8 @@ contract DNSSECImpl is DNSSEC, Owned {
         // of trust for all other records.
         anchors = _anchors;
         rrsets[keccak256(hex"00")][DNSTYPE_DS] = RRSet({
-            inception: uint32(0),
+            expiration: uint32(now) + 0xfffffff,
+            inception: uint32(now),
             inserted: uint64(now),
             hash: bytes20(keccak256(anchors))
         });
@@ -282,8 +284,9 @@ contract DNSSECImpl is DNSSEC, Owned {
         bytes memory rrs;
         (name, rrs) = validateSignedSet(input, sig, proof);
 
-        uint32 inception = input.readUint32(RRSIG_INCEPTION);
         uint16 typecovered = input.readUint16(RRSIG_TYPE);
+        uint32 expiration = input.readUint32(RRSIG_EXPIRATION);
+        uint32 inception = input.readUint32(RRSIG_INCEPTION);
 
         RRSet storage set = rrsets[keccak256(name)][typecovered];
         if (set.inserted > 0) {
@@ -292,6 +295,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         }
 
         rrsets[keccak256(name)][typecovered] = RRSet({
+            expiration: expiration,
             inception: inception,
             inserted: uint64(now),
             hash: bytes20(keccak256(rrs))
@@ -353,7 +357,8 @@ contract DNSSECImpl is DNSSEC, Owned {
 
     function validProof(bytes memory name, bytes memory proof) internal view returns(bool) {
         uint16 dnstype = proof.readUint16(proof.nameLength(0));
-        return rrsets[keccak256(name)][dnstype].hash == bytes20(keccak256(proof));
+        RRSet storage set = rrsets[keccak256(name)][dnstype];
+        return set.hash == bytes20(keccak256(proof)) && int32(set.expiration - now) >= 0;
     }
 
     /**
