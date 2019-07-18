@@ -130,6 +130,9 @@ contract('DNSSEC', function(accounts) {
     );
   });
 
+  const validityPeriod = 2419200;
+  const expiration = Date.now() / 1000 + validityPeriod;
+  const inception = Date.now() / 1000;
   function rootKeys() {
     var name = '.';
     var sig = {
@@ -143,8 +146,8 @@ contract('DNSSEC', function(accounts) {
         algorithm: 253,
         labels: 0,
         originalTTL: 3600,
-        expiration: Date.now() / 1000 + 2419200,
-        inception: Date.now() / 1000,
+        expiration,
+        inception,
         keyTag: 1278,
         signersName: '.',
         signature: new Buffer([])
@@ -288,8 +291,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 1,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
@@ -327,8 +330,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 1,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
@@ -364,8 +367,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 1,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
@@ -401,8 +404,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 1,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
@@ -438,8 +441,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 2,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
@@ -475,8 +478,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 1,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: '.',
             signature: new Buffer([])
@@ -510,8 +513,8 @@ contract('DNSSEC', function(accounts) {
             algorithm: 253,
             labels: 1,
             originalTTL: 3600,
-            expiration: Date.now() / 1000 + 2419200,
-            inception: Date.now() / 1000,
+            expiration,
+            inception,
             keyTag: 1278,
             signersName: 'com',
             signature: new Buffer([])
@@ -542,7 +545,7 @@ contract('DNSSEC', function(accounts) {
   it('should reject entries with inceptions in the future', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.sig.data.inception = Date.now() / 1000 + 2419200;
+    keys.sig.data.inception = Date.now() / 1000 + 15 * 60;
     await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
@@ -556,7 +559,7 @@ contract('DNSSEC', function(accounts) {
   it('should reject entries that are older', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.sig.data.inception = Date.now() / 1000 - 2419200;
+    keys.sig.data.inception--;
     await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
@@ -594,8 +597,8 @@ contract('DNSSEC', function(accounts) {
         algorithm: 253,
         labels: name.split('.').length,
         originalTTL: 3600,
-        expiration: Date.now() / 1000 + 2419200,
-        inception: Date.now() / 1000,
+        expiration,
+        inception,
         keyTag: 1278,
         signersName: '.',
         signature: new Buffer([])
@@ -875,7 +878,7 @@ contract('DNSSEC', function(accounts) {
       'NSEC',
       'x',
       { nextDomain: 'z', rrtypes: ['TXT'] },
-      { inception: Date.now() / 1000 - 2419200 }
+      { inception: inception - 1 }
     );
     assert.equal(
       await deleteEntry(
