@@ -59,10 +59,9 @@ contract DNSSECImpl is DNSSEC, Owned {
     uint8 constant DIGEST_ALGORITHM_SHA256 = 2;
 
     struct RRSet {
+        bytes20 hash;
         uint32 expiration;
         uint32 inception;
-        uint64 inserted;
-        bytes20 hash;
     }
 
     // (name, type) => RRSet
@@ -84,10 +83,9 @@ contract DNSSECImpl is DNSSEC, Owned {
         // of trust for all other records.
         anchors = _anchors;
         rrsets[keccak256(hex"00")][DNSTYPE_DS] = RRSet({
+            hash: bytes20(keccak256(anchors)),
             expiration: uint32(now) + 0xfffffff,
-            inception: uint32(now),
-            inserted: uint64(now),
-            hash: bytes20(keccak256(anchors))
+            inception: uint32(now)
         });
         emit RRSetUpdated(hex"00", anchors);
     }
@@ -270,13 +268,13 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @dev Returns data about the RRs (if any) known to this oracle with the provided type and name.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
-     * @return inception The unix timestamp at which the signature for this RRSET was created.
-     * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
      * @return hash The hash of the RRset that was inserted.
+     * @return expiration The Unix timestamp this RRset is valid until.
+     * @return inception The unix timestamp at which the signature for this RRSET was created.
      */
-    function rrdata(uint16 dnstype, bytes calldata name) external view returns (uint32, uint64, bytes20) {
+    function rrdata(uint16 dnstype, bytes calldata name) external view returns (bytes20, uint32, uint32) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
-        return (result.inception, result.inserted, result.hash);
+        return (result.hash, result.expiration, result.inception);
     }
 
     function _submitRRSet(bytes memory input, bytes memory sig, bytes memory proof) internal returns (bytes memory) {
@@ -289,16 +287,15 @@ contract DNSSECImpl is DNSSEC, Owned {
         uint32 inception = input.readUint32(RRSIG_INCEPTION);
 
         RRSet storage set = rrsets[keccak256(name)][typecovered];
-        if (set.inserted > 0) {
+        if (set.hash != bytes20(0)) {
             // To replace an existing rrset, the signature must be at least as new
             require(int32(inception - set.inception) >= 0);
         }
 
         rrsets[keccak256(name)][typecovered] = RRSet({
+            hash: bytes20(keccak256(rrs)),
             expiration: expiration,
-            inception: inception,
-            inserted: uint64(now),
-            hash: bytes20(keccak256(rrs))
+            inception: inception
         });
 
         emit RRSetUpdated(name, rrs);

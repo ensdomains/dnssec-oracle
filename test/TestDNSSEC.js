@@ -284,18 +284,17 @@ contract('DNSSEC', function(accounts) {
 
   it('should check if root DNSKEY exist', async function() {
     var instance = await dnssec.deployed();
-    var result = await instance.rrdata.call(
-      types.toType('DNSKEY'),
-      hexEncodeName('nonexisting.')
+    const [nonexistingHash] = Object.values(
+      await instance.rrdata.call(
+        types.toType('DNSKEY'),
+        hexEncodeName('nonexisting.')
+      )
     );
-    var rrs = result['2'];
-    assert.equal(rrs, '0x0000000000000000000000000000000000000000');
-    result = await instance.rrdata.call(
-      types.toType('DNSKEY'),
-      hexEncodeName('.')
+    assert.equal(nonexistingHash, '0x0000000000000000000000000000000000000000');
+    const [hash] = Object.values(
+      await instance.rrdata.call(types.toType('DNSKEY'), hexEncodeName('.'))
     );
-    rrs = result['2'];
-    assert.notEqual(rrs, '0x0000000000000000000000000000000000000000');
+    assert.notEqual(hash, '0x0000000000000000000000000000000000000000');
   });
 
   it('should accept a signed RRSET', async function() {
@@ -619,7 +618,7 @@ contract('DNSSEC', function(accounts) {
     const keys = rootKeys();
     keys.sig.data.inception++;
     const [signedData] = hexEncodeSignedSet(keys);
-    const [oldInception] = Object.values(
+    const [, , oldInception] = Object.values(
       await instance.rrdata(
         types.toType('DNSKEY'),
         `0x${packet.name.encode('.').toString('hex')}`
@@ -631,7 +630,7 @@ contract('DNSSEC', function(accounts) {
       Buffer.alloc(0),
       anchors.encode(anchors.realEntries)
     );
-    const [newInception] = Object.values(
+    const [, , newInception] = Object.values(
       await instance.rrdata(
         types.toType('DNSKEY'),
         `0x${packet.name.encode('.').toString('hex')}`
@@ -659,11 +658,10 @@ contract('DNSSEC', function(accounts) {
 
   // Test delete RRSET
   async function checkPresence(instance, type, name) {
-    var result = (await instance.rrdata.call(
-      types.toType(type),
-      hexEncodeName(name)
-    ))[2];
-    return result != '0x0000000000000000000000000000000000000000';
+    const [hash] = Object.values(
+      await instance.rrdata.call(types.toType(type), hexEncodeName(name))
+    );
+    return hash != '0x0000000000000000000000000000000000000000';
   }
 
   function buildEntry(type, name, rrsOption, sigOption) {
@@ -704,11 +702,10 @@ contract('DNSSEC', function(accounts) {
       '0x',
       proof
     );
-    var res = await instance.rrdata.call(
-      types.toType(type),
-      hexEncodeName(name)
+    const [hash] = Object.values(
+      await instance.rrdata.call(types.toType(type), hexEncodeName(name))
     );
-    assert.notEqual(res['2'], '0x0000000000000000000000000000000000000000');
+    assert.notEqual(hash, '0x0000000000000000000000000000000000000000');
     return tx;
   }
 
