@@ -67,8 +67,6 @@ contract DNSSECImpl is DNSSEC, Owned {
     // (name, type) => RRSet
     mapping (bytes32 => mapping(uint16 => RRSet)) rrsets;
 
-    bytes public anchors;
-
     mapping (uint8 => Algorithm) public algorithms;
     mapping (uint8 => Digest) public digests;
     mapping (uint8 => NSEC3Digest) public nsec3Digests;
