@@ -1,6 +1,8 @@
 pragma solidity ^0.5.0;
 
-interface DNSSEC {
+contract DNSSEC {
+
+    bytes public anchors;
 
     event AlgorithmUpdated(uint8 id, address addr);
     event DigestUpdated(uint8 id, address addr);
