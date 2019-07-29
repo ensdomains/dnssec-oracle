@@ -131,8 +131,8 @@ contract('DNSSEC', function(accounts) {
   });
 
   const validityPeriod = 2419200;
-  const expiration = Date.now() / 1000 + validityPeriod;
-  const inception = Date.now() / 1000;
+  const expiration = Date.now() / 1000 - 15 * 60 + validityPeriod;
+  const inception = Date.now() / 1000 - 15 * 60;
   function rootKeys() {
     var name = '.';
     var sig = {
@@ -538,7 +538,7 @@ contract('DNSSEC', function(accounts) {
   it('should reject entries with expirations in the past', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.sig.data.expiration = Date.now() / 1000 - 1;
+    keys.sig.data.expiration = Date.now() / 1000 - 2;
     await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
@@ -552,8 +552,33 @@ contract('DNSSEC', function(accounts) {
   it('should accept updates with newer signatures', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    keys.sig.data.inception = Date.now() / 1000;
     await verifySubmission(instance, ...hexEncodeSignedSet(keys));
+  });
+
+  it('updates the inception whether the RRs/hash have changed or not', async () => {
+    const instance = await dnssec.deployed();
+    const keys = rootKeys();
+    keys.sig.data.inception++;
+    const [signedData] = hexEncodeSignedSet(keys);
+    const [oldInception] = Object.values(
+      await instance.rrdata(
+        types.toType('DNSKEY'),
+        `0x${packet.name.encode('.').toString('hex')}`
+      )
+    );
+    assert.notEqual(oldInception, keys.sig.data.inception >>> 0);
+    await instance.submitRRSet(
+      signedData,
+      Buffer.alloc(0),
+      anchors.encode(anchors.realEntries)
+    );
+    const [newInception] = Object.values(
+      await instance.rrdata(
+        types.toType('DNSKEY'),
+        `0x${packet.name.encode('.').toString('hex')}`
+      )
+    );
+    assert.equal(newInception, keys.sig.data.inception >>> 0);
   });
 
   it('should reject entries that are older', async function() {
