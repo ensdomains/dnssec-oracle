@@ -13,7 +13,7 @@ deploy:
   email: arachnid@notdot.net
   api_key:
     # echo -n ... | openssl rsautl -inkey <(curl --header 'Authorization: token ...' https://api.travis-ci.org/v3/repo/{owner}%2f{repo}/key_pair/generated | jq --raw-output .public_key) -pubin -encrypt | base64 --wrap 0
-    secure: eUuQOjqC2O5JKzmF3VQQ2/4qJXLoGvRI2VJScM8u3sTn7Sllq4/+lLyXYs2z1LFZJzUpJzmgj9aEkbfZ5sfhncYcxZ5z0G1UL+nvBXXIoC8j9uVpgbCAoytQK7NBj4gE3+m0ENZ5ASGqULK+YVlX78Tp1iiEBS3pgUolwmIB5ROgGnJmaWudkT2qUC/z505KtK32u7YNmKqSOTHYr53txSbsgA4uHR8lo5ttweex5++ImAQMhAQ9UooHrENmsRsnn33LaTjHXQzEvn9GueuJ2dEvrAOvHj9K77KdTJ/JOxPAvPzTFEfV90dOCyuo7m0P8mmv3W3MIqhvb7Y7QCbhr15/fQFQ6oUVGLPSlijUdK7Yfb7Jjea+v+TK1Zi0vWKLOcWETKU3fEU9VxRafhc7so/nkKgzhKiV8Vzupf1xVcOVrXHnFLvPaETp2QMBqF+nKxYaiPfV949pLKgZZVNcmFPG+ilwbSRx/iy71awlf8GD40wOBx3brdeYPy472e/2LUZWnyhCwiW3hn+W/4BDVYetrbcsDaG0kpexSgxf3YwlFfbvbc0GA5dAXSNTN5Whixh4tc3xuZ/CrOTJ/FVwWzSP2cO3gR6snYhIjitjBWQc8VkM07fjNZ/uyVh1rB7K3k7L5FZkkkPiRfHkF08jlCMh7nDXLqPGf2li9TTOMvQ=
+    secure: fJ3VucxWNFNBR4vyMsYyC6BHdWfGioEhXmMvuODtgJROEOYiPx7aBKIl0jDx+1OAWFSAJMhS2Zo+pkOjPipB092dEQbSgXfAGnSGne/t8CCPvqLB8CD5iV2gEfsMXPEt89e9+pn1xpDheU3fIEm/ecNrreRpA8+iSwfcdAJJP/KjHXZRjl9czcQkayeHxjoyg0/meqoQnQ3DFAoIFX2ZQ4kg9RDua5Gde1F0qvSdlIQ8NhWjn2QLsYFRJvCFN9Svwzv601Jp8PwgTMJdwnL348Vmkourih8X+ObJUatZZO2mnMbyAYtCw8UCEYnCWUF/qVMVvEe1tgjHl/1aK5YZe/f6xxHbv77Nqo/gqAn4oM/pXlqhSkOWQetzQKzPMSt2N+88o1m/2iSObxZ1od4G4z6rYlz+CpQIwxbF/97UZeyLN9sbJMH6BgVSKMMWe5vo0jaf/NVpV2m8l2Mazxl26z5Kx6EkRsmRNtUWpQYHp0e5w0P2QYL0eNjtdXkKrdthFe5JDFECSeRHQZPvzXfRycTnKzOxjNPLU+8WtNPiN9nK2cuZjVD7CvIxsB4agzOp2V+wf7e7nJJiJC0F24DdCUxggou9JJ50YGmEACs0ejAKc/LXkFojsSmZRacWf+3SqKEpsJQND6pMolhSMoOUkuYL+CedS+h3i/mwDChgwwY=
   skip_cleanup: true
 notifications:
   email: false
