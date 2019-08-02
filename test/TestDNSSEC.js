@@ -110,6 +110,30 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
 }
 
 contract('DNSSEC', function(accounts) {
+  before(async () => {
+    const instance = await dnssec.deployed();
+    const keys = rootKeys();
+    const [signedData] = hexEncodeSignedSet(keys);
+    await instance.submitRRSet(
+      signedData,
+      Buffer.alloc(0),
+      anchors.encode(anchors.realEntries)
+    );
+  });
+
+  let result;
+  beforeEach(async () => {
+    ({ result } = await web3.currentProvider.send({
+      method: 'evm_snapshot'
+    }));
+  });
+  afterEach(async () => {
+    await web3.currentProvider.send({
+      method: 'evm_revert',
+      params: result
+    });
+  });
+
   it('should have a default algorithm and digest set', async function() {
     var instance = await dnssec.deployed();
     assert.notEqual(
@@ -160,13 +184,6 @@ contract('DNSSEC', function(accounts) {
         type: 'DNSKEY',
         class: 'IN',
         ttl: 3600,
-        data: { flags: 0x0101, algorithm: 253, key: Buffer.from('0000', 'HEX') }
-      },
-      {
-        name: '.',
-        type: 'DNSKEY',
-        class: 'IN',
-        ttl: 3600,
         data: { flags: 0, algorithm: 253, key: Buffer.from('0000', 'HEX') }
       },
       {
@@ -175,6 +192,13 @@ contract('DNSSEC', function(accounts) {
         class: 'IN',
         ttl: 3600,
         data: { flags: 0, algorithm: 253, key: Buffer.from('1112', 'HEX') }
+      },
+      {
+        name: '.',
+        type: 'DNSKEY',
+        class: 'IN',
+        ttl: 3600,
+        data: { flags: 0x0101, algorithm: 253, key: Buffer.from('0000', 'HEX') }
       }
     ];
     return { name, sig, rrs };
@@ -250,12 +274,12 @@ contract('DNSSEC', function(accounts) {
     await verifyFailedSubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
-  var rootKeyProof = undefined;
+  const { rrs } = rootKeys();
+  const rootKeyProof = anchors.encode(rrs);
   it('should accept a root DNSKEY', async function() {
     var instance = await dnssec.deployed();
     var keys = rootKeys();
-    var tx = await verifySubmission(instance, ...hexEncodeSignedSet(keys));
-    rootKeyProof = tx.logs[0].args.rrset;
+    await verifySubmission(instance, ...hexEncodeSignedSet(keys));
   });
 
   it('should check if root DNSKEY exist', async function() {
