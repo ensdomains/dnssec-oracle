@@ -292,6 +292,14 @@ contract DNSSECImpl is DNSSEC, Owned {
             require(int32(inception - set.inception) >= 0);
         }
 
+        // Only valid as long as the proof is
+        bytes memory signersName = input.readName(RRSIG_SIGNER_NAME);
+        uint16 proofType = proof.readUint16(proof.nameLength(0));
+        uint32 proofExpiration = rrsets[keccak256(signersName)][proofType].expiration;
+        if (int32(expiration - proofExpiration) > 0) {
+            expiration = proofExpiration;
+        }
+
         rrsets[keccak256(name)][typecovered] = RRSet({
             hash: bytes20(keccak256(rrs)),
             expiration: expiration,
