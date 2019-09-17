@@ -1212,7 +1212,7 @@ contract('DNSSEC', function(accounts) {
 });
 
 // Test against real record
-contract('DNSSEC', accounts => {
+contract.only('DNSSEC', accounts => {
   async function checkPresence(instance, type, name) {
     var result = (await instance.rrdata.call(
       types.toType(type),
@@ -1221,26 +1221,27 @@ contract('DNSSEC', accounts => {
     return result != '0x0000000000000000000000000000000000000000';
   }
 
-  it('checks real DNSSEC records', async function(){
-    instance = await dnssec.at('0x0AF7BfB9bC54E4ca0D48C30d6c0396B919c5abd7');
-    assert.equal(await checkPresence(instance, 'TXT', '_ens.matoken.xyz'), true);
-  })
+  it('should accept real DNSSEC records', async function() {
+    var instance = await dnssec.deployed();
+    console.log('instance.address', instance.address)
+    var proof = await instance.anchors();
+    // They were all valid at Fri Mar 15 14:06:45 2019 +1300 and
+    // will be again every 2^32 seconds or 136 years
+    // await web3.currentProvider.send({
+    //   method: 'evm_increaseTime',
+    //   params: (1552612005 - Date.now() / 1000) >>> 0
+    // });
+    for (let i = 0; i < test_rrsets.length; i++) {
+      var rrset = test_rrsets[i];
+      var tx = await instance.submitRRSet(rrset[1], rrset[2], proof);
+      proof = tx.logs[0].args.rrset;
+      assert.equal(tx.receipt.status, true);
+    }
+  });
 
-
-    //   matoken.xyz	300	DNSKEY	IN	257	3	8	AwEAAaUPT5a7Ch5cTVkcgDVrf9FCMxCMA+7McAz2x4933N8dFqqC+9OH4yAwoQW+VjXzLF4pbw4mdHuJXMSDaN1I0YrrglEfKtwaH5NacJW4UMoyF9MW5GAoS0XoZzw2ISOOOPCOphhQdc0T9SfG5pSPTvvPMXOZm9KFR99c+jiAwT4mjJut52Mu7b5I4nsUDKQBnOnDFt4fDv2DOSI+yVbdC0swX0bZXSD382GX4+ValNf6Yjz8a1SGtabkv5/PTlMxaHUwqqesqjMVYpnQ1J7bZxlzmfBLfk5A1hpSG8kBNM/ZFUsqRNz+8nOORUvsNrbQLkIEjfduCOUza630ON3ivpE=
-    //   matoken.xyz	300	DNSKEY	IN	256	3	8	AwEAAY6LVhxJdhiGG6lRtDBXMRkaiQFmbbRc+/HkD5gn4ZvpUvoZFnHBUoQ9ffN9HN5r3M6Hiuln2CqakGHt09lawk0QnNR54YZiQt/C1XBVBXvTqAG3mcerOizzOZeurCLwPrkybODfOlmNg0HXdczJM2F7x4Rr1xiqvNL/nibWxoJB
-    //   matoken.xyz	299	RRSIG	IN	DNSKEY	8	2	300	1570289035	1568388235	37042	matoken.xyz	RyIkEZ3RIolISnNviNgN7ZxNDUhmhJsHmPHOMVCYx1Hz82f8tNTT4XIXHi9az/sSw+EuV5trmYZSYSImaTCKq+z719sqSjJqgfhcsvK5E+hXYZP0s305OmjJJgaDpI+KpWRkg+3jR4yEXRmg9OUBuBqhonFNW/wqSzrkWats9sad7Fjc+zIvwHkeO/tR4jssLOuEWQna2U5F8nMYNCRJ0RoZgFFdKjGX77fnwO/faSamuHeFhZe1dCJUmSdRPeqb4FYY+w0XuaDljSysg785+ccORy4hCQy0gbw/9POzy0wDssIvlgiaI73/42P0uo+dX7sij6AkVuK3OUxjk9lUBA==
-    // ["matoken.xyz","0x003008020000012c5d98b58b5d7bb48b90b2076d61746f6b656e0378797a00076d61746f6b656e0378797a00003000010000012c008801000308030100018e8b561c497618861ba951b4305731191a8901666db45cfbf1e40f9827e19be952fa191671c152843d7df37d1cde6bdcce878ae967d82a9a9061edd3d95ac24d109cd479e1866242dfc2d57055057bd3a801b799c7ab3a2cf33997aeac22f03eb9326ce0df3a598d8341d775ccc933617bc7846bd718aabcd2ff9e26d6c68241076d61746f6b656e0378797a00003000010000012c01080101030803010001a50f4f96bb0a1e5c4d591c80356b7fd14233108c03eecc700cf6c78f77dcdf1d16aa82fbd387e32030a105be5635f32c5e296f0e26747b895cc48368dd48d18aeb82511f2adc1a1f935a7095b850ca3217d316e460284b45e8673c3621238e38f08ea6185075cd13f527c6e6948f4efbcf3173999bd28547df5cfa3880c13e268c9bade7632eedbe48e27b140ca4019ce9c316de1f0efd8339223ec956dd0b4b305f46d95d20f7f36197e3e55a94d7fa623cfc6b5486b5a6e4bf9fcf4e5331687530aaa7acaa33156299d0d49edb67197399f04b7e4e40d61a521bc90134cfd9154b2a44dcfef2738e454bec36b6d02e42048df76e08e5336badf438dde2be91","0x472224119dd12289484a736f88d80ded9c4d0d4866849b0798f1ce315098c751f3f367fcb4d4d3e172171e2f5acffb12c3e12e579b6b99865261222669308aabecfbd7db2a4a326a81f85cb2f2b913e8576193f4b37d393a68c9260683a48f8aa5646483ede3478c845d19a0f4e501b81aa1a2714d5bfc2a4b3ae459ab6cf6c69dec58dcfb322fc0791e3bfb51e23b2c2ceb845909dad94e45f27318342449d11a1980515d2a3197efb7e7c0efdf6926a6b877858597b57422549927513dea9be05618fb0d17b9a0e58d2cac83bf39f9c70e472e21090cb481bc3ff4f3b3cb4c03b2c22f96089a23bdffe363f4ba8f9d5fbb228fa02456e2b7394c6393d95404"],
-    
-    //   r8u7h0kpjdkv8tlp07e79fvascqsdbl2.matoken.xyz	300	NSEC3	IN	{"algorithm":1,"flags":0,"iterations":1,"salt":{"type":"Buffer","data":[238,133,139,204,143,18,43,84]},"nextDomain":{"type":"Buffer","data":[48,231,172,215,13,64,134,128,62,98,41,105,128,99,66,59,88,69,121,162]},"rrtypes":["NS","SOA","RRSIG","DNSKEY","NSEC3PARAM","CDS"]}
-    //   63jqplod82380fj255ko0oq27dc4aud2.matoken.xyz	300	NSEC3	IN	{"algorithm":1,"flags":0,"iterations":1,"salt":{"type":"Buffer","data":[238,133,139,204,143,18,43,84]},"nextDomain":{"type":"Buffer","data":[218,60,120,130,153,155,105,244,118,185,1,220,116,191,234,227,53,198,174,162]},"rrtypes":["CNAME","RRSIG"]}
-    //   r8u7h0kpjdkv8tlp07e79fvascqsdbl2.matoken.xyz	300	RRSIG	IN	NSEC3	8	3	300	1570289035	1568388235	62926	matoken.xyz	c5n+Vxl1DfLhQf/2z0f+7poSvFZwxy5zrrkEJv5j9cBH3RYBS5WIcx5HRQca/0WWvAcDicyEM3RpVaratjhZUCAz/kfvoB28UFHMVrGan8dgiA8r30HDTDP56tD1XCgpqO0sqx+c+g/HeirYJ2gDEtLzNsja4dcXqWDoRkn5ScU=
-    // ["_ens.matoken.xyz","0x003208030000012c5d98b58b5d7bb48bf5ce076d61746f6b656e0378797a002036336a71706c6f643832333830666a3235356b6f306f71323764633461756432076d61746f6b656e0378797a00003200010000012c002a0100000108ee858bcc8f122b5414da3c7882999b69f476b901dc74bfeae335c6aea20006040000000002207238753768306b706a646b7638746c7030376537396676617363717364626c32076d61746f6b656e0378797a00003200010000012c002c0100000108ee858bcc8f122b541430e7acd70d4086803e6229698063423b584579a200082200000000029010","0x7399fe5719750df2e141fff6cf47feee9a12bc5670c72e73aeb90426fe63f5c047dd16014b9588731e4745071aff4596bc070389cc8433746955aadab63859502033fe47efa01dbc5051cc56b19a9fc760880f2bdf41c34c33f9ead0f55c2829a8ed2cab1f9cfa0fc77a2ad827680312d2f336c8dae1d717a960e84649f949c5"],]
-
-  // it.only('deleteRRSet', async function(){
   it('deleteRRSet', async function(){
-    const contractAddress = ''
-    instance = await dnssec.at(contractAddress);
+    var instance = await dnssec.deployed();
+    console.log('instance.address', instance.address)    
     deleteType = 16
     // '0x' + packet.name.encode('_ens.matoken.xyz').toString('hex')
     // deleteName = '0x045f656e73076d61746f6b656e0378797a00',
@@ -1258,22 +1259,4 @@ contract('DNSSEC', accounts => {
     let result = await instance.deleteRRSet(deleteType, deleteName, nsec, sig, proof);
     assert.equal(await checkPresence(instance, 'TXT', '_ens.matoken.xyz'), false);
   })
-
-  it.only('should accept real DNSSEC records', async function() {
-    var instance = await dnssec.deployed();
-    console.log('instance.address', instance.address)
-    var proof = await instance.anchors();
-    // They were all valid at Fri Mar 15 14:06:45 2019 +1300 and
-    // will be again every 2^32 seconds or 136 years
-    // await web3.currentProvider.send({
-    //   method: 'evm_increaseTime',
-    //   params: (1552612005 - Date.now() / 1000) >>> 0
-    // });
-    for (let i = 0; i < test_rrsets.length; i++) {
-      var rrset = test_rrsets[i];
-      var tx = await instance.submitRRSet(rrset[1], rrset[2], proof);
-      proof = tx.logs[0].args.rrset;
-      assert.equal(tx.receipt.status, true);
-    }
-  });
 });
