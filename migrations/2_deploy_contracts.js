@@ -13,13 +13,16 @@ const dnsAnchors = require('../lib/anchors.js');
 
 module.exports = function(deployer, network) {
   return deployer.then(async () => {
+    // let result = await DNSSEC.deployed();
+    // console.log('deploy result', {result})
+  
     let dev = network == 'test' || network == 'local';
     // From http://data.iana.org/root-anchors/root-anchors.xml
     let anchors = dnsAnchors.realEntries;
 
-    if (dev) {
-      anchors.push(dnsAnchors.dummyEntry);
-    }
+    // if (dev) {
+    //   anchors.push(dnsAnchors.dummyEntry);
+    // }
     await deployer.deploy(DNSSEC, dnsAnchors.encode(anchors));
 
     await deployer.deploy(RSASHA256Algorithm);
@@ -41,6 +44,7 @@ module.exports = function(deployer, network) {
     let tasks = [];
 
     const dnssec = await DNSSEC.deployed();
+    console.log(dnssec.address)
 
     const rsasha1 = await RSASHA1Algorithm.deployed();
     tasks.push(dnssec.setAlgorithm(5, rsasha1.address));
