@@ -1259,7 +1259,7 @@ contract('DNSSEC', accounts => {
     assert.equal(await checkPresence(instance, 'TXT', '_ens.matoken.xyz'), false);
   })
 
-  it('should accept real DNSSEC records', async function() {
+  it.only('should accept real DNSSEC records', async function() {
     var instance = await dnssec.deployed();
     console.log('instance.address', instance.address)
     var proof = await instance.anchors();
