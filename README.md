@@ -1,11 +1,9 @@
 # DNSSEC Oracle
 
-[![Build Status](https://travis-ci.org/ensdomains/dnssec-oracle.svg?branch=master)](https://travis-ci.org/ensdomains/dnssec-oracle)
-[![License](https://img.shields.io/badge/License-BSD--2--Clause-blue.svg)](LICENSE)
-
-This is an implementation of a DNSSEC oracle for Ethereum. With it, you
-can securely prove the contents of any DNSSEC-signed DNS record on the
-Ethereum blockchain, as long as it was signed using supported public key
+This is an implementation of a DNSSEC oracle for RSK, forked from the
+[Ethereum implementation](https://github.com/ensdomains/dnssec-oracle).
+With it, you can securely prove the contents of any DNSSEC-signed DNS record on the
+RSK blockchain, as long as it was signed using supported public key
 schemes and digests. Presently, the oracle only supports RSA and
 SHA-256; fortunately, over 3/4 of TLDs use this combination of
 algorithms.
@@ -30,19 +28,21 @@ npm install
 
 ### Running tests
 
-The DNSSEC Oracle uses truffle for its ethereum development environment.
-All tests can be run using truffle:
+The DNSSEC Oracle uses truffle for its RSK development environment.
+All tests can be run using dockerfile:
 
 ```
-truffle test
+docker build -t regtest -f Dockerfile.RSKRegtest .
+docker run --name regtest-node-01 --rm -p 4444:4444 -p 30305:30305 regtest
 ```
 
 To run linting, use solium:
 
 ```
-solium --dir ./contracts
+npx solium --dir ./contracts
 ```
 
+<!--
 ## Including DNSSEC Oracle in your project
 
 ### Installation
@@ -75,6 +75,8 @@ from DNS data and submitting them to the oracle.
 
 The oracle is still in alpha, and does not yet have any official
 deployments on the main network or test networks.
+
+-->
 
 ## Built With
 

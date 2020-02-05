@@ -133,7 +133,7 @@ contract DNSSECImpl is DNSSEC, Owned {
     function submitRRSets(bytes calldata data, bytes calldata _proof) external returns (bytes memory) {
         uint offset = 0;
         bytes memory proof = _proof;
-        while(offset < data.length) {
+        while (offset < data.length) {
             bytes memory input = data.substring(offset + 2, data.readUint16(offset));
             offset += input.length + 2;
             bytes memory sig = data.substring(offset + 2, data.readUint16(offset));
@@ -199,9 +199,9 @@ contract DNSSECImpl is DNSSEC, Owned {
             //   - nextName comes before nsecName, in which case nextName is the
             //     zone apez, and deleteName must come after nsecName.
 
-            if(iter.dnstype == DNSTYPE_NSEC) {
+            if (iter.dnstype == DNSTYPE_NSEC) {
                 checkNsecName(iter, nsecName, deleteName, deleteType);
-            } else if(iter.dnstype == DNSTYPE_NSEC3) {
+            } else if (iter.dnstype == DNSTYPE_NSEC3) {
                 checkNsec3Name(iter, nsecName, deleteName, deleteType);
             } else {
                 revert("Unrecognised record type");
@@ -223,7 +223,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         require(rDataLength > nextNameLength);
 
         int compareResult = deleteName.compareNames(nsecName);
-        if(compareResult == 0) {
+        if (compareResult == 0) {
             // Name to delete is on the same label as the NSEC record
             require(!iter.data.checkTypeBitmap(rdataOffset + nextNameLength, deleteType));
         } else {
@@ -231,7 +231,7 @@ contract DNSSECImpl is DNSSEC, Owned {
             bytes memory nextName = iter.data.substring(rdataOffset,nextNameLength);
             // deleteName must come after nsecName
             require(compareResult > 0);
-            if(nsecName.compareNames(nextName) < 0) {
+            if (nsecName.compareNames(nextName) < 0) {
                 // deleteName must also come before nextName
                 require(deleteName.compareNames(nextName) < 0);
             }
@@ -250,14 +250,14 @@ contract DNSSECImpl is DNSSEC, Owned {
 
         bytes32 nsecNameHash = nsecName.base32HexDecodeWord(1, uint(nsecName.readUint8(0)));
 
-        if(deleteNameHash == nsecNameHash) {
+        if (deleteNameHash == nsecNameHash) {
             // Name to delete is on the same label as the NSEC record
             require(!iter.data.checkTypeBitmap(iter.rdataOffset + NSEC3_SALT + saltLength + 1 + nextLength, deleteType));
         } else {
             // deleteName must come after nsecName
             require(deleteNameHash > nsecNameHash);
             // Check if the NSEC next name comes after the NSEC name.
-            if(nextNameHash > nsecNameHash) {
+            if (nextNameHash > nsecNameHash) {
                 // deleteName must come also come before nextName
                 require(deleteNameHash < nextNameHash);
             }
@@ -367,7 +367,7 @@ contract DNSSECImpl is DNSSEC, Owned {
             // We only support class IN (Internet)
             require(iter.class == DNSCLASS_IN);
 
-            if(name.length == 0) {
+            if (name.length == 0) {
                 name = iter.name();
             } else {
                 // Name must be the same on all RRs

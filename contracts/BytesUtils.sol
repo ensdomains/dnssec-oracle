@@ -247,7 +247,7 @@ library BytesUtils {
 
     // Maps characters from 0x30 to 0x7A to their base32 values.
     // 0xFF represents invalid characters in that range.
-    bytes constant base32HexTable = hex'00010203040506070809FFFFFFFFFFFFFF0A0B0C0D0E0F101112131415161718191A1B1C1D1E1FFFFFFFFFFFFFFFFFFFFF0A0B0C0D0E0F101112131415161718191A1B1C1D1E1F';
+    bytes constant base32HexTable = hex"00010203040506070809FFFFFFFFFFFFFF0A0B0C0D0E0F101112131415161718191A1B1C1D1E1FFFFFFFFFFFFFFFFFFFFF0A0B0C0D0E0F101112131415161718191A1B1C1D1E1F";
 
     /**
      * @dev Decodes unpadded base32 data of up to one word in length.
@@ -261,34 +261,34 @@ library BytesUtils {
 
         uint ret = 0;
         uint8 decoded;
-        for(uint i = 0; i < len; i++) {
+        for (uint i = 0; i < len; i++) {
             bytes1 char = self[off + i];
             require(char >= 0x30 && char <= 0x7A);
             decoded = uint8(base32HexTable[uint(uint8(char)) - 0x30]);
             require(decoded <= 0x20);
-            if(i == len - 1) {
+            if (i == len - 1) {
                 break;
             }
             ret = (ret << 5) | decoded;
         }
 
         uint bitlen = len * 5;
-        if(len % 8 == 0) {
+        if (len % 8 == 0) {
             // Multiple of 8 characters, no padding
             ret = (ret << 5) | decoded;
-        } else if(len % 8 == 2) {
+        } else if (len % 8 == 2) {
             // Two extra characters - 1 byte
             ret = (ret << 3) | (decoded >> 2);
             bitlen -= 2;
-        } else if(len % 8 == 4) {
+        } else if (len % 8 == 4) {
             // Four extra characters - 2 bytes
             ret = (ret << 1) | (decoded >> 4);
             bitlen -= 4;
-        } else if(len % 8 == 5) {
+        } else if (len % 8 == 5) {
             // Five extra characters - 3 bytes
             ret = (ret << 4) | (decoded >> 1);
             bitlen -= 1;
-        } else if(len % 8 == 7) {
+        } else if (len % 8 == 7) {
             // Seven extra characters - 4 bytes
             ret = (ret << 2) | (decoded >> 3);
             bitlen -= 3;

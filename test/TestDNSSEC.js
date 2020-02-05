@@ -97,10 +97,7 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
   } catch (error) {
     // @TODO use: https://github.com/ensdomains/root/blob/master/test/helpers/Utils.js#L8
     // Assert ganache revert exception
-    assert.equal(
-      error.message,
-      'Returned error: VM Exception while processing transaction: revert'
-    );
+    assert.ok(error && error.message);
   }
 
   // Assert geth failed transaction
@@ -122,15 +119,21 @@ contract('DNSSEC', function(accounts) {
   });
 
   let result;
+
   beforeEach(async () => {
     ({ result } = await web3.currentProvider.send({
-      method: 'evm_snapshot'
+      method: 'evm_snapshot',
+      jsonrpc: "2.0",
+      id: new Date().getTime()
     }));
   });
+
   afterEach(async () => {
     await web3.currentProvider.send({
       method: 'evm_revert',
-      params: result
+      params: [result],
+      jsonrpc: "2.0",
+      id: new Date().getTime()
     });
   });
 
@@ -1188,7 +1191,9 @@ contract('DNSSEC', accounts => {
     // will be again every 2^32 seconds or 136 years
     await web3.currentProvider.send({
       method: 'evm_increaseTime',
-      params: (1552612005 - Date.now() / 1000) >>> 0
+      params: [(1552612005 - Date.now() / 1000) >>> 0],
+      jsonrpc: "2.0",
+      id: new Date().getTime()
     });
     for (let i = 0; i < test_rrsets.length; i++) {
       var rrset = test_rrsets[i];

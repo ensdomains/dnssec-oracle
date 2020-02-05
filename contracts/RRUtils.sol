@@ -210,7 +210,7 @@ library RRUtils {
         if (off == 0) {
             return -1;
         }
-        if(otheroff == 0) {
+        if (otheroff == 0) {
             return 1;
         }
 

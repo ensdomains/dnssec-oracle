@@ -1,12 +1,12 @@
 {
-  "name": "@ensdomains/dnssec-oracle",
-  "version": "0.1.2",
+  "name": "@rsksmart/dnssec-oracle",
+  "version": "0.0.1",
   "requires": true,
   "lockfileVersion": 1,
   "devDependencies": {
     "@ensdomains/buffer": "^0.0.8",
     "@ensdomains/solsha1": "^0.0.2",
-    "dnsprovejs": "0.0.9",
+    "@ensdomains/dnsprovejs": "0.0.9",
     "elliptic-solidity": "1.0.0",
     "eth-gas-reporter": "^0.1.12",
     "rfc4648": "^1.1.0",
@@ -14,11 +14,9 @@
     "truffle": "^5.0.0"
   },
   "scripts": {
-    "pretest": "truffle compile",
-    "test": "truffle test",
-    "watch": "npm-watch",
-    "lint": "solium --dir ./contracts",
-    "prepublishOnly": "truffle compile && truffle networks --clean"
+    "pretest": "npx truffle compile",
+    "test": "npm run lint && npx truffle test --network regtest",
+    "lint": "npx solium --dir ./contracts"
   },
   "dependencies": {
     "dns-packet": "^5.0.4"
