@@ -5,6 +5,7 @@ const types = require('dns-packet/types');
 
 var dnssec = artifacts.require('./DNSSECImpl');
 const Result = require('@ensdomains/dnsprovejs/dist/dns/result');
+const { exception } = require('@ensdomains/test-utils');
 
 const util = require('util');
 web3.currentProvider.send = util.promisify(web3.currentProvider.send);
@@ -92,21 +93,7 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
     proof = await instance.anchors();
   }
 
-  try {
-    var tx = await instance.submitRRSet(data, sig, proof);
-  } catch (error) {
-    // @TODO use: https://github.com/ensdomains/root/blob/master/test/helpers/Utils.js#L8
-    // Assert ganache revert exception
-    assert.equal(
-      error.message,
-      'Returned error: VM Exception while processing transaction: revert'
-    );
-  }
-
-  // Assert geth failed transaction
-  if (tx !== undefined) {
-    assert.equal(tx.receipt.status, false);
-  }
+  await exception.expectFailure(instance.submitRRSet(data, sig, proof));
 }
 
 contract('DNSSEC', function(accounts) {
