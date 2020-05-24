@@ -54,13 +54,13 @@ npm install dnssec-oracle --save
 ### Within Your contracts
 
 ```
-import "dnssec-oracle/build/contracts/DNSSEC"
+import "@ensdomains/dnssec-oracle/build/contracts/DNSSEC"
 ```
 
 ### Within Javascript code
 
 ```
-var data = require("dnssec-oracle/build/contracts/DNSSEC.json")
+var data = require("@ensdomains/dnssec-oracle/build/contracts/DNSSEC.json")
 ```
 
 The JSON file is same as the one generated using `truffle compile`. You
