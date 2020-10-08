@@ -1214,6 +1214,7 @@ contract('DNSSEC', function(accounts) {
 
 // Test against real record
 contract.only('DNSSEC', accounts => {
+  let proofs = []
   async function checkPresence(instance, type, name) {
     var result = (await instance.rrdata.call(
       types.toType(type),
@@ -1236,28 +1237,27 @@ contract.only('DNSSEC', accounts => {
       var rrset = test_rrsets[i];
       var tx = await instance.submitRRSet(rrset[1], rrset[2], proof);
       proof = tx.logs[0].args.rrset;
+      proofs.push(proof)
       assert.equal(tx.receipt.status, true);
     }
   });
 
   it('deleteRRSet', async function(){
     var instance = await dnssec.deployed();
-    console.log('instance.address', instance.address)    
     deleteType = 16
-    // '0x' + packet.name.encode('_ens.matoken.xyz').toString('hex')
-    // deleteName = '0x045f656e73076d61746f6b656e0378797a00',
 
-    // '0x' + packet.name.encode('r8u7h0kpjdkv8tlp07e79fvascqsdbl2.matoken.xyz').toString('hex')
-    // deleteName = '0x207238753768306b706a646b7638746c7030376537396676617363717364626c32076d61746f6b656e0378797a00',
-
-    // '0x' + packet.name.encode('63jqplod82380fj255ko0oq27dc4aud2.matoken.xyz').toString('hex')
-    // deleteName = '0x2036336a71706c6f643832333830666a3235356b6f306f71323764633461756432076d61746f6b656e0378797a00',
-
-    deleteName = '0x045f656e73076d61746f6b656e0378797a00',
-    nsec = '0x003208030000012c5d98b58b5d7bb48bf5ce076d61746f6b656e0378797a002036336a71706c6f643832333830666a3235356b6f306f71323764633461756432076d61746f6b656e0378797a00003200010000012c002a0100000108ee858bcc8f122b5414da3c7882999b69f476b901dc74bfeae335c6aea20006040000000002207238753768306b706a646b7638746c7030376537396676617363717364626c32076d61746f6b656e0378797a00003200010000012c002c0100000108ee858bcc8f122b541430e7acd70d4086803e6229698063423b584579a200082200000000029010',
-    sig = '0x63c23fd082110ddf30ed82453aac77c55e1f2b1eb17bef8f87d1c28be45cdd9f703ceb733f9aae8e017cbbb666279c5064622345c3f2783cb98f17372d074ef9be71e7fed6832c7756d6c8b9a22964f686ce91bd1a30e0a9124f5de4aa0225bbcf6790bff9296979c5b3aeeae3cb226cb49db451e92cbb9a08846056cc1007b2',
-    proof = '0x076d61746f6b656e0378797a00003000010000012c008801000308030100018e8b561c497618861ba951b4305731191a8901666db45cfbf1e40f9827e19be952fa191671c152843d7df37d1cde6bdcce878ae967d82a9a9061edd3d95ac24d109cd479e1866242dfc2d57055057bd3a801b799c7ab3a2cf33997aeac22f03eb9326ce0df3a598d8341d775ccc933617bc7846bd718aabcd2ff9e26d6c68241076d61746f6b656e0378797a00003000010000012c01080101030803010001a50f4f96bb0a1e5c4d591c80356b7fd14233108c03eecc700cf6c78f77dcdf1d16aa82fbd387e32030a105be5635f32c5e296f0e26747b895cc48368dd48d18aeb82511f2adc1a1f935a7095b850ca3217d316e460284b45e8673c3621238e38f08ea6185075cd13f527c6e6948f4efbcf3173999bd28547df5cfa3880c13e268c9bade7632eedbe48e27b140ca4019ce9c316de1f0efd8339223ec956dd0b4b305f46d95d20f7f36197e3e55a94d7fa623cfc6b5486b5a6e4bf9fcf4e5331687530aaa7acaa33156299d0d49edb67197399f04b7e4e40d61a521bc90134cfd9154b2a44dcfef2738e454bec36b6d02e42048df76e08e5336badf438dde2be91'    
-    let result = await instance.deleteRRSet(deleteType, deleteName, nsec, sig, proof);
+    // Dervied these data from https://dnssec.ens.domains after removing _ens.matoken.xyz TXT field from DNS record
+    //   r8u7h0kpjdkv8tlp07e79fvascqsdbl2.matoken.xyz	300	NSEC3	IN	{"algorithm":1,"flags":0,"iterations":1,"salt":{"type":"Buffer","data":[238,133,139,204,143,18,43,84]},"nextDomain":{"type":"Buffer","data":[48,231,172,215,13,64,134,128,62,98,41,105,128,99,66,59,88,69,121,162]},"rrtypes":["NS","SOA","RRSIG","DNSKEY","NSEC3PARAM","CDS"]}
+    //   63jqplod82380fj255ko0oq27dc4aud2.matoken.xyz	300	NSEC3	IN	{"algorithm":1,"flags":0,"iterations":1,"salt":{"type":"Buffer","data":[238,133,139,204,143,18,43,84]},"nextDomain":{"type":"Buffer","data":[218,60,120,130,153,155,105,244,118,185,1,220,116,191,234,227,53,198,174,162]},"rrtypes":["CNAME","RRSIG"]}
+    //   63jqplod82380fj255ko0oq27dc4aud2.matoken.xyz	300	NSEC3	IN	{"algorithm":1,"flags":0,"iterations":1,"salt":{"type":"Buffer","data":[238,133,139,204,143,18,43,84]},"nextDomain":{"type":"Buffer","data":[218,60,120,130,153,155,105,244,118,185,1,220,116,191,234,227,53,198,174,162]},"rrtypes":["CNAME","RRSIG"]}
+    //   r8u7h0kpjdkv8tlp07e79fvascqsdbl2.matoken.xyz	300	RRSIG	IN	NSEC3	8	3	300	1603753979	1601853179	14899	matoken.xyz	OFNgUwtgDNji/K3WxZ0vNHpWyWFq7ixpx32G3esv16WmI/9xQSAM+xSWmxyPbG9lUmXipcPm16lw9nLQ3f6A6q4OeV1+uWgXNorC6KKNZu4xcVQTpr/hfUPwppwgGrNEwaOG13rBlQ3NY7Aq/qspjNr+WM6qFjn6qCEmIiH0byQ=
+    var nsec = [
+      hexEncodeName("_ens.matoken.xyz"),
+      "0x003208030000012c5f9757fb5f7a56fb3a33076d61746f6b656e0378797a002036336a71706c6f643832333830666a3235356b6f306f71323764633461756432076d61746f6b656e0378797a00003200010000012c002a0100000108ee858bcc8f122b5414da3c7882999b69f476b901dc74bfeae335c6aea200060400000000022036336a71706c6f643832333830666a3235356b6f306f71323764633461756432076d61746f6b656e0378797a00003200010000012c002a0100000108ee858bcc8f122b5414da3c7882999b69f476b901dc74bfeae335c6aea20006040000000002207238753768306b706a646b7638746c7030376537396676617363717364626c32076d61746f6b656e0378797a00003200010000012c002c0100000108ee858bcc8f122b541430e7acd70d4086803e6229698063423b584579a200082200000000029010",
+      "0x385360530b600cd8e2fcadd6c59d2f347a56c9616aee2c69c77d86ddeb2fd7a5a623ff7141200cfb14969b1c8f6c6f655265e2a5c3e6d7a970f672d0ddfe80eaae0e795d7eb96817368ac2e8a28d66ee31715413a6bfe17d43f0a69c201ab344c1a386d77ac1950dcd63b02afeab298cdafe58ceaa1639faa821262221f46f24"
+    ]
+    console.log('***proof', proofs[proofs.length - 2])
+    let result = await instance.deleteRRSet(deleteType, nsec[0], nsec[1], nsec[2], proofs[proofs.length - 2]);
     assert.equal(await checkPresence(instance, 'TXT', '_ens.matoken.xyz'), false);
   })
 });
