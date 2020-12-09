@@ -253,23 +253,21 @@ contract DNSSECImpl is DNSSEC, Owned {
         }
 
         // Case 1: deleteName does exist, but no records of RRTYPE deleteType do.
-        if(isMatchingNSEC3Record(deleteType, deleteName, ce)) {
+        RRUtils.NSEC3 memory ceNSEC3 = readNSEC3(ce);
+        if(isMatchingNSEC3Record(deleteType, deleteName, ce.name, ceNSEC3)) {
             delete rrsets[keccak256(deleteName)][deleteType];
         // Case 2: deleteName does not exist.
-        } else if(isCoveringNSEC3Record(deleteType, deleteName, ce.name, readNSEC3(ce), nc.name, readNSEC3(nc))) {
+        } else if(isCoveringNSEC3Record(deleteType, deleteName, ce.name, ceNSEC3, nc.name, readNSEC3(nc))) {
             delete rrsets[keccak256(deleteName)][deleteType];
         } else {
             revert();
         }
     }
 
-    function isMatchingNSEC3Record(uint16 deleteType, bytes memory deleteName, RRUtils.SignedSet memory closestEncloser) private view returns(bool) {
-        for(RRUtils.RRIterator memory iter = closestEncloser.rrs(); !iter.done(); iter.next()) {
-            RRUtils.NSEC3 memory nsec = iter.data.readNSEC3(iter.rdataOffset, iter.nextOffset - iter.rdataOffset);
-            // Check the record matches the hashed name, but the type bitmap does not include the type
-            if(checkNSEC3Name(nsec, closestEncloser.name, deleteName)) {
-                return !nsec.checkTypeBitmap(deleteType);
-            }
+    function isMatchingNSEC3Record(uint16 deleteType, bytes memory deleteName, bytes memory closestEncloserName, RRUtils.NSEC3 memory closestEncloser) private view returns(bool) {
+        // Check the record matches the hashed name, but the type bitmap does not include the type
+        if(checkNSEC3Name(closestEncloser, closestEncloserName, deleteName)) {
+            return !closestEncloser.checkTypeBitmap(deleteType);
         }
 
         return false;
