@@ -1,4 +1,4 @@
-pragma solidity >0.4.23;
+pragma solidity ^0.7.4;
 
 import "./Algorithm.sol";
 import "../BytesUtils.sol";
@@ -10,7 +10,7 @@ import "./RSAVerify.sol";
 contract RSASHA256Algorithm is Algorithm {
     using BytesUtils for *;
 
-    function verify(bytes calldata key, bytes calldata data, bytes calldata sig) external view returns (bool) {
+    function verify(bytes calldata key, bytes calldata data, bytes calldata sig) external override view returns (bool) {
         bytes memory exponent;
         bytes memory modulus;
 

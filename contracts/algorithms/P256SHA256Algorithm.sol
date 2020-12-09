@@ -1,18 +1,12 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.7.4;
 
 import "./Algorithm.sol";
+import "./EllipticCurve.sol";
 import "../BytesUtils.sol";
-import "elliptic-solidity/contracts/curves/EllipticCurve.sol";
 
-contract P256SHA256Algorithm is Algorithm {
+contract P256SHA256Algorithm is Algorithm, EllipticCurve {
 
     using BytesUtils for *;
-
-    EllipticCurve public curve;
-
-    constructor(EllipticCurve _curve) public {
-        curve = _curve;
-    }
 
     /**
     * @dev Verifies a signature.
@@ -21,8 +15,8 @@ contract P256SHA256Algorithm is Algorithm {
     * @param signature The signature to verify.
     * @return True iff the signature is valid.
     */
-    function verify(bytes calldata key, bytes calldata data, bytes calldata signature) external view returns (bool) {
-        return curve.validateSignature(sha256(data), parseSignature(signature), parseKey(key));
+    function verify(bytes calldata key, bytes calldata data, bytes calldata signature) external override view returns (bool) {
+        return validateSignature(sha256(data), parseSignature(signature), parseKey(key));
     }
 
     function parseSignature(bytes memory data) internal pure returns (uint256[2] memory) {

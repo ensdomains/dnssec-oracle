@@ -1,4 +1,4 @@
-pragma solidity >0.4.23;
+pragma solidity ^0.7.4;
 
 import "../BytesUtils.sol";
 import "./ModexpPrecompile.sol";

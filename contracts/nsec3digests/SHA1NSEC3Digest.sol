@@ -1,4 +1,4 @@
-pragma solidity >0.4.23;
+pragma solidity ^0.7.4;
 
 import "./NSEC3Digest.sol";
 import "@ensdomains/solsha1/contracts/SHA1.sol";
@@ -10,7 +10,7 @@ import "@ensdomains/buffer/contracts/Buffer.sol";
 contract SHA1NSEC3Digest is NSEC3Digest {
     using Buffer for Buffer.buffer;
 
-    function hash(bytes calldata salt, bytes calldata data, uint iterations) external pure returns (bytes32) {
+    function hash(bytes calldata salt, bytes calldata data, uint iterations) external override pure returns (bytes32) {
         Buffer.buffer memory buf;
         buf.init(salt.length + data.length + 16);
 
