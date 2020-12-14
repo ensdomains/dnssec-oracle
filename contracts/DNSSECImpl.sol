@@ -278,8 +278,10 @@ contract DNSSECImpl is DNSSEC, Owned {
         bytes32 ncNameHash = decodeOwnerNameHash(ncName);
 
         uint lastOffset = 0;
+        // Iterate over suffixes of the name to delete until one matches the closest encloser
         for(uint offset = deleteName.readUint8(0) + 1; offset < deleteName.length; offset += deleteName.readUint8(offset) + 1) {
             if(hashName(ce, deleteName.substring(offset, deleteName.length - offset)) == ceNameHash) {
+                // Check that the next closest record encloses the name one label longer
                 bytes32 checkHash = hashName(nc, deleteName.substring(lastOffset, deleteName.length - lastOffset));
                 if(ncNameHash < nc.nextHashedOwnerName) {
                     return checkHash > ncNameHash && checkHash < nc.nextHashedOwnerName;
@@ -289,6 +291,7 @@ contract DNSSECImpl is DNSSEC, Owned {
             }
             lastOffset = offset;
         }
+        // If we reached the root without finding a match, return false.
         return false;
     }
 
@@ -375,7 +378,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The DNSKEY or DS to validate the signature against. Must Already
      *        have been submitted and proved previously.
      */
-    function validateSignedSet(RRSetWithSignature memory input, bytes memory proof) internal returns(RRUtils.SignedSet memory rrset) {
+    function validateSignedSet(RRSetWithSignature memory input, bytes memory proof) internal view returns(RRUtils.SignedSet memory rrset) {
         rrset = input.rrset.readSignedSet();
         require(validProof(rrset.signerName, proof));
 
@@ -441,9 +444,10 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param data The original data to verify.
      * @param proof A DS or DNSKEY record that's already verified by the oracle.
      */
-    function verifySignature(bytes memory name, RRUtils.SignedSet memory rrset, RRSetWithSignature memory data, bytes memory proof) internal {
+    function verifySignature(bytes memory name, RRUtils.SignedSet memory rrset, RRSetWithSignature memory data, bytes memory proof) internal view {
         // o  The RRSIG RR's Signer's Name field MUST be the name of the zone
         //    that contains the RRset.
+        require(rrset.signerName.length <= name.length);
         require(rrset.signerName.equals(0, name, name.length - rrset.signerName.length));
 
         RRUtils.RRIterator memory proofRR = proof.iterateRRs(0);
@@ -523,7 +527,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param proof The serialized DS or DNSKEY record to use as proof.
      * @return True if the RRSET could be verified, false otherwise.
      */
-    function verifyWithDS(RRUtils.SignedSet memory rrset, RRSetWithSignature memory data, RRUtils.RRIterator memory proof) internal returns(bool) {
+    function verifyWithDS(RRUtils.SignedSet memory rrset, RRSetWithSignature memory data, RRUtils.RRIterator memory proof) internal view returns(bool) {
         for(RRUtils.RRIterator memory iter = rrset.rrs(); !iter.done(); iter.next()) {
             require(iter.dnstype == DNSTYPE_DNSKEY);
             bytes memory keyrdata = iter.rdata();
@@ -545,7 +549,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @return True if a DS record verifies this key.
      */
     function verifyKeyWithDS(bytes memory keyname, RRUtils.RRIterator memory dsrrs, RRUtils.DNSKEY memory dnskey, bytes memory keyrdata)
-        internal returns (bool)
+        internal view returns (bool)
     {
         uint16 keytag = computeKeytag(keyrdata);
         for (; !dsrrs.done(); dsrrs.next()) {
@@ -576,7 +580,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @param digest The digest data to check against.
      * @return True iff the digest matches.
      */
-    function verifyDSHash(uint8 digesttype, bytes memory data, bytes memory digest) internal returns (bool) {
+    function verifyDSHash(uint8 digesttype, bytes memory data, bytes memory digest) internal view returns (bool) {
         if (address(digests[digesttype]) == address(0)) {
             return false;
         }
