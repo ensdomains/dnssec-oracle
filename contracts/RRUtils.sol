@@ -271,7 +271,7 @@ library RRUtils {
                 return false;
             } else if (typeWindow == window) {
                 // Check this type bitmap
-                if (len * 8 <= windowByte) {
+                if (len <= windowByte) {
                     // Our type is past the end of the bitmap
                     return false;
                 }

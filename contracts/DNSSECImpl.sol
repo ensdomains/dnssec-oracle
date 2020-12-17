@@ -22,6 +22,9 @@ contract DNSSECImpl is DNSSEC, Owned {
 
     uint16 constant DNSCLASS_IN = 1;
 
+    uint16 constant DNSTYPE_NS = 2;
+    uint16 constant DNSTYPE_SOA = 6;
+    uint16 constant DNSTYPE_DNAME = 39;
     uint16 constant DNSTYPE_DS = 43;
     uint16 constant DNSTYPE_RRSIG = 46;
     uint16 constant DNSTYPE_NSEC = 47;
@@ -233,27 +236,22 @@ contract DNSSECImpl is DNSSEC, Owned {
         int32 originalInception = int32(rrsets[keccak256(deleteName)][deleteType].inception);
 
         RRUtils.SignedSet memory ce = validateSignedSet(closestEncloser, dnskey);
-        // The records must have been signed after the record we're trying to delete
-        require(int32(ce.inception) - originalInception >= 0);
-
-        // The record must be an NSEC3
-        require(ce.typeCovered == DNSTYPE_NSEC3);
-
-        // nsecName is of the form <hash>.zone.xyz. <hash> is the NSEC3 hash of the entire name the NSEC3 record matches, while
-        // zone.xyz can be any ancestor of that name. First, we'll check that, so someone can't use a record on foo.com
-        // as proof of the nonexistence of bar.org.
-        require(checkNSEC3OwnerName(ce.name, deleteName));
+        checkNSEC3Validity(ce, deleteName, originalInception);
 
         RRUtils.SignedSet memory nc;
         if(nextClosest.rrset.length > 0) {
             nc = validateSignedSet(nextClosest, dnskey);
-            require(int32(nc.inception) - originalInception >= 0);
-            require(nc.typeCovered == DNSTYPE_NSEC3);
-            require(checkNSEC3OwnerName(nc.name, deleteName));
+            checkNSEC3Validity(nc, deleteName, originalInception);
         }
 
-        // Case 1: deleteName does exist, but no records of RRTYPE deleteType do.
         RRUtils.NSEC3 memory ceNSEC3 = readNSEC3(ce);
+        // The flags field must be 0 or 1 (RFC5155 section 8.2).
+        require(ceNSEC3.flags & 0x01 == 0);
+        // Check that the closest encloser is from the correct zone (RFC5155 section 8.3)
+        // "The DNAME type bit must not be set and the NS type bit may only be set if the SOA type bit is set."
+        require(!ceNSEC3.checkTypeBitmap(DNSTYPE_DNAME) && (!ceNSEC3.checkTypeBitmap(DNSTYPE_NS) || ceNSEC3.checkTypeBitmap(DNSTYPE_SOA)));
+
+        // Case 1: deleteName does exist, but no records of RRTYPE deleteType do.
         if(isMatchingNSEC3Record(deleteType, deleteName, ce.name, ceNSEC3)) {
             delete rrsets[keccak256(deleteName)][deleteType];
         // Case 2: deleteName does not exist.
@@ -262,6 +260,19 @@ contract DNSSECImpl is DNSSEC, Owned {
         } else {
             revert();
         }
+    }
+
+    function checkNSEC3Validity(RRUtils.SignedSet memory nsec, bytes memory deleteName, int32 originalInception) private pure {
+        // The records must have been signed after the record we're trying to delete
+        require(int32(nsec.inception) - originalInception >= 0);
+
+        // The record must be an NSEC3
+        require(nsec.typeCovered == DNSTYPE_NSEC3);
+
+        // nsecName is of the form <hash>.zone.xyz. <hash> is the NSEC3 hash of the entire name the NSEC3 record matches, while
+        // zone.xyz can be any ancestor of that name. We'll check that, so someone can't use a record on foo.com
+        // as proof of the nonexistence of bar.org.
+        require(checkNSEC3OwnerName(nsec.name, deleteName));
     }
 
     function isMatchingNSEC3Record(uint16 deleteType, bytes memory deleteName, bytes memory closestEncloserName, RRUtils.NSEC3 memory closestEncloser) private view returns(bool) {
@@ -274,6 +285,9 @@ contract DNSSECImpl is DNSSEC, Owned {
     }
 
     function isCoveringNSEC3Record(uint16 deleteType, bytes memory deleteName, bytes memory ceName, RRUtils.NSEC3 memory ce, bytes memory ncName, RRUtils.NSEC3 memory nc) private view returns(bool) {
+        // The flags field must be 0 or 1 (RFC5155 section 8.2).
+        require(nc.flags & 0x01 == 0);
+
         bytes32 ceNameHash = decodeOwnerNameHash(ceName);
         bytes32 ncNameHash = decodeOwnerNameHash(ncName);
 
