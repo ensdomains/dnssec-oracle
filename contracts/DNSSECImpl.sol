@@ -246,7 +246,7 @@ contract DNSSECImpl is DNSSEC, Owned {
 
         RRUtils.NSEC3 memory ceNSEC3 = readNSEC3(ce);
         // The flags field must be 0 or 1 (RFC5155 section 8.2).
-        require(ceNSEC3.flags & 0x01 == 0);
+        require(ceNSEC3.flags & 0xfe == 0);
         // Check that the closest encloser is from the correct zone (RFC5155 section 8.3)
         // "The DNAME type bit must not be set and the NS type bit may only be set if the SOA type bit is set."
         require(!ceNSEC3.checkTypeBitmap(DNSTYPE_DNAME) && (!ceNSEC3.checkTypeBitmap(DNSTYPE_NS) || ceNSEC3.checkTypeBitmap(DNSTYPE_SOA)));
@@ -286,7 +286,7 @@ contract DNSSECImpl is DNSSEC, Owned {
 
     function isCoveringNSEC3Record(uint16 deleteType, bytes memory deleteName, bytes memory ceName, RRUtils.NSEC3 memory ce, bytes memory ncName, RRUtils.NSEC3 memory nc) private view returns(bool) {
         // The flags field must be 0 or 1 (RFC5155 section 8.2).
-        require(nc.flags & 0x01 == 0);
+        require(nc.flags & 0xfe == 0);
 
         bytes32 ceNameHash = decodeOwnerNameHash(ceName);
         bytes32 ncNameHash = decodeOwnerNameHash(ncName);
@@ -509,12 +509,14 @@ contract DNSSECImpl is DNSSEC, Owned {
     {
         // TODO: Check key isn't expired, unless updating key itself
 
-        // o The RRSIG RR's Signer's Name, Algorithm, and Key Tag fields MUST
-        //   match the owner name, algorithm, and key tag for some DNSKEY RR in
-        //   the zone's apex DNSKEY RRset.
+        // The Protocol Field MUST have value 3 (RFC4034 2.1.2)
         if(dnskey.protocol != 3) {
             return false;
         }
+
+        // o The RRSIG RR's Signer's Name, Algorithm, and Key Tag fields MUST
+        //   match the owner name, algorithm, and key tag for some DNSKEY RR in
+        //   the zone's apex DNSKEY RRset.
         if(dnskey.algorithm != rrset.algorithm) {
             return false;
         }
@@ -580,9 +582,9 @@ contract DNSSECImpl is DNSSEC, Owned {
             buf.init(keyname.length + keyrdata.length);
             buf.append(keyname);
             buf.append(keyrdata);
-           if (verifyDSHash(ds.digestType, buf.buf, ds.digest)) {
+            if (verifyDSHash(ds.digestType, buf.buf, ds.digest)) {
                 return true;
-           }
+            }
         }
         return false;
     }
