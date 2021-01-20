@@ -6,12 +6,15 @@
   "devDependencies": {
     "@ensdomains/buffer": "^0.0.8",
     "@ensdomains/solsha1": "^0.0.2",
+    "@truffle/hdwallet-provider": "^1.2.1",
     "dnsprovejs": "0.0.9",
+    "dotenv": "^8.2.0",
     "elliptic-solidity": "1.0.0",
     "eth-gas-reporter": "^0.1.12",
     "rfc4648": "^1.1.0",
     "solium": "^1.2.3",
-    "truffle": "^5.1.53"
+    "truffle": "^5.1.53",
+    "truffle-plugin-verify": "^0.5.4"
   },
   "scripts": {
     "pretest": "truffle compile",
