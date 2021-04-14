@@ -99,7 +99,7 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
     // Assert ganache revert exception
     assert.equal(
       error.message,
-      'Returned error: VM Exception while processing transaction: revert'
+      'Transaction reverted without a reason'
     );
   }
 
@@ -109,8 +109,26 @@ async function verifyFailedSubmission(instance, data, sig, proof) {
   }
 }
 
+// Test against real record
+contract('DNSSEC', accounts => {
+  it('should accept real DNSSEC records', async function() {
+    var instance = await dnssec.deployed();
+    var proof = await instance.anchors();
+    for (let i = 0; i < test_rrsets.length; i++) {
+      var rrset = test_rrsets[i];
+      var tx = await instance.submitRRSet([rrset[1], rrset[2]], proof);
+      proof = tx.logs[0].args.rrset;
+      assert.equal(tx.receipt.status, true);
+    }
+  });
+});
+
 contract('DNSSEC', function(accounts) {
   before(async () => {
+    // Advance to the current time so the DNSSEC root keys work.
+    await network.provider.send("evm_setNextBlockTimestamp", [Date.now() / 1000]);
+    await network.provider.send("evm_mine");
+
     const instance = await dnssec.deployed();
     const keys = rootKeys();
     const [signedData] = hexEncodeSignedSet(keys);
@@ -1329,25 +1347,5 @@ contract('DNSSEC', function(accounts) {
       false
     );
     assert.equal(await checkPresence(instance, 'TXT', 'foo.matoken.xyz'), true);
-  });
-});
-
-// Test against real record
-contract('DNSSEC', accounts => {
-  it('should accept real DNSSEC records', async function() {
-    var instance = await dnssec.deployed();
-    var proof = await instance.anchors();
-    // They were all valid at Fri Mar 15 14:06:45 2019 +1300 and
-    // will be again every 2^32 seconds or 136 years
-    await web3.currentProvider.send({
-      method: 'evm_increaseTime',
-      params: (1552612005 - Date.now() / 1000) >>> 0
-    });
-    for (let i = 0; i < test_rrsets.length; i++) {
-      var rrset = test_rrsets[i];
-      var tx = await instance.submitRRSet([rrset[1], rrset[2]], proof);
-      proof = tx.logs[0].args.rrset;
-      assert.equal(tx.receipt.status, true);
-    }
   });
 });
