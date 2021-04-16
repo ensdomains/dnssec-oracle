@@ -2,6 +2,7 @@ var base32hex = require('rfc4648').base32hex;
 const anchors = require('../lib/anchors.js');
 const packet = require('dns-packet');
 const types = require('dns-packet/types');
+const { expectRevert } = require('@openzeppelin/test-helpers');
 
 var dnssec = artifacts.require('./DNSSECImpl');
 const Result = require('@ensdomains/dnsprovejs/dist/dns/result');
@@ -114,12 +115,23 @@ contract('DNSSEC', accounts => {
   it('should accept real DNSSEC records', async function() {
     var instance = await dnssec.deployed();
     var proof = await instance.anchors();
-    for (let i = 0; i < test_rrsets.length; i++) {
-      var rrset = test_rrsets[i];
-      var tx = await instance.submitRRSet([rrset[1], rrset[2]], proof);
-      proof = tx.logs[0].args.rrset;
-      assert.equal(tx.receipt.status, true);
+    const totalLen = test_rrsets.map(([name, rrset, sig]) => (rrset.length / 2 - 1) + (sig.length / 2 - 1) + 4).reduce((a,b) => a+b);
+    const buf = Buffer.alloc(totalLen);
+    let off = 0;
+    for (const [name, rrset, sig] of test_rrsets) {
+      const rrsetBuf = Buffer.from(rrset.slice(2), 'hex');
+      const sigBuf = Buffer.from(sig.slice(2), 'hex');
+      buf.writeUInt16BE(rrsetBuf.length, off);
+      off += 2;
+      rrsetBuf.copy(buf, off);
+      off += rrsetBuf.length;
+      buf.writeUInt16BE(sigBuf.length, off);
+      off += 2;
+      sigBuf.copy(buf, off);
+      off += sigBuf.length;
     }
+    var tx = await instance.submitRRSets(buf, proof);
+    assert.equal(tx.receipt.status, true);
   });
 });
 
@@ -169,6 +181,21 @@ contract('DNSSEC', function(accounts) {
       await instance.digests(253),
       '0x0000000000000000000000000000000000000000'
     );
+  });
+
+  it('should only allow the owner to set digests', async function() {
+    var instance = await dnssec.deployed();
+    await expectRevert.unspecified(instance.setDigest(1, accounts[1], {from: accounts[1]}));
+  });
+
+  it('should only allow the owner to set algorithms', async function() {
+    var instance = await dnssec.deployed();
+    await expectRevert.unspecified(instance.setAlgorithm(1, accounts[1], {from: accounts[1]}));
+  });
+
+  it('should only allow the owner to set NSEC3 digests', async function() {
+    var instance = await dnssec.deployed();
+    await expectRevert.unspecified(instance.setNSEC3Digest(1, accounts[1], {from: accounts[1]}));
   });
 
   const validityPeriod = 2419200;

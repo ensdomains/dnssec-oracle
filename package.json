@@ -8,6 +8,7 @@
     "@ensdomains/solsha1": "^0.0.2",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/test-helpers": "^0.5.10",
     "@truffle/hdwallet-provider": "^1.2.1",
     "dnsprovejs": "0.0.9",
     "dotenv": "^8.2.0",
