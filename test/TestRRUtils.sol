@@ -99,4 +99,11 @@ contract TestRRUtils {
     require(bthLabXyz.compareNames(xyz)       >  0, "bthLab.xyz comes after xyz");
   }
 
+  function testSerialNumberGt() public pure {
+    require(RRUtils.serialNumberGt(1, 0), "1 > 0");
+    require(!RRUtils.serialNumberGt(0, 1), "!(0 < 1)");
+    require(RRUtils.serialNumberGt(0, 0xFFFFFFFF), "0 > 0xFFFFFFFF");
+    require(!RRUtils.serialNumberGt(0xFFFFFFFF, 0), "!(0 < 0xFFFFFFFF)");
+    require(RRUtils.serialNumberGt(0x11111111, 0xAAAAAAAA), "0x11111111 > 0xAAAAAAAA");
+  }
 }
