@@ -39,7 +39,7 @@ contract DNSSECImpl is DNSSEC, Owned {
 
     struct RRSet {
         uint32 inception;
-        uint64 inserted;
+        uint32 expiration;
         bytes20 hash;
     }
 
@@ -63,7 +63,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         anchors = _anchors;
         rrsets[keccak256(hex"00")][DNSTYPE_DS] = RRSet({
             inception: uint32(0),
-            inserted: uint64(block.timestamp),
+            expiration: uint32(3767581600), // May 22 2089
             hash: bytes20(keccak256(anchors))
         });
         emit RRSetUpdated(hex"00", anchors);
@@ -348,13 +348,13 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @dev Returns data about the RRs (if any) known to this oracle with the provided type and name.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
-     * @return inception The unix timestamp at which the signature for this RRSET was created.
-     * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
-     * @return hash The hash of the RRset that was inserted.
+     * @return inception The unix timestamp (wrapped) at which the signature for this RRSET was created.
+     * @return expiration The unix timestamp (wrapped) at which the signature for this RRSET expires.
+     * @return hash The hash of the RRset.
      */
-    function rrdata(uint16 dnstype, bytes calldata name) external override view returns (uint32, uint64, bytes20) {
+    function rrdata(uint16 dnstype, bytes calldata name) external override view returns (uint32, uint32, bytes20) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
-        return (result.inception, result.inserted, result.hash);
+        return (result.inception, result.expiration, result.hash);
     }
 
     function _submitRRSet(RRSetWithSignature memory input, bytes memory proof) internal returns (bytes memory) {
@@ -362,13 +362,13 @@ contract DNSSECImpl is DNSSEC, Owned {
         rrset = validateSignedSet(input, proof);
 
         RRSet storage storedSet = rrsets[keccak256(rrset.name)][rrset.typeCovered];
-        if (storedSet.inserted > 0) {
+        if (storedSet.hash != bytes20(0)) {
             // To replace an existing rrset, the signature must be at least as new
             require(RRUtils.serialNumberGt(rrset.inception, storedSet.inception));
         }
         rrsets[keccak256(rrset.name)][rrset.typeCovered] = RRSet({
             inception: rrset.inception,
-            inserted: uint64(block.timestamp),
+            expiration: rrset.expiration,
             hash: bytes20(keccak256(rrset.data))
         });
 
