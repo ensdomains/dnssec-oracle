@@ -5,7 +5,7 @@ const types = require('dns-packet/types');
 const { expectRevert } = require('@openzeppelin/test-helpers');
 
 var dnssec = artifacts.require('./DNSSECImpl');
-const Result = require('@ensdomains/dnsprovejs/dist/dns/result');
+const SignedSet = require('@ensdomains/dnsprovejs').SignedSet;
 
 const util = require('util');
 web3.currentProvider.send = util.promisify(web3.currentProvider.send);
@@ -69,7 +69,8 @@ const test_rrsets = [
 ];
 
 function hexEncodeSignedSet(keys) {
-  return new Result([keys]).proofs[0].toSubmit();
+  const ss = new SignedSet(keys.rrs, keys.sig)
+  return [ss.toWire(), ss.signature.data.signature];
 }
 
 function hexEncodeName(name) {
