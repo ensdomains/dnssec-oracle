@@ -30,11 +30,11 @@ npm install
 
 ### Running tests
 
-The DNSSEC Oracle uses truffle for its ethereum development environment.
-All tests can be run using truffle:
+The DNSSEC Oracle uses hardhat for its ethereum development environment.
+All tests can be run using hardhat:
 
 ```
-truffle test
+npx hardhat test
 ```
 
 To run linting, use solium:
@@ -63,7 +63,7 @@ import "@ensdomains/dnssec-oracle/build/contracts/DNSSEC"
 var data = require("@ensdomains/dnssec-oracle/build/contracts/DNSSEC.json")
 ```
 
-The JSON file is same as the one generated using `truffle compile`. You
+The JSON file is same as the one generated using `hardhat compile`. You
 can pass the loaded data to `truffle-contract` or use it via web3 by
 passing `data.abi`.
 
@@ -78,7 +78,7 @@ deployments on the main network or test networks.
 
 ## Built With
 
-- [Truffle](https://github.com/trufflesuite/truffle) - Ethereum
+- [Hardhat](https://hardhat.org/) - Ethereum
   development environment
 
 ## Authors

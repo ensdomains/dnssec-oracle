@@ -57,7 +57,7 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @dev Constructor.
      * @param _anchors The binary format RR entries for the root DS records.
      */
-    constructor(bytes memory _anchors) public {
+    constructor(bytes memory _anchors) {
         // Insert the 'trust anchors' - the key hashes that start the chain
         // of trust for all other records.
         anchors = _anchors;
@@ -255,7 +255,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         if(isMatchingNSEC3Record(deleteType, deleteName, ce.name, ceNSEC3)) {
             delete rrsets[keccak256(deleteName)][deleteType];
         // Case 2: deleteName does not exist.
-        } else if(isCoveringNSEC3Record(deleteType, deleteName, ce.name, ceNSEC3, nc.name, readNSEC3(nc))) {
+        } else if(isCoveringNSEC3Record(deleteName, ce.name, ceNSEC3, nc.name, readNSEC3(nc))) {
             delete rrsets[keccak256(deleteName)][deleteType];
         } else {
             revert();
@@ -284,7 +284,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         return false;
     }
 
-    function isCoveringNSEC3Record(uint16 deleteType, bytes memory deleteName, bytes memory ceName, RRUtils.NSEC3 memory ce, bytes memory ncName, RRUtils.NSEC3 memory nc) private view returns(bool) {
+    function isCoveringNSEC3Record(bytes memory deleteName, bytes memory ceName, RRUtils.NSEC3 memory ce, bytes memory ncName, RRUtils.NSEC3 memory nc) private view returns(bool) {
         // The flags field must be 0 or 1 (RFC5155 section 8.2).
         require(nc.flags & 0xfe == 0);
 
@@ -493,6 +493,7 @@ contract DNSSECImpl is DNSSEC, Owned {
                 return true;
             }
         }
+        return false;
     }
 
     /**
@@ -569,7 +570,6 @@ contract DNSSECImpl is DNSSEC, Owned {
     {
         uint16 keytag = computeKeytag(keyrdata);
         for (; !dsrrs.done(); dsrrs.next()) {
-            bytes memory rdata = dsrrs.rdata();
             RRUtils.DS memory ds = dsrrs.data.readDS(dsrrs.rdataOffset, dsrrs.nextOffset - dsrrs.rdataOffset);
             if(ds.keytag != keytag) {
                 continue;
