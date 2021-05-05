@@ -332,7 +332,7 @@ library RRUtils {
     /**
      * @dev Compares two serial numbers using RFC1982 serial number math.
      */
-    function serialNumberGt(uint i1, uint i2) internal pure returns(bool) {
+    function serialNumberGte(uint i1, uint i2) internal pure returns(bool) {
         return int32(i1 - i2) >= 0;
     }
 
