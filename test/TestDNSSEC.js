@@ -1376,4 +1376,104 @@ contract('DNSSEC', function(accounts) {
     );
     assert.equal(await checkPresence(instance, 'TXT', 'foo.matoken.xyz'), true);
   });
+  it("doesn't delete nsec3 records with invalid inception", async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(
+      instance,
+      'TXT',
+      'quux.matoken.xyz',
+      Buffer.from('foo', 'ascii'),
+      rootKeyProof
+    );
+    var nsec3 = buildEntry(
+      'NSEC3',
+      'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.matoken.xyz',
+      {
+        algorithm: 1,
+        flags: 0,
+        iterations: 1,
+        salt: Buffer.from('5BA6AD4385844262', 'hex'),
+        nextDomain: Buffer.from(
+          base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')
+        ),
+        rrtypes: ['TXT']
+      }
+    );
+    // Set invalid inception date
+    nsec3.sig.data.inception = 1
+    assert.equal(
+      await deleteEntryNSEC3(
+        instance,
+        'TXT',
+        'quux.matoken.xyz',
+        hexEncodeSignedSet(nsec3)[0],
+        hexEncodeSignedSet(nsec3)[0],
+        rootKeyProof
+      ),
+      false
+    );
+  });
+
+  it("doesn't delete nsec3 records with wrong data type", async function() {
+    var instance = await dnssec.deployed();
+    await submitEntry(
+      instance,
+      'TXT',
+      'b',
+      Buffer.from('foo', 'ascii'),
+      rootKeyProof
+    );
+    // Submit with a proof for an irrelevant record.
+    assert.equal(
+      await deleteEntryNSEC3(
+        instance,
+        'TXT',
+        'b',
+        hexEncodeSignedSet(rootKeys())[0],
+        hexEncodeSignedSet(rootKeys())[0],
+        rootKeyProof
+      ),
+      false
+    );
+    assert.equal(await checkPresence(instance, 'TXT', 'b'), true);
+  });
+
+  it("doesn't delete records matching an NSEC3 record with non-matching NSEC3 owner name", async function() {
+    var instance = await dnssec.deployed();
+
+    await submitEntry(
+      instance,
+      'TXT',
+      'matoken.xyz',
+      Buffer.from('foo', 'ascii'),
+      rootKeyProof
+    );
+    var closestEncloser = buildEntry(
+      'NSEC3',
+      // Use foo.xyz instead of matoken.xyz
+      'bst4hlje7r0o8c8p4o8q582lm0ejmiqt.foo.xyz',
+      {
+        algorithm: 1,
+        flags: 0,
+        iterations: 1,
+        salt: Buffer.from('5BA6AD4385844262', 'hex'),
+        nextDomain: Buffer.from(
+          base32hex.parse('L54NRUAKA4B4F3MFM5SCV7AOCQLS84GM')
+        ),
+        rrtypes: ['DNSKEY']
+      }
+    );
+    assert.equal(
+      await deleteEntryNSEC3(
+        instance,
+        'TXT',
+        'matoken.xyz',
+        hexEncodeSignedSet(closestEncloser)[0],
+        '0x',
+        rootKeyProof
+      ),
+      false
+    );
+    assert.equal(await checkPresence(instance, 'TXT', 'matoken.xyz'), true);
+  });
 });
