@@ -104,23 +104,16 @@ contract DNSSECImpl is DNSSEC, Owned {
 
     /**
      * @dev Submits multiple RRSets
-     * @param data The data to submit, as a series of chunks. Each chunk is
-     *        in the format <uint16 length><bytes input><uint16 length><bytes sig>
+     * @param input A list of RRSets and signatures forming a chain of trust from an existing known-good record.
      * @param _proof The DNSKEY or DS to validate the first signature against.
      * @return The last RRSET submitted.
      */
-    function submitRRSets(bytes memory data, bytes memory _proof) public override returns (bytes memory) {
-        uint offset = 0;
+    function submitRRSets(RRSetWithSignature[] memory input, bytes calldata _proof) public override returns (bytes memory) {
         bytes memory proof = _proof;
-        while(offset < data.length) {
-            RRSetWithSignature memory input;
-            input.rrset = data.substring(offset + 2, data.readUint16(offset));
-            offset += input.rrset.length + 2;
-            input.sig = data.substring(offset + 2, data.readUint16(offset));
-            offset += input.sig.length + 2;
-            proof = _submitRRSet(input, proof);
+        for(uint i = 0; i < input.length; i++) {
+            proof = _submitRRSet(input[i], proof);
         }
-        return proof;
+        return _proof;
     }
 
     /**
