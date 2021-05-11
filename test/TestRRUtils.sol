@@ -102,8 +102,9 @@ contract TestRRUtils {
   function testSerialNumberGt() public pure {
     require(RRUtils.serialNumberGte(1, 0), "1 >= 0");
     require(!RRUtils.serialNumberGte(0, 1), "!(0 <= 1)");
-    require(RRUtils.serialNumberGte(0, 0xFFFFFFFF), "0 > 0xFFFFFFFF");
-    require(!RRUtils.serialNumberGte(0xFFFFFFFF, 0), "!(0 < 0xFFFFFFFF)");
-    require(RRUtils.serialNumberGte(0x11111111, 0xAAAAAAAA), "0x11111111 > 0xAAAAAAAA");
+    require(RRUtils.serialNumberGte(0, 0xFFFFFFFF), "0 >= 0xFFFFFFFF");
+    require(!RRUtils.serialNumberGte(0xFFFFFFFF, 0), "!(0 <= 0xFFFFFFFF)");
+    require(RRUtils.serialNumberGte(0x11111111, 0xAAAAAAAA), "0x11111111 >= 0xAAAAAAAA");
+    require(RRUtils.serialNumberGte(1, 1), "1 >= 1");
   }
 }
