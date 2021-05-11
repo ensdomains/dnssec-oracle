@@ -113,7 +113,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         for(uint i = 0; i < input.length; i++) {
             proof = _submitRRSet(input[i], proof);
         }
-        return _proof;
+        return proof;
     }
 
     /**
