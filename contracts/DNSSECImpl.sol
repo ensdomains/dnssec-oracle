@@ -39,7 +39,7 @@ contract DNSSECImpl is DNSSEC, Owned {
 
     struct RRSet {
         uint32 inception;
-        uint64 inserted;
+        uint32 expiration;
         bytes20 hash;
     }
 
@@ -63,7 +63,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         anchors = _anchors;
         rrsets[keccak256(hex"00")][DNSTYPE_DS] = RRSet({
             inception: uint32(0),
-            inserted: uint64(block.timestamp),
+            expiration: uint32(3767581600), // May 22 2089 - the latest date we can encode as of writing this
             hash: bytes20(keccak256(anchors))
         });
         emit RRSetUpdated(hex"00", anchors);
@@ -162,7 +162,7 @@ contract DNSSECImpl is DNSSEC, Owned {
         require(rrset.typeCovered == DNSTYPE_NSEC);
 
         // Don't let someone use an old proof to delete a new name
-        require(int32(rrset.inception - rrsets[keccak256(deleteName)][deleteType].inception) >= 0);
+        require(RRUtils.serialNumberGte(rrset.inception, rrsets[keccak256(deleteName)][deleteType].inception));
 
         for (RRUtils.RRIterator memory iter = rrset.rrs(); !iter.done(); iter.next()) {
             // We're dealing with three names here:
@@ -233,7 +233,7 @@ contract DNSSECImpl is DNSSEC, Owned {
     function deleteRRSetNSEC3(uint16 deleteType, bytes memory deleteName, RRSetWithSignature memory closestEncloser, RRSetWithSignature memory nextClosest, bytes memory dnskey)
         public override
     {
-        int32 originalInception = int32(rrsets[keccak256(deleteName)][deleteType].inception);
+        uint32 originalInception = rrsets[keccak256(deleteName)][deleteType].inception;
 
         RRUtils.SignedSet memory ce = validateSignedSet(closestEncloser, dnskey);
         checkNSEC3Validity(ce, deleteName, originalInception);
@@ -262,9 +262,9 @@ contract DNSSECImpl is DNSSEC, Owned {
         }
     }
 
-    function checkNSEC3Validity(RRUtils.SignedSet memory nsec, bytes memory deleteName, int32 originalInception) private pure {
+    function checkNSEC3Validity(RRUtils.SignedSet memory nsec, bytes memory deleteName, uint32 originalInception) private pure {
         // The records must have been signed after the record we're trying to delete
-        require(int32(nsec.inception) - originalInception >= 0);
+        require(RRUtils.serialNumberGte(nsec.inception, originalInception));
 
         // The record must be an NSEC3
         require(nsec.typeCovered == DNSTYPE_NSEC3);
@@ -348,13 +348,13 @@ contract DNSSECImpl is DNSSEC, Owned {
      * @dev Returns data about the RRs (if any) known to this oracle with the provided type and name.
      * @param dnstype The DNS record type to query.
      * @param name The name to query, in DNS label-sequence format.
-     * @return inception The unix timestamp at which the signature for this RRSET was created.
-     * @return inserted The unix timestamp at which this RRSET was inserted into the oracle.
-     * @return hash The hash of the RRset that was inserted.
+     * @return inception The unix timestamp (wrapped) at which the signature for this RRSET was created.
+     * @return expiration The unix timestamp (wrapped) at which the signature for this RRSET expires.
+     * @return hash The hash of the RRset.
      */
-    function rrdata(uint16 dnstype, bytes calldata name) external override view returns (uint32, uint64, bytes20) {
+    function rrdata(uint16 dnstype, bytes calldata name) external override view returns (uint32, uint32, bytes20) {
         RRSet storage result = rrsets[keccak256(name)][dnstype];
-        return (result.inception, result.inserted, result.hash);
+        return (result.inception, result.expiration, result.hash);
     }
 
     function _submitRRSet(RRSetWithSignature memory input, bytes memory proof) internal returns (bytes memory) {
@@ -362,14 +362,13 @@ contract DNSSECImpl is DNSSEC, Owned {
         rrset = validateSignedSet(input, proof);
 
         RRSet storage storedSet = rrsets[keccak256(rrset.name)][rrset.typeCovered];
-        if (storedSet.inserted > 0) {
+        if (storedSet.hash != bytes20(0)) {
             // To replace an existing rrset, the signature must be at least as new
-            require(int32(rrset.inception - storedSet.inception) >= 0);
+            require(RRUtils.serialNumberGte(rrset.inception, storedSet.inception));
         }
-
         rrsets[keccak256(rrset.name)][rrset.typeCovered] = RRSet({
             inception: rrset.inception,
-            inserted: uint64(block.timestamp),
+            expiration: rrset.expiration,
             hash: bytes20(keccak256(rrset.data))
         });
 
@@ -407,11 +406,11 @@ contract DNSSECImpl is DNSSEC, Owned {
 
         // o  The validator's notion of the current time MUST be less than or
         //    equal to the time listed in the RRSIG RR's Expiration field.
-        require(int32(rrset.expiration - block.timestamp) >= 0);
+        require(RRUtils.serialNumberGte(rrset.expiration, uint32(block.timestamp)));
 
         // o  The validator's notion of the current time MUST be greater than or
         //    equal to the time listed in the RRSIG RR's Inception field.
-        require(int32(block.timestamp - rrset.inception) >= 0);
+        require(RRUtils.serialNumberGte(uint32(block.timestamp), rrset.inception));
 
         // Validate the signature
         verifySignature(name, rrset, input, proof);
