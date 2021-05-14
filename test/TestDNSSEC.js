@@ -117,21 +117,13 @@ contract('DNSSEC', accounts => {
     var instance = await dnssec.deployed();
     var proof = await instance.anchors();
     const totalLen = test_rrsets.map(([name, rrset, sig]) => (rrset.length / 2 - 1) + (sig.length / 2 - 1) + 4).reduce((a,b) => a+b);
-    const buf = Buffer.alloc(totalLen);
-    let off = 0;
+    const sets = [];
     for (const [name, rrset, sig] of test_rrsets) {
       const rrsetBuf = Buffer.from(rrset.slice(2), 'hex');
       const sigBuf = Buffer.from(sig.slice(2), 'hex');
-      buf.writeUInt16BE(rrsetBuf.length, off);
-      off += 2;
-      rrsetBuf.copy(buf, off);
-      off += rrsetBuf.length;
-      buf.writeUInt16BE(sigBuf.length, off);
-      off += 2;
-      sigBuf.copy(buf, off);
-      off += sigBuf.length;
+      sets.push([rrsetBuf, sigBuf]);
     }
-    var tx = await instance.submitRRSets(buf, proof);
+    var tx = await instance.submitRRSets(sets, proof);
     assert.equal(tx.receipt.status, true);
   });
 });
