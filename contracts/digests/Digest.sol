@@ -1,4 +1,4 @@
-pragma solidity ^0.7.4;
+pragma solidity ^0.8.4;
 
 /**
 * @dev An interface for contracts implementing a DNSSEC digest.

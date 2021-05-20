@@ -1,4 +1,4 @@
-pragma solidity ^0.7.4;
+pragma solidity ^0.8.4;
 
 /**
  * @dev Interface for contracts that implement NSEC3 digest algorithms.
