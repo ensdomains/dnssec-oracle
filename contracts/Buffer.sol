@@ -209,7 +209,7 @@ library Buffer {
             resize(buf, (len + off) * 2);
         }
 
-        uint mask = (256 ** (len - 1));
+        uint mask = (256 ** len) - 1;
         // Right-align data
         data = data >> (8 * (32 - len));
         assembly {
@@ -274,7 +274,7 @@ library Buffer {
             resize(buf, (len + off) * 2);
         }
 
-        uint mask = 256 ** (len - 1);
+        uint mask = (256 ** len) - 1;
         assembly {
             // Memory address of the buffer data
             let bufptr := mload(buf)
