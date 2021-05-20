@@ -10,6 +10,6 @@ module.exports = {
   mocha: {
   },
   solidity: {
-    version: "0.7.4",
+    version: "0.8.4",
   },
 };
