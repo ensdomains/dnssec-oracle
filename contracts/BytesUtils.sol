@@ -1,4 +1,4 @@
-pragma solidity ^0.7.4;
+pragma solidity ^0.8.4;
 
 library BytesUtils {
     /*
@@ -64,13 +64,13 @@ library BytesUtils {
                 // Mask out irrelevant bytes and check again
                 uint mask;
                 if (shortest > 32) {
-                    mask = uint256(- 1); // aka 0xffffff....
+                    mask = type(uint256).max;
                 } else {
                     mask = ~(2 ** (8 * (32 - shortest + idx)) - 1);
                 }
-                uint diff = (a & mask) - (b & mask);
+                int diff = int(a & mask) - int(b & mask);
                 if (diff != 0)
-                return int(diff);
+                return diff;
             }
             selfptr += 32;
             otherptr += 32;
@@ -215,7 +215,7 @@ library BytesUtils {
         }
 
         // Copy remaining bytes
-        uint mask = 256 ** (32 - len) - 1;
+        uint mask = 256 ** ((32 - len) - 1);
         assembly {
             let srcpart := and(mload(src), not(mask))
             let destpart := and(mload(dest), mask)
