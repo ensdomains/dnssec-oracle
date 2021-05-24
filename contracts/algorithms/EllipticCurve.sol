@@ -34,26 +34,28 @@ contract EllipticCurve {
     function inverseMod(uint u, uint m) internal pure
         returns (uint)
     {
-        if (u == 0 || u == m || m == 0)
-            return 0;
-        if (u > m)
-            u = u % m;
+        unchecked {
+            if (u == 0 || u == m || m == 0)
+                return 0;
+            if (u > m)
+                u = u % m;
 
-        int t1;
-        int t2 = 1;
-        uint r1 = m;
-        uint r2 = u;
-        uint q;
+            int t1;
+            int t2 = 1;
+            uint r1 = m;
+            uint r2 = u;
+            uint q;
 
-        while (r2 != 0) {
-            q = r1 / r2;
-            (t1, t2, r1, r2) = (t2, t1 - int(q) * t2, r2, r1 - q * r2);
+            while (r2 != 0) {
+                q = r1 / r2;
+                (t1, t2, r1, r2) = (t2, t1 - int(q) * t2, r2, r1 - q * r2);
+            }
+
+            if (t1 < 0)
+                return (m - uint(-t1));
+
+            return uint(t1);
         }
-
-        if (t1 < 0)
-            return (m - uint(-t1));
-
-        return uint(t1);
     }
 
     /**
