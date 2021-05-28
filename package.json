@@ -6,7 +6,7 @@
   "devDependencies": {
     "@ensdomains/buffer": "^0.0.12",
     "@ensdomains/dnsprovejs": "0.3.7",
-    "@ensdomains/solsha1": "^0.0.2",
+    "@ensdomains/solsha1": "^0.0.3",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.10",
